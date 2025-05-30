@@ -1,0 +1,45 @@
+# CMake build folders
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Compiled binary/executables
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+*.dylib
+*.app
+
+# VSCode settings
+.vscode/
+*.code-workspace
+
+# macOS system files
+.DS_Store
+
+# Logs and user files
+*.log
+
+# OpenCV generated files (if any)
+opencv*.xml
+opencv*.yml
+
+# Image outputs (optional, if temporary)
+Results/
+*.png
+*.jpg
+*.jpeg
+
+# Python virtual environments (if you cross-use)
+venv/
+.env/
+
+# Backup or temp files
+*~
+*.swp
