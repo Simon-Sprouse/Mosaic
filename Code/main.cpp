@@ -11,17 +11,22 @@ using ImageProcess::ImageState;
 int main() { 
     cout << "Hello From Mosaic" << endl;
 
-    string imagePath = "../Images/flower.jpg";
+    string image_path = "../Images/flower.jpg";
+    string results_dir = "../Results";
 
-    ImageState img_state = ImageProcess::loadImage(imagePath);
+    // parameters
+    double RESIZE_FACTOR = 0.8;
 
-    cout << img_state.name << endl;
+    // Load Image
+    ImageState img_state(image_path);
+    cout << "Loaded image: " << img_state.file_name << endl;
+    cout << "Original dimensions: " << img_state.original.size() << endl;
+    ImageProcess::saveImage(img_state.original, results_dir, img_state.file_name, "original");
 
-    string output_dir = "../Results";
-
-
-    ImageProcess::saveImage(img_state.original, output_dir, img_state.name);
-
+    // Resize Image
+    ImageProcess::resizeImage(img_state, RESIZE_FACTOR);
+    cout << "Resized image to size: " << img_state.resized.size() << endl;
+    ImageProcess::saveImage(img_state.resized, results_dir, img_state.file_name, "rescaled");
 
     return 0;
 }

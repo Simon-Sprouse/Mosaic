@@ -7,24 +7,47 @@ namespace fs = std::__fs::filesystem;
 
 namespace ImageProcess { 
 
-ImageState loadImage(const string& path) { 
-    ImageState imgState;
-    imgState.original = cv::imread(path);
 
-    if (imgState.original.empty()) { 
-        cerr << "Error: Could not load image from path: " << path << endl;
-        return imgState;
+// IMAGE STATE CONSTRUCTOR
+ImageState::ImageState(const string& image_path) { 
+
+    original = cv::imread(image_path);
+
+    if (original.empty()) { 
+        cerr << "Error: Could not load image from path: " << image_path << endl;
+        return;
     }
 
-    imgState.file_path = path;
-    imgState.name = fs::path(path).stem().string();
+    file_path = image_path;
+    file_name = fs::path(image_path).stem().string();
 
-    return imgState;
 
 }
 
 
-void saveImage(const cv::Mat& image, const string& output_dir, const string& output_name) { 
+void resizeImage(ImageState& state, double resize_factor) { 
+
+    // if state.rescaled already exists we need to replace it / handle old version.
+    // if state.resalced hasn't been set yet, we need to initialize it
+
+    // set state.rescaled to cv::Mat with resalce performed
+
+
+    if (state.original.empty()) { 
+        cerr << "Resized called but no original image found" << endl;
+        return;
+    }
+
+    cv::resize(state.original, state.resized, cv::Size(), resize_factor, resize_factor, cv::INTER_LINEAR);
+
+}
+
+
+
+
+
+// USED FOR TESTING //
+void saveImage(const cv::Mat& image, const string& output_dir, const string& output_name, const string& suffix) { 
     if (image.empty()) { 
         return;
     }
@@ -33,12 +56,12 @@ void saveImage(const cv::Mat& image, const string& output_dir, const string& out
         fs::create_directory(output_dir);
     }
 
-    std::string output_path = output_dir + "/" + output_name + ".jpg";
+    std::string output_path = output_dir + "/" + output_name + "_" + suffix + ".jpg";
     if (cv::imwrite(output_path, image)) { 
-        cout << "Saved: " << output_path << endl;
+        // cout << "Saved: " << output_path << endl;
     }
     else { 
-        cout << "Failed to save: " << output_path << endl;
+        cerr << "Failed to save: " << output_path << endl;
     }
 
 
