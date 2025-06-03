@@ -8,6 +8,41 @@ using namespace std;
 namespace fs = std::__fs::filesystem;
 using ImageProcess::ImageState;
 
+// Helper to print Vec3b as (B,G,R)
+std::string vec3bToString(const cv::Vec3b& color) {
+    return "(" + std::to_string(color[0]) + ", " + 
+                 std::to_string(color[1]) + ", " + 
+                 std::to_string(color[2]) + ")";
+}
+
+// Helper to print Point as (x,y)
+std::string pointToString(const cv::Point& pt) {
+    return "(" + std::to_string(pt.x) + ", " + std::to_string(pt.y) + ")";
+}
+
+// Print color_to_pixels unordered_map
+void printColorToPixels(const std::unordered_map<cv::Vec3b, std::vector<cv::Point>, ImageProcess::Vec3bHash, ImageProcess::Vec3bEqual>& color_to_pixels) {
+    std::cout << "Color to Pixels Map:\n";
+    for (const auto& [color, points] : color_to_pixels) {
+        std::cout << "  Color " << vec3bToString(color) << " -> [";
+        for (size_t i = 0; i < std::min(points.size(), size_t(5)); ++i) {
+            std::cout << pointToString(points[i]);
+            if (i != std::min(points.size(), size_t(5)) - 1) std::cout << ", ";
+        }
+        if (points.size() > 5) std::cout << "...";
+        std::cout << "] (" << points.size() << " points)\n";
+    }
+}
+
+
+// Print color_lengths vector
+void printColorLengths(const std::vector<std::pair<cv::Vec3b, double>>& color_lengths) {
+    std::cout << "Color Lengths:\n";
+    for (const auto& [color, length] : color_lengths) {
+        std::cout << "  Color " << vec3bToString(color) << " -> Length: " << length << "\n";
+    }
+}
+
 
 
 int main() { 
@@ -57,6 +92,14 @@ int main() {
     int contour_count = ImageProcess::detectContours(img_state, MAX_SEGMENT_ANGLE, MIN_SEGMENT_LENGTH, SEGMENT_ANGLE_WINDOW);
     ImageProcess::saveImage(img_state.segmented, results_dir, img_state.file_name, "segmented");
     cout << "Found " << contour_count << " contour segments" << endl;
+
+    // Rank Segments
+    ImageProcess::rankSegments(img_state);
+    printColorToPixels(img_state.segment_pixels);
+    printColorLengths(img_state.segment_lengths);
+
+
+
 
     auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed_time = end - start;

@@ -39,7 +39,7 @@ void resizeImage(ImageState& state, double resize_factor) {
 }
 
 void grayImage(ImageState& state) { 
-    
+
     if (state.resized.empty()) { 
         cerr << "Gray called but no resized image" << endl;
         return;
@@ -150,6 +150,58 @@ int detectContours(ImageState& state, double max_segment_angle_rad, int min_segm
     return contour_id;
 }
 
+void rankSegments(ImageState& state) {
+    if (state.segmented.empty()) {
+        std::cerr << "rankSegments called but segmented image is empty" << std::endl;
+        return;
+    }
+
+    state.segment_pixels.clear();
+    state.segment_lengths.clear();
+
+    // Collect pixels for each color (excluding black)
+    for (int y = 0; y < state.segmented.rows; ++y) {
+        for (int x = 0; x < state.segmented.cols; ++x) {
+            cv::Vec3b color = state.segmented.at<cv::Vec3b>(y, x);
+            if (color != cv::Vec3b(0, 0, 0)) {
+                state.segment_pixels[color].emplace_back(x, y);
+            }
+        }
+    }
+
+    // Helper lambda for PCA length
+    auto pca_length = [](const std::vector<cv::Point>& points) -> double {
+        if (points.size() < 2)
+            return 0.0;
+
+        cv::Mat data(points.size(), 2, CV_64F);
+        for (size_t i = 0; i < points.size(); ++i) {
+            data.at<double>(i, 0) = points[i].x;
+            data.at<double>(i, 1) = points[i].y;
+        }
+
+        cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 1);
+        cv::Mat projected;
+        pca.project(data, projected);
+
+        double minVal, maxVal;
+        cv::minMaxLoc(projected.col(0), &minVal, &maxVal);
+
+        return maxVal - minVal;
+    };
+
+    // Compute PCA length per color segment
+    for (const auto& [color, pixels] : state.segment_pixels) {
+        double length = pca_length(pixels);
+        state.segment_lengths.emplace_back(color, length);
+    }
+
+    // Sort descending by length
+    std::sort(state.segment_lengths.begin(), state.segment_lengths.end(),
+              [](const auto& a, const auto& b) {
+                  return a.second > b.second;
+              });
+}
 
 
 
