@@ -56,6 +56,13 @@ namespace ImageProcess {
     void cannyFilter(ImageState& state, int threshold_1, int threshold_2);
     int detectContours(ImageState& state, double max_segment_angle, int min_segment_length, int segment_angle_window);
     void rankSegments(ImageState& state);
+
+    std::string vec3bToString(const cv::Vec3b& color);
+    std::string pointToString(const cv::Point& pt);
+    void printColorToPixels(const std::unordered_map<cv::Vec3b, std::vector<cv::Point>, ImageProcess::Vec3bHash, ImageProcess::Vec3bEqual>& color_to_pixels);
+    void printColorLengths(const std::vector<std::pair<cv::Vec3b, double>>& color_lengths);
+    void printColorToPixelsK(const std::unordered_map<cv::Vec3b, std::vector<cv::Point>, ImageProcess::Vec3bHash, ImageProcess::Vec3bEqual>& color_to_pixels);
+    void printColorLengthsK(const std::vector<std::pair<cv::Vec3b, double>>& color_lengths);
     
     void saveImage(const cv::Mat& image, const std::string& output_dir, const std::string& output_name, const std::string& suffix);
 
