@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 #include <opencv2/opencv.hpp>
 #include "image_process.hpp"
 
@@ -9,6 +10,9 @@ using ImageProcess::ImageState;
 
 
 int main() { 
+
+    auto start = chrono::high_resolution_clock::now();
+
     cout << "Hello From Mosaic" << endl;
 
     string image_path = "../Images/flower.jpg";
@@ -27,6 +31,11 @@ int main() {
     ImageProcess::resizeImage(img_state, RESIZE_FACTOR);
     cout << "Resized image to size: " << img_state.resized.size() << endl;
     ImageProcess::saveImage(img_state.resized, results_dir, img_state.file_name, "rescaled");
+
+
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed_time = end - start;
+    cout << "Time to complete: " << elapsed_time.count() << " seconds" << endl;
 
     return 0;
 }
