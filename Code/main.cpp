@@ -3,6 +3,7 @@
 #include <cmath>
 #include <opencv2/opencv.hpp>
 #include "image_process.hpp"
+#include "graphics.hpp"
 
 using namespace std;
 namespace fs = std::__fs::filesystem;
@@ -70,7 +71,10 @@ int main() {
     ImageProcess::saveImage(img_state.selected_segment, results_dir, img_state.file_name, "selected_segment");
 
     // Draw Square
-
+    img_state.canvas = img_state.selected_segment.clone();
+    cv::Point random_point = ImageProcess::getRandomPointOnSegment(img_state, 1);
+    Graphics::drawSquare(img_state.canvas, random_point, 30, 42, cv::Scalar(0, 0, 255), 5);
+    ImageProcess::saveImage(img_state.canvas, results_dir, img_state.file_name, "canvas");
 
 
     auto end = chrono::high_resolution_clock::now();

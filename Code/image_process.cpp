@@ -236,6 +236,37 @@ void selectSegment(ImageState& state, int k) {
 }
 
 
+cv::Point getRandomPointOnSegment(ImageState& state, int k) {
+    // Safety check: make sure k is in bounds
+    if (k < 0 || k >= static_cast<int>(state.segment_lengths.size())) {
+        throw std::out_of_range("Segment index k is out of range");
+    }
+
+    // Get the color for segment k (assuming segment_lengths[k].first is the color)
+    const cv::Vec3b& color = state.segment_lengths[k].first;
+
+    // Find the vector of points corresponding to this color
+    auto it = state.segment_pixels.find(color);
+    if (it == state.segment_pixels.end()) {
+        throw std::runtime_error("Color not found in segment_pixels");
+    }
+
+    const std::vector<cv::Point>& points = it->second;
+
+    if (points.empty()) {
+        throw std::runtime_error("No points in the selected segment");
+    }
+
+    // Random engine and distribution
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<> dist(0, static_cast<int>(points.size()) - 1);
+
+    // Pick a random index and return the point
+    return points[dist(rng)];
+}
+
+
+
 
 
 /*
