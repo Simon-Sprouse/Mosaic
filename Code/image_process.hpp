@@ -39,6 +39,7 @@ namespace ImageProcess {
         std::vector<std::pair<cv::Vec3b, double>> segment_lengths;
 
 
+        cv::Mat selected_segment;
 
         cv::Mat mask;
         std::string file_name;
@@ -56,6 +57,7 @@ namespace ImageProcess {
     void cannyFilter(ImageState& state, int threshold_1, int threshold_2);
     int detectContours(ImageState& state, double max_segment_angle, int min_segment_length, int segment_angle_window);
     void rankSegments(ImageState& state);
+    void selectSegment(ImageState& state, int k);
 
     std::string vec3bToString(const cv::Vec3b& color);
     std::string pointToString(const cv::Point& pt);

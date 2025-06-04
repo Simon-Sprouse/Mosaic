@@ -11,6 +11,7 @@ using ImageProcess::ImageState;
 
 
 
+
 int main() { 
 
     auto start = chrono::high_resolution_clock::now();
@@ -64,6 +65,9 @@ int main() {
     ImageProcess::printColorToPixelsK(img_state.segment_pixels);
     ImageProcess::printColorLengthsK(img_state.segment_lengths);
 
+    // Select Segment
+    ImageProcess::selectSegment(img_state, 1);
+    ImageProcess::saveImage(img_state.selected_segment, results_dir, img_state.file_name, "selected_segment");
 
     // Draw Square
 

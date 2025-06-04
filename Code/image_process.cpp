@@ -204,6 +204,40 @@ void rankSegments(ImageState& state) {
 }
 
 
+void selectSegment(ImageState& state, int k) {
+    if (state.segment_lengths.empty()) {
+        std::cerr << "selectSegment called but segment_lengths is empty." << std::endl;
+        return;
+    }
+
+    if (k < 0 || k >= static_cast<int>(state.segment_lengths.size())) {
+        std::cerr << "selectSegment: k = " << k << " is out of range. Valid range: [0, "
+                  << state.segment_lengths.size() - 1 << "]\n";
+        return;
+    }
+
+    const cv::Vec3b& selected_color = state.segment_lengths[k].first;
+
+    auto it = state.segment_pixels.find(selected_color);
+    if (it == state.segment_pixels.end()) {
+        std::cerr << "selectSegment: Selected color not found in segment_pixels.\n";
+        return;
+    }
+
+    // Create a blank image
+    state.selected_segment = cv::Mat::zeros(state.segmented.size(), CV_8UC3);
+
+    // Draw only the selected segment
+    for (const auto& pt : it->second) {
+        if (pt.y >= 0 && pt.y < state.selected_segment.rows && pt.x >= 0 && pt.x < state.selected_segment.cols) {
+            state.selected_segment.at<cv::Vec3b>(pt.y, pt.x) = cv::Vec3b(255, 255, 255);
+        }
+    }
+}
+
+
+
+
 /*
 PRINT FUNCTIONS >>
 */
@@ -242,15 +276,6 @@ void printColorLengths(const std::vector<std::pair<cv::Vec3b, double>>& color_le
         std::cout << "  Color " << vec3bToString(color) << " -> Length: " << length << "\n";
     }
 }
-
-
-
-
-
-
-
-
-
 
 
 void printColorToPixelsK(const std::unordered_map<cv::Vec3b, std::vector<cv::Point>, ImageProcess::Vec3bHash, ImageProcess::Vec3bEqual>& color_to_pixels) {
