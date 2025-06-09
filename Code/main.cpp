@@ -5,10 +5,13 @@
 #include "image_process.hpp"
 #include "graphics.hpp"
 
+#include "Mosaic.hpp"
+
 using namespace std;
 namespace fs = std::__fs::filesystem;
 using ImageProcess::ImageState;
 
+using mosaic_gen::Mosaic;
 
 
 
@@ -19,7 +22,7 @@ int main() {
 
     cout << "Hello From Mosaic" << endl;
 
-    string image_path = "../Images/flower.jpg";
+    const string image_path = "../Images/flower.jpg";
     string results_dir = "../Results";
 
     // parameters
@@ -32,13 +35,22 @@ int main() {
     int MIN_SEGMENT_LENGTH = 20;
     int SEGMENT_ANGLE_WINDOW = 10;
 
+
     // Load Image
-    ImageState img_state(image_path);
-    ImageProcess::saveImage(img_state.original, results_dir, img_state.file_name, "original");
-    cout << "Loaded image: " << img_state.file_name << endl;
-    cout << "Original dimensions: " << img_state.original.size() << endl;
 
+    Mosaic mosaic(image_path);
 
+    // Resize Image
+
+    // mosaic.resizeOriginal(RESIZE_FACTOR);
+
+    // // Load Image
+    // ImageState img_state(image_path);
+    // ImageProcess::saveImage(img_state.original, results_dir, img_state.file_name, "original");
+    // cout << "Loaded image: " << img_state.file_name << endl;
+    // cout << "Original dimensions: " << img_state.original.size() << endl;
+
+    /*
     // Resize Image
     ImageProcess::resizeImage(img_state, RESIZE_FACTOR);
     ImageProcess::saveImage(img_state.resized, results_dir, img_state.file_name, "rescaled");
@@ -76,6 +88,8 @@ int main() {
     Graphics::drawSquare(img_state.canvas, random_point, 30, 42, cv::Scalar(0, 0, 255), 5);
     ImageProcess::saveImage(img_state.canvas, results_dir, img_state.file_name, "canvas");
 
+
+    */
 
     auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed_time = end - start;
