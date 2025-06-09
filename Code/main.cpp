@@ -31,7 +31,7 @@ int main() {
     double BLUR_SIGMA = 1.4;
     int CANNY_THRESHOLD_1 = 50;
     int CANNY_THRESHOLD_2 = 100;
-    double MAX_SEGMENT_ANGLE = 40 * M_PI / 180.0;
+    double MAX_SEGMENT_ANGLE_RAD = 40 * M_PI / 180.0;
     int MIN_SEGMENT_LENGTH = 20;
     int SEGMENT_ANGLE_WINDOW = 10;
 
@@ -47,6 +47,35 @@ int main() {
     my_mosaic.resizeOriginal(RESIZE_FACTOR);
     my_mosaic.saveImage(my_mosaic.resized, results_dir, "resized");
     cout << "Resized image to size: " << my_mosaic.resized.size() << endl;
+
+    // Grayscale Image
+    my_mosaic.grayImage();
+    my_mosaic.saveImage(my_mosaic.grayscale, results_dir, "gray");
+
+    // Blur Image
+    my_mosaic.blurImage(BLUR_KERNEL_SIZE, BLUR_SIGMA);
+    my_mosaic.saveImage(my_mosaic.blurred, results_dir, "blurred");
+
+    // Canny Filter
+    my_mosaic.cannyFilter(CANNY_THRESHOLD_1, CANNY_THRESHOLD_2);
+    my_mosaic.saveImage(my_mosaic.edges, results_dir, "canny_edges");
+
+    // Detect Contours
+    int contour_count = my_mosaic.detectContours(MAX_SEGMENT_ANGLE_RAD, MIN_SEGMENT_LENGTH, SEGMENT_ANGLE_WINDOW);
+    my_mosaic.saveImage(my_mosaic.segmented, results_dir, "segmented_edges");
+    cout << "Detedted: " << contour_count << " edges" << endl;
+
+
+    // Rank Segments
+    my_mosaic.rankSegments();
+    my_mosaic.printColorToPixelsK(5);
+    my_mosaic.printColorLengthsK(5);
+
+    // Select Segment
+    my_mosaic.selectSegment(1);
+    my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "selected_segment");
+
+    // Draw Square
 
     // mosaic.resizeOriginal(RESIZE_FACTOR);
 

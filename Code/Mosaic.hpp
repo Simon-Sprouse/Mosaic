@@ -22,19 +22,19 @@ class Mosaic {
 
 
         void resizeOriginal(double resize_factor);
-        // void grayImage();
-        // void blurImage(int kernel_size, double sigma);
-        // void cannyFilter(int threshold_1, int threshold_2);
-        // int detectContours(double max_segment_angle, int min_segment_length, int segment_angle_window);
-        // void rankSegments();
-        // void selectSegment(int k);
-        // cv::Point getRandomPointOnSegment(int k);
+        void grayImage();
+        void blurImage(int kernel_size, double sigma);
+        void cannyFilter(int threshold_1, int threshold_2);
+        int detectContours(double max_segment_angle_rad, int min_segment_length, int segment_angle_window);
+        void rankSegments();
+        void selectSegment(int k);
+        cv::Point getRandomPointOnSegment(int k);
 
         
-        // void printColorToPixels();
-        // void printColorLengths();
-        // void printColorToPixelsK(int k);
-        // void printColorLengthsK(int k);
+        void printColorToPixels();
+        void printColorLengths();
+        void printColorToPixelsK(int k);
+        void printColorLengthsK(int k);
         
         void saveImage(const cv::Mat& image, const std::string& output_dir, const std::string& suffix);
 
