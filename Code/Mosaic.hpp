@@ -16,6 +16,46 @@ class Mosaic {
         // param constructor
         Mosaic(const string& image_path);
 
+        
+
+
+
+
+        void resizeOriginal(double resize_factor);
+        // void grayImage();
+        // void blurImage(int kernel_size, double sigma);
+        // void cannyFilter(int threshold_1, int threshold_2);
+        // int detectContours(double max_segment_angle, int min_segment_length, int segment_angle_window);
+        // void rankSegments();
+        // void selectSegment(int k);
+        // cv::Point getRandomPointOnSegment(int k);
+
+        
+        // void printColorToPixels();
+        // void printColorLengths();
+        // void printColorToPixelsK(int k);
+        // void printColorLengthsK(int k);
+        
+        void saveImage(const cv::Mat& image, const std::string& output_dir, const std::string& suffix);
+
+
+        cv::Mat original;
+        cv::Mat resized;
+        cv::Mat grayscale;
+        cv::Mat blurred;
+        cv::Mat edges;
+        cv::Mat segmented;
+
+        cv::Mat selected_segment;
+        cv::Mat canvas;
+
+        cv::Mat mask;
+        std::string file_path;
+        std::string image_name;
+
+
+    private: 
+
         struct Vec3bHash {
             std::size_t operator()(const cv::Vec3b& color) const noexcept {
                 return std::hash<int>()(
@@ -32,30 +72,11 @@ class Mosaic {
             }
         };
 
-        // void resizeOriginal(double resize_factor);
-
-
-
-    private: 
-
-        cv::Mat original;
-        cv::Mat resized;
-        cv::Mat grayscale;
-        cv::Mat blurred;
-        cv::Mat edges;
-        cv::Mat segmented;
+        std::string vec3bToString(const cv::Vec3b& color);
+        std::string pointToString(const cv::Point& pt);
 
         std::unordered_map<cv::Vec3b, std::vector<cv::Point>, Vec3bHash, Vec3bEqual> segment_pixels;
         std::vector<std::pair<cv::Vec3b, double>> segment_lengths;
-
-
-
-        cv::Mat selected_segment;
-        cv::Mat canvas;
-
-        cv::Mat mask;
-        std::string file_path;
-        std::string image_name;
 
 };
 

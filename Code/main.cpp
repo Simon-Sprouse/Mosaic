@@ -38,9 +38,15 @@ int main() {
 
     // Load Image
 
-    Mosaic mosaic(image_path);
+    Mosaic my_mosaic(image_path);
+    cout << "Loaded image: " << my_mosaic.image_name << endl;
+    cout << "Original dimensions: " << my_mosaic.original.size() << endl;
 
     // Resize Image
+
+    my_mosaic.resizeOriginal(RESIZE_FACTOR);
+    my_mosaic.saveImage(my_mosaic.resized, results_dir, "resized");
+    cout << "Resized image to size: " << my_mosaic.resized.size() << endl;
 
     // mosaic.resizeOriginal(RESIZE_FACTOR);
 
