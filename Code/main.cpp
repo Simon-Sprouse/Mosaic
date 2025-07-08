@@ -30,7 +30,7 @@ int main() {
     double BLUR_SIGMA = 1.4;
     int CANNY_THRESHOLD_1 = 50;
     int CANNY_THRESHOLD_2 = 100;
-    double MAX_SEGMENT_ANGLE_RAD = 40 * M_PI / 180.0;
+    double MAX_SEGMENT_ANGLE_RAD = 100 * M_PI / 180.0;
     int MIN_SEGMENT_LENGTH = 20;
     int SEGMENT_ANGLE_WINDOW = 10;
 
@@ -65,23 +65,30 @@ int main() {
     cout << "Detedted: " << contour_count << " edges" << endl;
 
 
+
+    int k = 1;
+
     // Rank Segments
     my_mosaic.rankSegments();
-    my_mosaic.printColorToPixelsK(5);
-    my_mosaic.printColorLengthsK(5);
+    my_mosaic.printColorToPixelsK(k);
+    my_mosaic.printColorLengthsK(k);
 
     // Select Segment
-    my_mosaic.selectSegment(1);
+    my_mosaic.selectSegment(k);
     my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "selected_segment");
 
 
     // Get random point on segment
-    cv::Point my_point = my_mosaic.getRandomPointOnSegment(1);
+    cv::Point my_point = my_mosaic.getRandomPointOnSegment(k);
     cout << "Random Point: " << my_point << endl;
 
     // Draw Square
-    my_mosaic.drawSquareRandomPoint(1);
-    my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "draw_test");
+    my_mosaic.drawSquareRandomPoint(k);
+    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "draw_test");
+
+    // Test Reward Function
+    my_mosaic.placeTile(k);
+    my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "reward_test");
   
 
 

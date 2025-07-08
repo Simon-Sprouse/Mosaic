@@ -26,6 +26,7 @@ class Mosaic {
         void selectSegment(int k);
         cv::Point getRandomPointOnSegment(int k);
         void drawSquareRandomPoint(int k); // test
+        void placeTile(int k);
 
         
         void printColorToPixels();
@@ -45,8 +46,8 @@ class Mosaic {
 
         cv::Mat selected_segment;
         cv::Mat canvas;
-
         cv::Mat mask;
+
         std::string file_path;
         std::string image_name;
 

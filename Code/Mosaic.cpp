@@ -1,5 +1,6 @@
 #include "Mosaic.hpp"
 #include "graphics.hpp"
+#include "optimize.hpp"
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -272,11 +273,55 @@ void Mosaic::drawSquareRandomPoint(int k) {
 
     cv::Point center = getRandomPointOnSegment(k);
     cv::Scalar color = cv::Scalar(255, 0, 255);
-    Graphics::drawSquare(selected_segment, center, 20.0, 12.0, color, 2.0);
+
+    canvas = selected_segment.clone();
+    Graphics::drawSquare(canvas, center, 40.0, 12.0, color, 2.0);
 
 
 }
 
+
+
+void Mosaic::placeTile(int k) { 
+
+
+    selectSegment(k);
+
+    // canvas = selected_segment.clone();
+
+    cv::Point center = getRandomPointOnSegment(k);
+    double size = 20.0;
+    double theta = 20.0;
+    double decay_rate = 10.0;
+
+    double reward = Optimize::rewardFromCanny(selected_segment, center, size, theta, decay_rate);
+    cout << "reward: " << reward << endl;
+
+
+    // find best theta -- later move to optimize
+    double best_theta = 0;
+    double max_reward = 0;
+    for (double i = 0; i < 90; i += 5) { 
+        reward = Optimize::rewardFromCanny(selected_segment, center, size, i, decay_rate);
+        cout << "theta: " << i << " reward: " << reward << endl;
+
+        if (reward >= max_reward) { 
+            max_reward = reward;
+            best_theta = i;
+        }
+    }
+
+    cout << "Best theta: " << best_theta << endl;
+
+
+
+    cv::Scalar color = cv::Scalar(255, 255, 0);
+    Graphics::drawSquare(selected_segment, center, size, best_theta, color, 2.0);
+
+
+
+
+}
 
 
 
