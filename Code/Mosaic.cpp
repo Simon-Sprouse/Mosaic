@@ -1,4 +1,6 @@
 #include "Mosaic.hpp"
+#include "graphics.hpp"
+
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <random>
@@ -261,6 +263,25 @@ cv::Point Mosaic::getRandomPointOnSegment(int k) {
     // Pick a random index and return the point
     return points[dist(rng)];
 }
+
+
+
+
+
+void Mosaic::drawSquareRandomPoint(int k) { 
+
+    cv::Point center = getRandomPointOnSegment(k);
+    cv::Scalar color = cv::Scalar(255, 0, 255);
+    Graphics::drawSquare(selected_segment, center, 20.0, 12.0, color, 2.0);
+
+
+}
+
+
+
+
+
+
 
 
 

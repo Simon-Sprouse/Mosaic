@@ -16,10 +16,6 @@ class Mosaic {
         // param constructor
         Mosaic(const string& image_path);
 
-        
-
-
-
 
         void resizeOriginal(double resize_factor);
         void grayImage();
@@ -29,6 +25,7 @@ class Mosaic {
         void rankSegments();
         void selectSegment(int k);
         cv::Point getRandomPointOnSegment(int k);
+        void drawSquareRandomPoint(int k); // test
 
         
         void printColorToPixels();

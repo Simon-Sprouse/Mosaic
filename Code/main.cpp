@@ -2,14 +2,13 @@
 #include <chrono>
 #include <cmath>
 #include <opencv2/opencv.hpp>
-#include "image_process.hpp"
 #include "graphics.hpp"
 
 #include "Mosaic.hpp"
 
 using namespace std;
 namespace fs = std::__fs::filesystem;
-using ImageProcess::ImageState;
+
 
 using mosaic_gen::Mosaic;
 
@@ -75,56 +74,16 @@ int main() {
     my_mosaic.selectSegment(1);
     my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "selected_segment");
 
-    // Draw Square
 
-    // mosaic.resizeOriginal(RESIZE_FACTOR);
-
-    // // Load Image
-    // ImageState img_state(image_path);
-    // ImageProcess::saveImage(img_state.original, results_dir, img_state.file_name, "original");
-    // cout << "Loaded image: " << img_state.file_name << endl;
-    // cout << "Original dimensions: " << img_state.original.size() << endl;
-
-    /*
-    // Resize Image
-    ImageProcess::resizeImage(img_state, RESIZE_FACTOR);
-    ImageProcess::saveImage(img_state.resized, results_dir, img_state.file_name, "rescaled");
-    cout << "Resized image to size: " << img_state.resized.size() << endl;
-
-    // Grayscale Image
-    ImageProcess::grayImage(img_state);
-    ImageProcess::saveImage(img_state.grayscale, results_dir, img_state.file_name, "grayscale");
-
-    // Blur Image
-    ImageProcess::blurImage(img_state, BLUR_KERNEL_SIZE, BLUR_SIGMA);
-    ImageProcess::saveImage(img_state.blurred, results_dir, img_state.file_name, "blurred");
-
-    // Canny Filter
-    ImageProcess::cannyFilter(img_state, CANNY_THRESHOLD_1, CANNY_THRESHOLD_2);
-    ImageProcess::saveImage(img_state.edges, results_dir, img_state.file_name, "canny_edges");
-
-    // Detect Contours
-    int contour_count = ImageProcess::detectContours(img_state, MAX_SEGMENT_ANGLE, MIN_SEGMENT_LENGTH, SEGMENT_ANGLE_WINDOW);
-    ImageProcess::saveImage(img_state.segmented, results_dir, img_state.file_name, "segmented");
-    cout << "Found " << contour_count << " contour segments" << endl;
-
-    // Rank Segments
-    ImageProcess::rankSegments(img_state);
-    ImageProcess::printColorToPixelsK(img_state.segment_pixels);
-    ImageProcess::printColorLengthsK(img_state.segment_lengths);
-
-    // Select Segment
-    ImageProcess::selectSegment(img_state, 1);
-    ImageProcess::saveImage(img_state.selected_segment, results_dir, img_state.file_name, "selected_segment");
+    // Get random point on segment
+    cv::Point my_point = my_mosaic.getRandomPointOnSegment(1);
+    cout << "Random Point: " << my_point << endl;
 
     // Draw Square
-    img_state.canvas = img_state.selected_segment.clone();
-    cv::Point random_point = ImageProcess::getRandomPointOnSegment(img_state, 1);
-    Graphics::drawSquare(img_state.canvas, random_point, 30, 42, cv::Scalar(0, 0, 255), 5);
-    ImageProcess::saveImage(img_state.canvas, results_dir, img_state.file_name, "canvas");
+    my_mosaic.drawSquareRandomPoint(1);
+    my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "draw_test");
+  
 
-
-    */
 
     auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed_time = end - start;
