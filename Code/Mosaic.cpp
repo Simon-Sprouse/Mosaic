@@ -282,47 +282,106 @@ void Mosaic::drawSquareRandomPoint(int k) {
 
 
 
-void Mosaic::placeTile(int k) { 
+// void Mosaic::placeTile(int k) { 
 
 
+//     selectSegment(k);
+
+//     // canvas = selected_segment.clone();
+
+//     cv::Point center = getRandomPointOnSegment(k);
+//     double size = 20.0;
+//     double theta = 20.0;
+//     double decay_rate = 1.0;
+
+//     double reward = Optimize::rewardFromCanny(selected_segment, center, size, theta, decay_rate);
+//     cout << "reward: " << reward << endl;
+
+
+//     // find best theta -- later move to optimize
+//     double best_theta = 0;
+//     double max_reward = 0;
+//     for (double i = 0; i < 90; i += 5) { 
+//         reward = Optimize::rewardFromCanny(selected_segment, center, size, i, decay_rate);
+//         cout << "theta: " << i << " reward: " << reward << endl;
+
+//         if (reward >= max_reward) { 
+//             max_reward = reward;
+//             best_theta = i;
+//         }
+//     }
+
+//     cout << "Best theta: " << best_theta << endl;
+
+
+
+//     cv::Scalar color = cv::Scalar(255, 255, 0);
+//     Graphics::drawSquare(selected_segment, center, size, best_theta, color, 2.0);
+
+
+
+
+// }
+
+
+
+
+void Mosaic::placeTile(int k) {
     selectSegment(k);
-
-    // canvas = selected_segment.clone();
 
     cv::Point center = getRandomPointOnSegment(k);
     double size = 20.0;
-    double theta = 20.0;
-    double decay_rate = 10.0;
+    double radius = size * 1.5;
 
-    double reward = Optimize::rewardFromCanny(selected_segment, center, size, theta, decay_rate);
-    cout << "reward: " << reward << endl;
+    // Convert to grayscale if needed
+    cv::Mat gray;
+    if (selected_segment.channels() > 1) {
+        cv::cvtColor(selected_segment, gray, cv::COLOR_BGR2GRAY);
+    } else {
+        gray = selected_segment;
+    }
 
+    // Find non-zero stroke pixels
+    std::vector<cv::Point> all_stroke_pixels;
+    cv::findNonZero(gray, all_stroke_pixels);
 
-    // find best theta -- later move to optimize
-    double best_theta = 0;
-    double max_reward = 0;
-    for (double i = 0; i < 90; i += 5) { 
-        reward = Optimize::rewardFromCanny(selected_segment, center, size, i, decay_rate);
-        cout << "theta: " << i << " reward: " << reward << endl;
-
-        if (reward >= max_reward) { 
-            max_reward = reward;
-            best_theta = i;
+    // Filter to those within circular radius
+    std::vector<cv::Point2f> region_pixels;
+    for (const auto& pt : all_stroke_pixels) {
+        double dx = pt.x - center.x;
+        double dy = pt.y - center.y;
+        if ((dx * dx + dy * dy) <= radius * radius) {
+            region_pixels.emplace_back(pt.x, pt.y);
         }
     }
 
-    cout << "Best theta: " << best_theta << endl;
+    // Check if enough points for PCA
+    if (region_pixels.size() < 2) {
+        std::cerr << "Not enough stroke pixels for PCA near point: " << center << std::endl;
+        return;
+    }
 
+    // Build matrix for PCA
+    cv::Mat data(region_pixels.size(), 2, CV_64F);
+    for (size_t i = 0; i < region_pixels.size(); ++i) {
+        data.at<double>(i, 0) = region_pixels[i].x;
+        data.at<double>(i, 1) = region_pixels[i].y;
+    }
 
+    // Run PCA to get dominant direction
+    cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 1);
+    cv::Vec2d direction = pca.eigenvectors.row(0);
 
+    // Convert to angle in degrees
+    double theta_rad = std::atan2(direction[1], direction[0]);
+    double theta_deg = theta_rad * 180.0 / CV_PI;
+
+    cout << "Best theta: " << theta_deg << endl;
+
+    // Draw aligned square
     cv::Scalar color = cv::Scalar(255, 255, 0);
-    Graphics::drawSquare(selected_segment, center, size, best_theta, color, 2.0);
-
-
-
-
+    Graphics::drawSquare(selected_segment, center, size, theta_deg, color, 2.0);
 }
-
 
 
 
