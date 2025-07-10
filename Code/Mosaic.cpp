@@ -541,12 +541,12 @@ void Mosaic::placeTileSegment(int k) {
     selectSegment(k);
     canvas = selected_segment.clone();
 
-    cv::Point center = getRandomPointOnSegment(k);
+    cv::Point center = getRandomPointOnSegment(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
+
     double size = 20.0;
     cv::Scalar color(255, 255, 0);
 
 
-    // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
 
 
 
@@ -621,6 +621,21 @@ void Mosaic::placeTileSegment(int k) {
 
 
 
+
+// TODO finish this function
+void Mosaic::placeTileAllSegments() { 
+
+    // TODO - find the number of segments
+    int number_of_segments = static_cast<int>(segment_lengths.size());
+
+    for (int i = 0; i < number_of_segments; i++) {
+        placeTileSegment(i);
+    }
+
+    cout << "Placed tiles along: " << number_of_segments << "segments" << endl;
+
+
+}
 
 
 

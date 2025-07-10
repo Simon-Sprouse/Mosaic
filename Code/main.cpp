@@ -91,9 +91,13 @@ int main() {
     // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reward_test");
 
 
-    // Complete One BFS Frontier
-    my_mosaic.placeTileSegment(k);
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "placeTileSegment_test");
+    // // Complete One BFS Frontier
+    // my_mosaic.placeTileSegment(k);
+    // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "placeTileSegment_test");
+    // my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");
+
+    // Place tiles on all segments
+    my_mosaic.placeTileAllSegments();
     my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");
   
 
