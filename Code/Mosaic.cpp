@@ -455,7 +455,7 @@ std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::P
 
 
 // Returns theta_deg if placed, -420 if not placed
-double Mosaic::placeTile(cv::Point center, double size) {
+double Mosaic::placeTile(cv::Point center, double size, string text) {
 
     double radius = size * 1.0; // HUGE impact on alignment TODO do some geometry
 
@@ -512,7 +512,7 @@ double Mosaic::placeTile(cv::Point center, double size) {
 
     // Draw aligned square
     cv::Scalar color = cv::Scalar(255, 255, 0);
-    Graphics::drawSquare(canvas, center, size, theta_deg, color, 2.0);
+    Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, text);
     Graphics::drawSquare(mask, center, size, theta_deg, color, 2.0);
 
     return theta_deg;
@@ -549,6 +549,7 @@ void Mosaic::placeTileSegment(int k) {
     stack<cv::Point> s;
     cv::Point current_center;
     s.push(center);
+    int squares_placed = 0;
 
 
     while(!s.empty()) { 
@@ -557,11 +558,12 @@ void Mosaic::placeTileSegment(int k) {
 
         cout << "current center: " << current_center << endl;
 
-        double theta_deg = placeTile(current_center, size);
+        double theta_deg = placeTile(current_center, size, std::to_string(squares_placed));
         // no valid placement
         if (theta_deg < -360) { 
             continue;
         }
+        squares_placed++;
 
 
         int number_of_rings = 10;
@@ -585,7 +587,9 @@ void Mosaic::placeTileSegment(int k) {
 
 
         // add intersection points to stack
+        cv::Scalar point_color(0, 255, 0);
         for (cv::Point p : allIntersections) { 
+            // Graphics::drawSquare(canvas, p, 5, 0, point_color, 2);
             s.push(p);
         }
 

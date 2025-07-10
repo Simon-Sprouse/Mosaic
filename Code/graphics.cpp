@@ -35,6 +35,34 @@ namespace Graphics {
     }
 
 
+    void drawSquareText(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Scalar& color, int border_width, const std::string& text) {
+        // Draw the square
+        drawSquare(image, center, size, angle_deg, color, border_width);
+
+        if (text == "") { 
+            return;
+        }
+    
+        // Set font parameters
+        int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+        double fontScale = 0.5;
+        int thickness = 1;
+    
+        // Get text size
+        int baseline = 0;
+        cv::Size textSize = cv::getTextSize(text, fontFace, fontScale, thickness, &baseline);
+    
+        // Compute top-left corner to center the text
+        cv::Point textOrg(center.x - textSize.width / 2, center.y + textSize.height / 2);
+    
+        // Draw black rectangle behind text for legibility
+        cv::Point rectTopLeft(textOrg.x, textOrg.y - textSize.height);
+        cv::Point rectBottomRight(textOrg.x + textSize.width, textOrg.y + baseline);
+        cv::rectangle(image, rectTopLeft, rectBottomRight, cv::Scalar(0, 0, 0), cv::FILLED);
+    
+        // Draw white text
+        cv::putText(image, text, textOrg, fontFace, fontScale, cv::Scalar(255, 255, 255), thickness, cv::LINE_AA);
+    }
     
     
 
