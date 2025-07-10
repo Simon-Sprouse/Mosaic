@@ -284,7 +284,6 @@ void Mosaic::drawSquareRandomPoint(int k) {
 
 
 
-
 bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees) {
     // 1. Compute tile corners
     float halfSize = static_cast<float>(tileSize / 2.0);
@@ -305,18 +304,25 @@ bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double r
         worldCorners.emplace_back(cvRound(centerF.x + x), cvRound(centerF.y + y));
     }
 
-    // 2. Create tile mask
+    // 2. FAST CORNER CHECK (early exit if any corner already marked in mask)
+    for (const auto& pt : worldCorners) {
+        if (pt.x >= 0 && pt.x < mask.cols && pt.y >= 0 && pt.y < mask.rows) {
+            if (mask.at<uchar>(pt) > 0) {
+                return true;
+            }
+        }
+    }
+
+    // 3. Create tile mask and check full overlap
     cv::Mat tileMask = cv::Mat::zeros(mask.size(), CV_8UC1);
     std::vector<std::vector<cv::Point>> contour{worldCorners};
     cv::fillPoly(tileMask, contour, cv::Scalar(255));
 
-    // 3. Check overlap with existing mask
     cv::Mat overlap;
     cv::bitwise_and(mask, tileMask, overlap);
 
     return cv::countNonZero(overlap) > 0;
 }
-
 
 
 
@@ -502,7 +508,7 @@ double Mosaic::placeTile(cv::Point center, double size, string text) {
     double theta_rad = std::atan2(direction[1], direction[0]);
     double theta_deg = theta_rad * 180.0 / CV_PI;
 
-    cout << "Best theta: " << theta_deg << endl;
+    // cout << "Best theta: " << theta_deg << endl;
 
 
     // check for validity
@@ -556,7 +562,7 @@ void Mosaic::placeTileSegment(int k) {
         current_center = s.top();
         s.pop();
 
-        cout << "current center: " << current_center << endl;
+        // cout << "current center: " << current_center << endl;
 
         double theta_deg = placeTile(current_center, size, std::to_string(squares_placed));
         // no valid placement
@@ -583,7 +589,7 @@ void Mosaic::placeTileSegment(int k) {
         }
 
         allIntersections = filterUniqueIntersections(allIntersections);
-        cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
+        // cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
 
 
 
