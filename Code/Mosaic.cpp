@@ -7,6 +7,7 @@
 #include <random>
 #include <cmath>
 #include <filesystem>
+#include <stack>
 
 using namespace std;
 namespace fs = std::__fs::filesystem;
@@ -535,49 +536,65 @@ void Mosaic::placeTileSegment(int k) {
     canvas = selected_segment.clone();
 
     cv::Point center = getRandomPointOnSegment(k);
-
-    // cout << "placeTile center: " << center << endl;
-
     double size = 20.0;
     cv::Scalar color(255, 255, 0);
-    double theta_deg = placeTile(center, size);
 
 
-    int number_of_rings = 3;
-    double initial_size = size;
-    double step_size = 40.0;
+    // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
 
-    std::vector<cv::Point> allIntersections;
 
-    for (int i = 0; i < number_of_rings; ++i) {
-        double currentSize = initial_size + i * step_size;
 
-        // draw rings to show them
-        Graphics::drawSquare(canvas, center, currentSize, theta_deg, color, 5);
+    
 
-        std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
-            selected_segment, center, currentSize, theta_deg
-        );
+    stack<cv::Point> s;
+    cv::Point current_center;
+    s.push(center);
 
-        allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+
+    while(!s.empty()) { 
+        current_center = s.top();
+        s.pop();
+
+        cout << "current center: " << current_center << endl;
+
+        double theta_deg = placeTile(current_center, size);
+        // no valid placement
+        if (theta_deg < -360) { 
+            continue;
+        }
+
+
+        int number_of_rings = 10;
+        double initial_size = size;
+        double step_size = size * 0.5;
+        std::vector<cv::Point> allIntersections;
+
+        for (int i = 0; i < number_of_rings; ++i) {
+            double currentSize = initial_size + i * step_size;
+
+
+            std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
+                selected_segment, current_center, currentSize, theta_deg
+            );
+
+            allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+        }
+
+        allIntersections = filterUniqueIntersections(allIntersections);
+        cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
+
+
+        // add intersection points to stack
+        for (cv::Point p : allIntersections) { 
+            s.push(p);
+        }
+
     }
 
-    cout << "number of intersections found: " << allIntersections.size() << endl;
+    
 
 
 
-    // TODO USE FILTER
-    allIntersections = filterUniqueIntersections(allIntersections);
-    cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
-
-
-
-    cv::Scalar point_color(255, 0, 255);
-    for (cv::Point point : allIntersections) { 
-        cout << point << endl;
-
-        Graphics::drawSquare(canvas, point, 5, theta_deg, point_color, 2.0);
-    }
 
 
 

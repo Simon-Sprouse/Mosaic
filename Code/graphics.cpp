@@ -33,6 +33,9 @@ namespace Graphics {
         std::vector<std::vector<cv::Point>> outer_contour = { rotated_corners };
         cv::drawContours(image, outer_contour, 0, color, border_width, cv::LINE_AA);
     }
+
+
+    
     
 
 }
