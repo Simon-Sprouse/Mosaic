@@ -82,13 +82,13 @@ int main() {
     cv::Point my_point = my_mosaic.getRandomPointOnSegment(k);
     cout << "Random Point: " << my_point << endl;
 
-    // Draw Square
-    my_mosaic.drawSquareRandomPoint(k);
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "draw_test");
+    // // Draw Square
+    // my_mosaic.drawSquareRandomPoint(k);
+    // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "draw_test");
 
     // Test Reward Function
     my_mosaic.placeTile(k);
-    my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "reward_test");
+    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reward_test");
   
 
 

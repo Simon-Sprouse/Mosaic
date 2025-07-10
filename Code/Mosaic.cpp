@@ -328,10 +328,14 @@ void Mosaic::drawSquareRandomPoint(int k) {
 
 void Mosaic::placeTile(int k) {
     selectSegment(k);
+    canvas = selected_segment.clone();
 
     cv::Point center = getRandomPointOnSegment(k);
+
+    cout << "placeTile center: " << center << endl;
+
     double size = 20.0;
-    double radius = size * 1.5;
+    double radius = size * 1.0; // HUGE impact on alignment
 
     // Convert to grayscale if needed
     cv::Mat gray;
@@ -380,10 +384,180 @@ void Mosaic::placeTile(int k) {
 
     // Draw aligned square
     cv::Scalar color = cv::Scalar(255, 255, 0);
-    Graphics::drawSquare(selected_segment, center, size, theta_deg, color, 2.0);
+    Graphics::drawSquare(canvas, center, size, theta_deg, color, 2.0);
+
+
+
+    // find intersections
+
+    int number_of_rings = 3;
+    double initial_size = size;
+    double step_size = 40.0;
+
+    std::vector<cv::Point> allIntersections;
+
+    for (int i = 0; i < number_of_rings; ++i) {
+        double currentSize = initial_size + i * step_size;
+
+        // draw rings to show them
+        Graphics::drawSquare(canvas, center, currentSize, theta_deg, color, 5);
+
+        std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
+            selected_segment, center, currentSize, theta_deg
+        );
+
+        allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+    }
+
+    cout << "number of intersections found: " << allIntersections.size() << endl;
+
+
+
+    // TODO USE FILTER
+    allIntersections = filterUniqueIntersections(allIntersections);
+    cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
+
+
+
+    cv::Scalar point_color(255, 0, 255);
+    for (cv::Point point : allIntersections) { 
+        cout << point << endl;
+
+        Graphics::drawSquare(canvas, point, 5, theta_deg, point_color, 2.0);
+    }
+
+
+
 }
 
 
+
+
+
+
+double pointLineSegmentDistance(const cv::Point2f& p, const cv::Point2f& A, const cv::Point2f& B) {
+    cv::Point2f AB = B - A;
+    cv::Point2f AP = p - A;
+
+    double ab2 = AB.dot(AB);
+    if (ab2 == 0.0) return cv::norm(AP); // A == B case
+
+    double t = AP.dot(AB) / ab2;
+    t = std::max(0.0, std::min(1.0, t)); // Clamp t to [0,1]
+
+    cv::Point2f projection = A + t * AB;
+    return cv::norm(p - projection);
+}
+
+std::vector<cv::Point> Mosaic::findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees) {
+    std::vector<cv::Point> intersections;
+
+    // Convert to grayscale if needed
+    cv::Mat gray;
+    if (segment_image.channels() > 1) {
+        cv::cvtColor(segment_image, gray, cv::COLOR_BGR2GRAY);
+    } else {
+        gray = segment_image;
+    }
+
+    // Threshold to binary mask
+    cv::Mat binaryGray;
+    cv::threshold(gray, binaryGray, 128, 255, cv::THRESH_BINARY);
+
+    // Compute half-size and rotation radians
+    float halfSize = tileSize / 2.0f;
+    float theta = rotationDegrees * CV_PI / 180.0f;
+
+    // Define corners in local space
+    std::vector<cv::Point2f> localCorners = {
+        {-halfSize, -halfSize},
+        { halfSize, -halfSize},
+        { halfSize,  halfSize},
+        {-halfSize,  halfSize}
+    };
+
+    // Rotate and translate corners to world space
+    std::vector<cv::Point2f> worldCorners(4);
+    for (int i = 0; i < 4; ++i) {
+        float x = localCorners[i].x;
+        float y = localCorners[i].y;
+        float xr = x * std::cos(theta) - y * std::sin(theta);
+        float yr = x * std::sin(theta) + y * std::cos(theta);
+        worldCorners[i] = center + cv::Point2f(xr, yr);
+    }
+
+    // Create tile mask from polygon of rotated corners
+    cv::Mat tileMask = cv::Mat::zeros(gray.size(), CV_8UC1);
+    std::vector<std::vector<cv::Point>> contour(1);
+    for (const auto& pt : worldCorners)
+        contour[0].push_back(cv::Point(cvRound(pt.x), cvRound(pt.y)));
+
+    cv::fillPoly(tileMask, contour, cv::Scalar(255));
+
+    // Bitwise AND between binary segment mask and tile mask
+    cv::Mat overlap;
+    cv::bitwise_and(binaryGray, tileMask, overlap);
+
+    // Find all non-zero points inside tile
+    cv::findNonZero(overlap, intersections);
+
+    // Filter intersections to keep only points near edges
+    const double borderThreshold = 3.0; // pixels
+    std::vector<cv::Point> borderIntersections;
+
+    for (const auto& pt : intersections) {
+        cv::Point2f p(pt.x, pt.y);
+
+        bool nearEdge = false;
+        for (int i = 0; i < 4; ++i) {
+            const cv::Point2f& A = worldCorners[i];
+            const cv::Point2f& B = worldCorners[(i + 1) % 4];
+
+            double dist = pointLineSegmentDistance(p, A, B);
+            if (dist <= borderThreshold) {
+                nearEdge = true;
+                break;
+            }
+        }
+
+        if (nearEdge) {
+            borderIntersections.push_back(pt);
+        }
+    }
+
+    return borderIntersections;
+}
+
+
+
+
+
+double euclideanDistance(const cv::Point& a, const cv::Point& b) {
+    double dx = static_cast<double>(a.x - b.x);
+    double dy = static_cast<double>(a.y - b.y);
+    return std::sqrt(dx * dx + dy * dy);
+}
+
+std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::Point>& inputPoints) {
+    std::vector<cv::Point> uniquePoints;
+
+    const double MIN_INTERSECTION_DIST = 10.0;  // adjust as needed
+
+    for (const auto& pt : inputPoints) {
+        bool isFarEnough = true;
+        for (const auto& kept : uniquePoints) {
+            if (euclideanDistance(pt, kept) < MIN_INTERSECTION_DIST) {
+                isFarEnough = false;
+                break;
+            }
+        }
+        if (isFarEnough) {
+            uniquePoints.push_back(pt);
+        }
+    }
+
+    return uniquePoints;
+}
 
 
 

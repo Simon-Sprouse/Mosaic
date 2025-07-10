@@ -27,7 +27,8 @@ class Mosaic {
         cv::Point getRandomPointOnSegment(int k);
         void drawSquareRandomPoint(int k); // test
         void placeTile(int k);
-
+        std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
+        std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
         
         void printColorToPixels();
         void printColorLengths();
