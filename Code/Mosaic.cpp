@@ -586,10 +586,16 @@ void Mosaic::placeTileSegment(int k) {
         cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
 
 
-        // add intersection points to stack
-        cv::Scalar point_color(0, 255, 0);
+
+
+        // sort and add closest points to top of stack
+        std::sort(allIntersections.begin(), allIntersections.end(),
+        [&current_center](const cv::Point& a, const cv::Point& b) {
+            return euclideanDistance(a, current_center) < euclideanDistance(b, current_center);
+        });
+        std::reverse(allIntersections.begin(), allIntersections.end());
+
         for (cv::Point p : allIntersections) { 
-            // Graphics::drawSquare(canvas, p, 5, 0, point_color, 2);
             s.push(p);
         }
 
