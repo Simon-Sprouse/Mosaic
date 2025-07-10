@@ -26,7 +26,9 @@ class Mosaic {
         void selectSegment(int k);
         cv::Point getRandomPointOnSegment(int k);
         void drawSquareRandomPoint(int k); // test
-        void placeTile(int k);
+        bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
+        double placeTile(cv::Point center, double size);
+        void placeTileSegment(int k);
         std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
         

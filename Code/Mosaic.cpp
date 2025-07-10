@@ -282,153 +282,42 @@ void Mosaic::drawSquareRandomPoint(int k) {
 
 
 
-// void Mosaic::placeTile(int k) { 
 
 
-//     selectSegment(k);
+bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees) {
+    // 1. Compute tile corners
+    float halfSize = static_cast<float>(tileSize / 2.0);
+    float theta = static_cast<float>(rotationDegrees * CV_PI / 180.0);
 
-//     // canvas = selected_segment.clone();
+    std::vector<cv::Point2f> localCorners = {
+        {-halfSize, -halfSize},
+        { halfSize, -halfSize},
+        { halfSize,  halfSize},
+        {-halfSize,  halfSize}
+    };
 
-//     cv::Point center = getRandomPointOnSegment(k);
-//     double size = 20.0;
-//     double theta = 20.0;
-//     double decay_rate = 1.0;
-
-//     double reward = Optimize::rewardFromCanny(selected_segment, center, size, theta, decay_rate);
-//     cout << "reward: " << reward << endl;
-
-
-//     // find best theta -- later move to optimize
-//     double best_theta = 0;
-//     double max_reward = 0;
-//     for (double i = 0; i < 90; i += 5) { 
-//         reward = Optimize::rewardFromCanny(selected_segment, center, size, i, decay_rate);
-//         cout << "theta: " << i << " reward: " << reward << endl;
-
-//         if (reward >= max_reward) { 
-//             max_reward = reward;
-//             best_theta = i;
-//         }
-//     }
-
-//     cout << "Best theta: " << best_theta << endl;
-
-
-
-//     cv::Scalar color = cv::Scalar(255, 255, 0);
-//     Graphics::drawSquare(selected_segment, center, size, best_theta, color, 2.0);
-
-
-
-
-// }
-
-
-
-
-void Mosaic::placeTile(int k) {
-    selectSegment(k);
-    canvas = selected_segment.clone();
-
-    cv::Point center = getRandomPointOnSegment(k);
-
-    cout << "placeTile center: " << center << endl;
-
-    double size = 20.0;
-    double radius = size * 1.0; // HUGE impact on alignment
-
-    // Convert to grayscale if needed
-    cv::Mat gray;
-    if (selected_segment.channels() > 1) {
-        cv::cvtColor(selected_segment, gray, cv::COLOR_BGR2GRAY);
-    } else {
-        gray = selected_segment;
+    cv::Point2f centerF(center);
+    std::vector<cv::Point> worldCorners;
+    for (const auto& pt : localCorners) {
+        float x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
+        float y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
+        worldCorners.emplace_back(cvRound(centerF.x + x), cvRound(centerF.y + y));
     }
 
-    // Find non-zero stroke pixels
-    std::vector<cv::Point> all_stroke_pixels;
-    cv::findNonZero(gray, all_stroke_pixels);
+    // 2. Create tile mask
+    cv::Mat tileMask = cv::Mat::zeros(mask.size(), CV_8UC1);
+    std::vector<std::vector<cv::Point>> contour{worldCorners};
+    cv::fillPoly(tileMask, contour, cv::Scalar(255));
 
-    // Filter to those within circular radius
-    std::vector<cv::Point2f> region_pixels;
-    for (const auto& pt : all_stroke_pixels) {
-        double dx = pt.x - center.x;
-        double dy = pt.y - center.y;
-        if ((dx * dx + dy * dy) <= radius * radius) {
-            region_pixels.emplace_back(pt.x, pt.y);
-        }
-    }
+    // 3. Check overlap with existing mask
+    cv::Mat overlap;
+    cv::bitwise_and(mask, tileMask, overlap);
 
-    // Check if enough points for PCA
-    if (region_pixels.size() < 2) {
-        std::cerr << "Not enough stroke pixels for PCA near point: " << center << std::endl;
-        return;
-    }
-
-    // Build matrix for PCA
-    cv::Mat data(region_pixels.size(), 2, CV_64F);
-    for (size_t i = 0; i < region_pixels.size(); ++i) {
-        data.at<double>(i, 0) = region_pixels[i].x;
-        data.at<double>(i, 1) = region_pixels[i].y;
-    }
-
-    // Run PCA to get dominant direction
-    cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 1);
-    cv::Vec2d direction = pca.eigenvectors.row(0);
-
-    // Convert to angle in degrees
-    double theta_rad = std::atan2(direction[1], direction[0]);
-    double theta_deg = theta_rad * 180.0 / CV_PI;
-
-    cout << "Best theta: " << theta_deg << endl;
-
-    // Draw aligned square
-    cv::Scalar color = cv::Scalar(255, 255, 0);
-    Graphics::drawSquare(canvas, center, size, theta_deg, color, 2.0);
-
-
-
-    // find intersections
-
-    int number_of_rings = 3;
-    double initial_size = size;
-    double step_size = 40.0;
-
-    std::vector<cv::Point> allIntersections;
-
-    for (int i = 0; i < number_of_rings; ++i) {
-        double currentSize = initial_size + i * step_size;
-
-        // draw rings to show them
-        Graphics::drawSquare(canvas, center, currentSize, theta_deg, color, 5);
-
-        std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
-            selected_segment, center, currentSize, theta_deg
-        );
-
-        allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
-    }
-
-    cout << "number of intersections found: " << allIntersections.size() << endl;
-
-
-
-    // TODO USE FILTER
-    allIntersections = filterUniqueIntersections(allIntersections);
-    cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
-
-
-
-    cv::Scalar point_color(255, 0, 255);
-    for (cv::Point point : allIntersections) { 
-        cout << point << endl;
-
-        Graphics::drawSquare(canvas, point, 5, theta_deg, point_color, 2.0);
-    }
-
-
-
+    return cv::countNonZero(overlap) > 0;
 }
+
+
+
 
 
 
@@ -558,6 +447,153 @@ std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::P
 
     return uniquePoints;
 }
+
+
+
+
+
+
+// Returns theta_deg if placed, -420 if not placed
+double Mosaic::placeTile(cv::Point center, double size) {
+
+    double radius = size * 1.0; // HUGE impact on alignment TODO do some geometry
+
+    // Convert to grayscale if needed
+    cv::Mat gray;
+    if (selected_segment.channels() > 1) {
+        cv::cvtColor(selected_segment, gray, cv::COLOR_BGR2GRAY);
+    } else {
+        gray = selected_segment;
+    }
+
+    // Find non-zero stroke pixels
+    std::vector<cv::Point> all_stroke_pixels;
+    cv::findNonZero(gray, all_stroke_pixels);
+
+    // Filter to those within circular radius
+    std::vector<cv::Point2f> region_pixels;
+    for (const auto& pt : all_stroke_pixels) {
+        double dx = pt.x - center.x;
+        double dy = pt.y - center.y;
+        if ((dx * dx + dy * dy) <= radius * radius) {
+            region_pixels.emplace_back(pt.x, pt.y);
+        }
+    }
+
+    // Check if enough points for PCA
+    if (region_pixels.size() < 2) {
+        std::cerr << "Not enough stroke pixels for PCA near point: " << center << std::endl;
+        return -420.00;
+    }
+
+    // Build matrix for PCA
+    cv::Mat data(region_pixels.size(), 2, CV_64F);
+    for (size_t i = 0; i < region_pixels.size(); ++i) {
+        data.at<double>(i, 0) = region_pixels[i].x;
+        data.at<double>(i, 1) = region_pixels[i].y;
+    }
+
+    // Run PCA to get dominant direction
+    cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 1);
+    cv::Vec2d direction = pca.eigenvectors.row(0);
+
+    // Convert to angle in degrees
+    double theta_rad = std::atan2(direction[1], direction[0]);
+    double theta_deg = theta_rad * 180.0 / CV_PI;
+
+    cout << "Best theta: " << theta_deg << endl;
+
+
+    // check for validity
+    if (tileOverlapsMask(center, size, theta_deg)) { 
+        return -420.00;
+    }
+
+    // Draw aligned square
+    cv::Scalar color = cv::Scalar(255, 255, 0);
+    Graphics::drawSquare(canvas, center, size, theta_deg, color, 2.0);
+    Graphics::drawSquare(mask, center, size, theta_deg, color, 2.0);
+
+    return theta_deg;
+
+
+
+
+
+
+}
+
+
+
+void Mosaic::placeTileSegment(int k) { 
+
+    if (mask.empty()) { 
+        mask = cv::Mat::zeros(resized.size(), CV_8UC1);
+    }
+
+    selectSegment(k);
+    canvas = selected_segment.clone();
+
+    cv::Point center = getRandomPointOnSegment(k);
+
+    // cout << "placeTile center: " << center << endl;
+
+    double size = 20.0;
+    cv::Scalar color(255, 255, 0);
+    double theta_deg = placeTile(center, size);
+
+
+    int number_of_rings = 3;
+    double initial_size = size;
+    double step_size = 40.0;
+
+    std::vector<cv::Point> allIntersections;
+
+    for (int i = 0; i < number_of_rings; ++i) {
+        double currentSize = initial_size + i * step_size;
+
+        // draw rings to show them
+        Graphics::drawSquare(canvas, center, currentSize, theta_deg, color, 5);
+
+        std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
+            selected_segment, center, currentSize, theta_deg
+        );
+
+        allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+    }
+
+    cout << "number of intersections found: " << allIntersections.size() << endl;
+
+
+
+    // TODO USE FILTER
+    allIntersections = filterUniqueIntersections(allIntersections);
+    cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
+
+
+
+    cv::Scalar point_color(255, 0, 255);
+    for (cv::Point point : allIntersections) { 
+        cout << point << endl;
+
+        Graphics::drawSquare(canvas, point, 5, theta_deg, point_color, 2.0);
+    }
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
 
 
 

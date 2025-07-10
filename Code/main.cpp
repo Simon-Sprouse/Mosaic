@@ -86,9 +86,15 @@ int main() {
     // my_mosaic.drawSquareRandomPoint(k);
     // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "draw_test");
 
-    // Test Reward Function
-    my_mosaic.placeTile(k);
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reward_test");
+    // // Test Reward Function
+    // my_mosaic.placeTile(k);
+    // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reward_test");
+
+
+    // Complete One BFS Frontier
+    my_mosaic.placeTileSegment(k);
+    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "placeTileSegment_test");
+    my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");
   
 
 
