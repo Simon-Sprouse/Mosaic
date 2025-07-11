@@ -24,16 +24,21 @@ int main() {
     const string image_path = "../Images/flower.jpg";
     string results_dir = "../Results";
 
-    // parameters
-    double RESIZE_FACTOR = 0.8;
-    int BLUR_KERNEL_SIZE = 3;
-    double BLUR_SIGMA = 1.4;
-    int CANNY_THRESHOLD_1 = 50;
-    int CANNY_THRESHOLD_2 = 100;
-    double MAX_SEGMENT_ANGLE_RAD = 100 * M_PI / 180.0;
-    int MIN_SEGMENT_LENGTH = 20;
-    int SEGMENT_ANGLE_WINDOW = 10;
 
+    mosaic_gen::HyperParameters params;
+    params.resize_factor = 0.8;
+    params.blur_kernel_size = 3;
+    params.blur_sigma = 1.4;
+    params.canny_threshold_1 = 50;
+    params.canny_threshold_2 = 100;
+    params.max_segment_angle_rad = 100 * M_PI / 180.0;
+    params.min_segment_length = 20;
+    params.segment_angle_window = 10;
+    params.tile_size = 10.0;
+    params.number_of_rings = 10;
+    params.step_size = 0.5 * params.tile_size;
+
+    
 
     // Load Image
 
@@ -41,9 +46,14 @@ int main() {
     cout << "Loaded image: " << my_mosaic.image_name << endl;
     cout << "Original dimensions: " << my_mosaic.original.size() << endl;
 
+
+    // Set hyperparameters
+    my_mosaic.setParameters(params);
+
+
     // Resize Image
 
-    my_mosaic.resizeOriginal(RESIZE_FACTOR);
+    my_mosaic.resizeOriginal();
     my_mosaic.saveImage(my_mosaic.resized, results_dir, "resized");
     cout << "Resized image to size: " << my_mosaic.resized.size() << endl;
 
@@ -52,50 +62,23 @@ int main() {
     my_mosaic.saveImage(my_mosaic.grayscale, results_dir, "gray");
 
     // Blur Image
-    my_mosaic.blurImage(BLUR_KERNEL_SIZE, BLUR_SIGMA);
+    my_mosaic.blurImage();
     my_mosaic.saveImage(my_mosaic.blurred, results_dir, "blurred");
 
     // Canny Filter
-    my_mosaic.cannyFilter(CANNY_THRESHOLD_1, CANNY_THRESHOLD_2);
+    my_mosaic.cannyFilter();
     my_mosaic.saveImage(my_mosaic.edges, results_dir, "canny_edges");
 
     // Detect Contours
-    int contour_count = my_mosaic.detectContours(MAX_SEGMENT_ANGLE_RAD, MIN_SEGMENT_LENGTH, SEGMENT_ANGLE_WINDOW);
+    int contour_count = my_mosaic.detectContours();
     my_mosaic.saveImage(my_mosaic.segmented, results_dir, "segmented_edges");
     cout << "Detedted: " << contour_count << " edges" << endl;
 
 
-
-    int k = 1;
-
     // Rank Segments
     my_mosaic.rankSegments();
-    my_mosaic.printColorToPixelsK(k);
-    my_mosaic.printColorLengthsK(k);
 
-    // Select Segment
-    my_mosaic.selectSegment(k);
-    my_mosaic.saveImage(my_mosaic.selected_segment, results_dir, "selected_segment");
-
-
-    // Get random point on segment
-    cv::Point my_point = my_mosaic.getRandomPointOnSegment(k);
-    cout << "Random Point: " << my_point << endl;
-
-    // // Draw Square
-    // my_mosaic.drawSquareRandomPoint(k);
-    // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "draw_test");
-
-    // // Test Reward Function
-    // my_mosaic.placeTile(k);
-    // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reward_test");
-
-
-    // // Complete One BFS Frontier
-    // my_mosaic.placeTileSegment(k);
-    // my_mosaic.saveImage(my_mosaic.canvas, results_dir, "placeTileSegment_test");
-    // my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");
-
+   
     // Place tiles on all segments
     my_mosaic.placeTileAllSegments();
     my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");

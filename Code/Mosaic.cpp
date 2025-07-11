@@ -28,14 +28,19 @@ Mosaic::Mosaic(const std::string& image_path) {
 
 }
 
+// set hyperparameters
+void Mosaic::setParameters(const HyperParameters& hp) { 
+    params = hp;
+}
 
-void Mosaic::resizeOriginal(double resize_factor) { 
+
+void Mosaic::resizeOriginal() { 
     if (original.empty()) { 
         cerr << "Resized called but no original image found" << endl;
         return;
     }
 
-    cv::resize(original, resized, cv::Size(), resize_factor, resize_factor, cv::INTER_LINEAR);
+    cv::resize(original, resized, cv::Size(), params.resize_factor, params.resize_factor, cv::INTER_LINEAR);
 }
 
 
@@ -50,31 +55,31 @@ void Mosaic::grayImage() {
 }
 
 
-void Mosaic::blurImage(int kernel_size, double sigma) { 
+void Mosaic::blurImage() { 
     if (grayscale.empty()) { 
         cerr << "Blur called but no grayscale image" << endl;
         return;
     }
 
     // ensure odd kernel size
-    if (kernel_size % 2 == 0) { 
-        kernel_size += 1;
+    if (params.blur_kernel_size % 2 == 0) { 
+        params.blur_kernel_size += 1;
     }
 
-    cv::GaussianBlur(grayscale, blurred, cv::Size(kernel_size, kernel_size), sigma);
+    cv::GaussianBlur(grayscale, blurred, cv::Size(params.blur_kernel_size, params.blur_kernel_size), params.blur_sigma);
 }
 
 
 
-void Mosaic::cannyFilter(int threshold_1, int threshold_2) { 
+void Mosaic::cannyFilter() { 
     if (blurred.empty()) { 
         cerr << "Canny called but no blurred" << endl;
         return;
     }
-    cv::Canny(blurred, edges, threshold_1, threshold_2);
+    cv::Canny(blurred, edges, params.canny_threshold_1, params.canny_threshold_2);
 }
 
-int Mosaic::detectContours(double max_segment_angle_rad, int min_segment_length, int segment_angle_window) { 
+int Mosaic::detectContours() { 
     if (edges.empty()) {
         cerr << "DetectContours called but no edges" << endl;
         return -1;
@@ -98,7 +103,7 @@ int Mosaic::detectContours(double max_segment_angle_rad, int min_segment_length,
 
         std::vector<int> breaks;
         int len = contour.size();
-        int w = segment_angle_window;
+        int w = params.segment_angle_window;
 
         for (int i = w; i < len - w; ++i) {
             cv::Point2f v1 = contour[i] - contour[i - w];
@@ -113,7 +118,7 @@ int Mosaic::detectContours(double max_segment_angle_rad, int min_segment_length,
             double cosine = std::clamp(n1.dot(n2), -1.0f, 1.0f);
             double angle = std::acos(std::abs(cosine));
 
-            if (angle > max_segment_angle_rad) {
+            if (angle > params.max_segment_angle_rad) {
                 breaks.push_back(i);
             }
         }
@@ -126,7 +131,7 @@ int Mosaic::detectContours(double max_segment_angle_rad, int min_segment_length,
         for (size_t i = 0; i < split_idxs.size() - 1; ++i) {
             int a = split_idxs[i];
             int b = split_idxs[i + 1];
-            if (b - a < min_segment_length)
+            if (b - a < params.min_segment_length)
                 continue;
 
             // Generate a new color not used yet
@@ -543,7 +548,7 @@ void Mosaic::placeTileSegment(int k) {
 
     cv::Point center = getRandomPointOnSegment(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
 
-    double size = 20.0;
+    double size = params.tile_size;
     cv::Scalar color(255, 255, 0);
 
 
@@ -572,13 +577,13 @@ void Mosaic::placeTileSegment(int k) {
         squares_placed++;
 
 
-        int number_of_rings = 10;
+   
         double initial_size = size;
-        double step_size = size * 0.5;
+
         std::vector<cv::Point> allIntersections;
 
-        for (int i = 0; i < number_of_rings; ++i) {
-            double currentSize = initial_size + i * step_size;
+        for (int i = 0; i < params.number_of_rings; ++i) {
+            double currentSize = initial_size + i * params.step_size;
 
 
             std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
@@ -632,8 +637,8 @@ void Mosaic::placeTileAllSegments() {
         placeTileSegment(i);
     }
 
-    cout << "Placed tiles along: " << number_of_segments << "segments" << endl;
-
+    cout << "Placed tiles along: " << number_of_segments << " segments" << endl;
+    cout << "Hyperparam test: " << params.blur_kernel_size << endl;
 
 }
 

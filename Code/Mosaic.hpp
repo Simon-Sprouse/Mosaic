@@ -9,6 +9,22 @@ using namespace std;
 
 namespace mosaic_gen {
 
+struct HyperParameters { 
+
+    double resize_factor;
+    int blur_kernel_size;
+    double blur_sigma;
+    int canny_threshold_1;
+    int canny_threshold_2;
+    double max_segment_angle_rad;
+    int min_segment_length;
+    int segment_angle_window;
+    int tile_size;
+    int number_of_rings;
+    int step_size;
+
+};
+
 class Mosaic { 
 
     public: 
@@ -16,12 +32,13 @@ class Mosaic {
         // param constructor
         Mosaic(const string& image_path);
 
+        void setParameters(const HyperParameters& hp);
 
-        void resizeOriginal(double resize_factor);
+        void resizeOriginal();
         void grayImage();
-        void blurImage(int kernel_size, double sigma);
-        void cannyFilter(int threshold_1, int threshold_2);
-        int detectContours(double max_segment_angle_rad, int min_segment_length, int segment_angle_window);
+        void blurImage();
+        void cannyFilter();
+        int detectContours();
         void rankSegments();
         void selectSegment(int k);
         cv::Point getRandomPointOnSegment(int k);
@@ -57,6 +74,8 @@ class Mosaic {
 
 
     private: 
+
+        HyperParameters params;
 
         struct Vec3bHash {
             std::size_t operator()(const cv::Vec3b& color) const noexcept {
