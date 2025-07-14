@@ -56,7 +56,15 @@ class Mosaic {
         void placeTileAllSegments();
         std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
+        cv::Scalar sampleTileColor(const TileInfo& tile);
         void reconstructPlacedTiles();
+        std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
+        std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
+        void connectSamplesToNearestTiles(const std::vector<cv::Point>& samples);
+        void samplePointsOnCanvas();
+
+        void placeTileBackground(cv::Point center, double size, double theta_deg);
+        void placeTileAllBackground();
         
         void printColorToPixels();
         void printColorLengths();

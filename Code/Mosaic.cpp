@@ -659,17 +659,223 @@ void Mosaic::placeTileAllSegments() {
 
 
 
+cv::Scalar Mosaic::sampleTileColor(const TileInfo& tile) {
+    float halfSize = static_cast<float>(tile.size / 2.0);
+    float theta = static_cast<float>(tile.theta_deg * CV_PI / 180.0f);
+
+    std::vector<cv::Point2f> localCorners = {
+        {-halfSize, -halfSize},
+        { halfSize, -halfSize},
+        { halfSize,  halfSize},
+        {-halfSize,  halfSize}
+    };
+
+    std::vector<cv::Point> worldCorners;
+    for (const auto& pt : localCorners) {
+        float x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
+        float y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
+        worldCorners.emplace_back(cvRound(tile.center.x + x), cvRound(tile.center.y + y));
+    }
+
+    // Create mask for the rotated tile
+    cv::Mat mask = cv::Mat::zeros(resized.size(), CV_8UC1);
+    std::vector<std::vector<cv::Point>> contour{worldCorners};
+    cv::fillPoly(mask, contour, cv::Scalar(255));
+
+    // Return average color from resized image under tile
+    return cv::mean(resized, mask);
+}
+
+
 void Mosaic::reconstructPlacedTiles() { 
 
     // reset canvas
     canvas = cv::Mat::zeros(edges.size(), CV_8UC3);
-    cv::Scalar color(255, 255, 255);
+    cv::Scalar color;
 
     for (TileInfo tile : tiles_placed) { 
-        Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, 2.0);
+        color = sampleTileColor(tile);
+        Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
     }
 
 
+}
+
+
+
+std::vector<cv::Point> Mosaic::samplePointsGrid(const cv::Mat& image, int grid_size) { 
+    std::vector<cv::Point> grid_points;
+
+    if (image.empty() || grid_size <= 0) {
+        return grid_points;
+    }
+
+    for (int y = 0; y < image.rows; y += grid_size) {
+        for (int x = 0; x < image.cols; x += grid_size) {
+            grid_points.emplace_back(x, y);
+        }
+    }
+
+    return grid_points;
+}
+
+std::vector<cv::Point> Mosaic::samplePointsRandom(const cv::Mat& image, int num_points) {
+    std::vector<cv::Point> random_points;
+
+    if (image.empty() || num_points <= 0) {
+        return random_points;
+    }
+
+    int width = image.cols;
+    int height = image.rows;
+
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> dist_x(0, width - 1);
+    std::uniform_int_distribution<int> dist_y(0, height - 1);
+
+    for (int i = 0; i < num_points; ++i) {
+        int x = dist_x(rng);
+        int y = dist_y(rng);
+        random_points.emplace_back(x, y);
+    }
+
+    return random_points;
+}
+
+
+
+
+
+
+
+void Mosaic::samplePointsOnCanvas() {
+
+
+    canvas = cv::Mat::zeros(edges.size(), CV_8UC3);
+    
+
+
+    int grid_size = 20;
+    std::vector<cv::Point> points = samplePointsGrid(canvas, grid_size);
+    cv::Scalar sample_color(100, 100, 0);
+
+    for (cv::Point point : points) { 
+        Graphics::drawSquare(canvas, point, 5, 0, sample_color, 2.0);
+    }
+
+
+
+    cv::Scalar point_color(255, 255, 255);
+
+    for (TileInfo tile : tiles_placed) { 
+        Graphics::drawSquare(canvas, tile.center, 5, tile.theta_deg, point_color, 3);
+    }
+
+
+    connectSamplesToNearestTiles(points);
+
+
+
+}
+
+
+
+// just to show voronoi map
+void Mosaic::connectSamplesToNearestTiles(const std::vector<cv::Point>& samples) {
+    if (tiles_placed.empty()) {
+        std::cerr << "No tiles placed to map samples to." << std::endl;
+        return;
+    }
+
+    for (const auto& sample : samples) {
+        double min_dist = std::numeric_limits<double>::max();
+        cv::Point closest_tile;
+
+        for (const auto& tile : tiles_placed) {
+            double dist = euclideanDistance(sample, tile.center);
+            if (dist < min_dist) {
+                min_dist = dist;
+                closest_tile = tile.center;
+            }
+        }
+
+        // Draw line from sample to its closest tile
+        cv::Scalar line_color(0, 255, 255);  // Yellowish
+        Graphics::drawLine(canvas, sample, closest_tile, 1, line_color);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+void Mosaic::placeTileBackground(cv::Point center, double size, double theta_deg) {
+
+
+
+
+    // check for validity
+    if (tileOverlapsMask(center, size, theta_deg)) { 
+        return;
+    }
+
+    // Draw aligned square
+    // cv::Scalar color = cv::Scalar(150, 150, 0);
+    cv::Scalar color = cv::Scalar(255, 255, 255);
+    Graphics::drawSquare(canvas, center, size, theta_deg, color, 2.0);
+    Graphics::drawSquare(mask, center, size, theta_deg, color, 2.0);
+
+    // TODO add tile metadata to the 
+    int order = tiles_placed.size();
+    TileInfo current_tile = {
+        center,
+        size, 
+        theta_deg,
+        order,
+    };
+    tiles_placed.push_back(current_tile);
+
+
+
+
+
+
+
+
+}
+
+void Mosaic::placeTileAllBackground() {
+    if (tiles_placed.empty()) {
+        std::cerr << "No tiles placed to map samples to." << std::endl;
+        return;
+    }
+
+    int num_points = 50000;
+    std::vector<cv::Point> samples = samplePointsRandom(canvas, num_points);
+
+
+    for (const auto& sample : samples) {
+        double min_dist = std::numeric_limits<double>::max();
+        cv::Point closest_tile;
+        double closest_tile_theta_deg;
+
+        for (const auto& tile : tiles_placed) {
+            double dist = euclideanDistance(sample, tile.center);
+            if (dist < min_dist) {
+                min_dist = dist;
+                closest_tile = tile.center;
+                closest_tile_theta_deg = tile.theta_deg;
+            }
+        }
+
+        //
+        placeTileBackground(sample, params.tile_size, closest_tile_theta_deg);
+    }
 }
 
 

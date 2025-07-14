@@ -34,8 +34,8 @@ int main() {
     params.max_segment_angle_rad = 100 * M_PI / 180.0;
     params.min_segment_length = 20;
     params.segment_angle_window = 10;
-    params.tile_size = 10.0;
-    params.number_of_rings = 10;
+    params.tile_size = 5.0;
+    params.number_of_rings = 40;
     params.step_size = 0.5 * params.tile_size;
 
     
@@ -84,9 +84,16 @@ int main() {
     my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");
 
 
-    // store placed tiles and reconstruct
-    my_mosaic.reconstructPlacedTiles();
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reconstruction");
+   
+
+
+    // sample points
+    my_mosaic.placeTileAllBackground();
+    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "samples");
+
+     // store placed tiles and reconstruct
+     my_mosaic.reconstructPlacedTiles();
+     my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reconstruction");
   
 
 
