@@ -25,6 +25,13 @@ struct HyperParameters {
 
 };
 
+struct TileInfo { 
+    cv::Point center;
+    double size;
+    double theta_deg;
+    int order;
+};
+
 class Mosaic { 
 
     public: 
@@ -49,6 +56,7 @@ class Mosaic {
         void placeTileAllSegments();
         std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
+        void reconstructPlacedTiles();
         
         void printColorToPixels();
         void printColorLengths();
@@ -76,6 +84,7 @@ class Mosaic {
     private: 
 
         HyperParameters params;
+        std::vector<TileInfo> tiles_placed;
 
         struct Vec3bHash {
             std::size_t operator()(const cv::Vec3b& color) const noexcept {

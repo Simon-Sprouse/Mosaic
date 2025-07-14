@@ -72,7 +72,7 @@ int main() {
     // Detect Contours
     int contour_count = my_mosaic.detectContours();
     my_mosaic.saveImage(my_mosaic.segmented, results_dir, "segmented_edges");
-    cout << "Detedted: " << contour_count << " edges" << endl;
+    cout << "Detected: " << contour_count << " edges" << endl;
 
 
     // Rank Segments
@@ -82,6 +82,11 @@ int main() {
     // Place tiles on all segments
     my_mosaic.placeTileAllSegments();
     my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");
+
+
+    // store placed tiles and reconstruct
+    my_mosaic.reconstructPlacedTiles();
+    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reconstruction");
   
 
 

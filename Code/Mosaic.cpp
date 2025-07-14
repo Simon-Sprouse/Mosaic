@@ -526,6 +526,16 @@ double Mosaic::placeTile(cv::Point center, double size, string text) {
     Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, text);
     Graphics::drawSquare(mask, center, size, theta_deg, color, 2.0);
 
+    // TODO add tile metadata to the 
+    int order = tiles_placed.size();
+    TileInfo current_tile = {
+        center,
+        size, 
+        theta_deg,
+        order,
+    };
+    tiles_placed.push_back(current_tile);
+
     return theta_deg;
 
 
@@ -646,6 +656,21 @@ void Mosaic::placeTileAllSegments() {
 
 
 
+
+
+
+void Mosaic::reconstructPlacedTiles() { 
+
+    // reset canvas
+    canvas = cv::Mat::zeros(edges.size(), CV_8UC3);
+    cv::Scalar color(255, 255, 255);
+
+    for (TileInfo tile : tiles_placed) { 
+        Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, 2.0);
+    }
+
+
+}
 
 
 
