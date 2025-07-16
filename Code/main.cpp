@@ -26,7 +26,7 @@ int main() {
 
 
     mosaic_gen::HyperParameters params;
-    params.resize_factor = 4.0;
+    params.resize_factor = 2.0;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -101,7 +101,9 @@ int main() {
 
     // distance field
     my_mosaic.computeDistanceField();
-    my_mosaic.saveImage(my_mosaic.distance, results_dir, "distance_field");
+    cv::Mat distance_visual;
+    my_mosaic.distance.convertTo(distance_visual, CV_8U, 255.0 / cv::norm(my_mosaic.distance, cv::NORM_INF));
+    my_mosaic.saveImage(distance_visual, results_dir, "distance_field");
 
     // tangent field
     my_mosaic.sampleTangentField();

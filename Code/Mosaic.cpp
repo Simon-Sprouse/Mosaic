@@ -939,7 +939,7 @@ void Mosaic::computeDistanceField() {
     cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
     cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
 
-    distance.convertTo(distance, CV_8U);
+    
 
 }
 
