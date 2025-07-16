@@ -65,6 +65,8 @@ class Mosaic {
 
         void placeTileBackground(cv::Point center, double size, double theta_deg);
         void placeTileAllBackground();
+
+        std::vector<std::tuple<cv::Point, cv::Vec2f, float>> sampleTangentField();
         
         void printColorToPixels();
         void printColorLengths();
@@ -83,6 +85,7 @@ class Mosaic {
 
         cv::Mat selected_segment;
         cv::Mat canvas;
+        cv::Mat vector_field;
         cv::Mat mask;
 
         std::string file_path;

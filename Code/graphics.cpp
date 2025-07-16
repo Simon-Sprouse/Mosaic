@@ -113,6 +113,50 @@ namespace Graphics {
     
         cv::line(image, point_a, point_b, color, thickness, cv::LINE_AA);
     }
+
+
+    void drawArrow(cv::Mat& image, const cv::Point& center, int length, double angle_deg, const cv::Scalar& color) {
+        if (image.empty()) {
+            std::cerr << "drawArrow: Input image is empty." << std::endl;
+            return;
+        }
+    
+        // Parameters for arrow size (in pixels)
+
+        const int headLength = 10;        // length of each arrowhead wing
+        const double headAngleDeg = 30;  // angle between shaft and arrowhead wing
+        const int thickness = 3;
+    
+        // Convert angle to radians
+        double theta = angle_deg * CV_PI / 180.0;
+    
+        // Compute arrow tip point
+        cv::Point tip(
+            cvRound(center.x + length * cos(theta)),
+            cvRound(center.y + length * sin(theta))
+        );
+    
+        // Draw shaft line
+        cv::line(image, center, tip, color, thickness, cv::LINE_AA);
+    
+        // Calculate left wing point
+        double leftTheta = theta + (CV_PI * headAngleDeg / 180.0);
+        cv::Point leftWing(
+            cvRound(tip.x - headLength * cos(leftTheta)),
+            cvRound(tip.y - headLength * sin(leftTheta))
+        );
+    
+        // Calculate right wing point
+        double rightTheta = theta - (CV_PI * headAngleDeg / 180.0);
+        cv::Point rightWing(
+            cvRound(tip.x - headLength * cos(rightTheta)),
+            cvRound(tip.y - headLength * sin(rightTheta))
+        );
+    
+        // Draw arrowhead wings
+        cv::line(image, tip, leftWing, color, thickness, cv::LINE_AA);
+        cv::line(image, tip, rightWing, color, thickness, cv::LINE_AA);
+    }
     
     
 

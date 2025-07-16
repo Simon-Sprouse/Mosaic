@@ -26,7 +26,7 @@ int main() {
 
 
     mosaic_gen::HyperParameters params;
-    params.resize_factor = 0.8;
+    params.resize_factor = 1.0;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -34,8 +34,8 @@ int main() {
     params.max_segment_angle_rad = 100 * M_PI / 180.0;
     params.min_segment_length = 20;
     params.segment_angle_window = 10;
-    params.tile_size = 5.0;
-    params.number_of_rings = 40;
+    params.tile_size = 20;
+    params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
 
     
@@ -91,9 +91,20 @@ int main() {
     my_mosaic.placeTileAllBackground();
     my_mosaic.saveImage(my_mosaic.canvas, results_dir, "samples");
 
-     // store placed tiles and reconstruct
-     my_mosaic.reconstructPlacedTiles();
-     my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reconstruction");
+    // store placed tiles and reconstruct
+    my_mosaic.reconstructPlacedTiles();
+    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reconstruction");
+
+
+
+
+
+    // tangent field
+    cout << endl << "Sampling tangent field" << endl;
+    my_mosaic.sampleTangentField();
+
+    // test arrow draw function
+    my_mosaic.saveImage(my_mosaic.vector_field, results_dir, "vector_field");
   
 
 

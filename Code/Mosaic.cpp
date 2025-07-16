@@ -885,6 +885,127 @@ void Mosaic::placeTileAllBackground() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField() {
+
+    int num_points = 10;
+    std::vector<cv::Point> samplePoints = samplePointsRandom(segmented, num_points);
+
+
+    std::vector<std::tuple<cv::Point, cv::Vec2f, float>> results;
+
+    if (segmented.empty() || samplePoints.empty()) {
+        return results;
+    }
+
+    // Step 1: Convert to grayscale and threshold to get binary edge map
+    cv::Mat gray, binary;
+    cv::cvtColor(segmented, gray, cv::COLOR_BGR2GRAY);
+    cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
+
+    // Step 2: Invert binary image (distanceTransform treats non-zero as background)
+    cv::Mat inverted = 255 - binary;
+
+    // Step 3: Compute distance transform
+    cv::Mat distance;
+    cv::distanceTransform(inverted, distance, cv::DIST_L2, 3);
+
+    // Step 4: Compute gradients of distance map
+    cv::Mat gradX, gradY;
+    cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
+    cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
+
+    // Step 5: For each sample point, compute tangent and distance
+    for (const cv::Point& pt : samplePoints) {
+        int x = pt.x;
+        int y = pt.y;
+
+        // Bounds check
+        if (x < 0 || x >= distance.cols || y < 0 || y >= distance.rows)
+            continue;
+
+        float dx = gradX.at<float>(y, x);
+        float dy = gradY.at<float>(y, x);
+
+        // Rotate 90° counter-clockwise to get tangent
+        float tx = -dy;
+        float ty = dx;
+
+        float magnitude = std::sqrt(tx * tx + ty * ty);
+        cv::Vec2f tangent(0.0f, 0.0f);
+        if (magnitude > 1e-5f) {
+            tangent = cv::Vec2f(tx / magnitude, ty / magnitude);
+        }
+
+        float dist = distance.at<float>(y, x);
+
+        results.emplace_back(pt, tangent, dist);
+    }
+
+
+
+    // Draw arrow on vector_field at every point
+    for (const auto& [pt, tangent, dist] : results) {
+        std::cout << "Point: " << pt
+                  << " | Tangent: (" << tangent[0] << ", " << tangent[1] << ")"
+                  << " | Distance: " << dist << "\n";
+    }
+
+
+
+
+    // test arrow print function
+    vector_field = cv::Mat::zeros(segmented.size(), CV_8UC3);
+
+    cv::Point center(100, 100);
+    cv::Scalar color(255, 100, 0);
+    double theta_deg = 30.0;
+    int length = 30;
+
+    Graphics::drawArrow(vector_field, center, length, theta_deg, color);
+
+
+    return results;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 PRINT FUNCTIONS >>
 */
