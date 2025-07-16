@@ -60,13 +60,17 @@ class Mosaic {
         void reconstructPlacedTiles();
         std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
         std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
+        std::vector<cv::Point> samplePointsRandomGrid(const cv::Mat& image, int grid_size, int max_step);
         void connectSamplesToNearestTiles(const std::vector<cv::Point>& samples);
         void samplePointsOnCanvas();
 
         void placeTileBackground(cv::Point center, double size, double theta_deg);
         void placeTileAllBackground();
 
+        void computeDistanceField();
+        std::tuple<cv::Vec2f, float> sampleTangentPoint(const cv::Point& pt);
         std::vector<std::tuple<cv::Point, cv::Vec2f, float>> sampleTangentField();
+
         
         void printColorToPixels();
         void printColorLengths();
@@ -85,8 +89,15 @@ class Mosaic {
 
         cv::Mat selected_segment;
         cv::Mat canvas;
-        cv::Mat vector_field;
         cv::Mat mask;
+
+        cv::Mat vector_field;
+        cv::Mat distance;
+        cv::Mat gradX;
+        cv::Mat gradY;
+
+
+
 
         std::string file_path;
         std::string image_name;

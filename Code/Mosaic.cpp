@@ -41,6 +41,11 @@ void Mosaic::resizeOriginal() {
     }
 
     cv::resize(original, resized, cv::Size(), params.resize_factor, params.resize_factor, cv::INTER_LINEAR);
+
+
+    // construct image mats
+
+
 }
 
 
@@ -648,8 +653,7 @@ void Mosaic::placeTileAllSegments() {
     }
 
     cout << "Placed tiles along: " << number_of_segments << " segments" << endl;
-    cout << "Hyperparam test: " << params.blur_kernel_size << endl;
-
+    
 }
 
 
@@ -742,6 +746,34 @@ std::vector<cv::Point> Mosaic::samplePointsRandom(const cv::Mat& image, int num_
     return random_points;
 }
 
+std::vector<cv::Point> Mosaic::samplePointsRandomGrid(const cv::Mat& image, int grid_size, int max_step) {
+    std::vector<cv::Point> jittered_points;
+
+    if (image.empty() || grid_size <= 0 || max_step < 0) {
+        return jittered_points;
+    }
+
+    int width = image.cols;
+    int height = image.rows;
+
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> offset_dist(-max_step, max_step);
+
+    for (int y = 0; y < height; y += grid_size) {
+        for (int x = 0; x < width; x += grid_size) {
+            int jitter_x = x + offset_dist(rng);
+            int jitter_y = y + offset_dist(rng);
+
+            // Clamp to image bounds
+            jitter_x = std::clamp(jitter_x, 0, width - 1);
+            jitter_y = std::clamp(jitter_y, 0, height - 1);
+
+            jittered_points.emplace_back(jitter_x, jitter_y);
+        }
+    }
+
+    return jittered_points;
+}
 
 
 
@@ -860,21 +892,13 @@ void Mosaic::placeTileAllBackground() {
 
 
     for (const auto& sample : samples) {
-        double min_dist = std::numeric_limits<double>::max();
-        cv::Point closest_tile;
-        double closest_tile_theta_deg;
 
-        for (const auto& tile : tiles_placed) {
-            double dist = euclideanDistance(sample, tile.center);
-            if (dist < min_dist) {
-                min_dist = dist;
-                closest_tile = tile.center;
-                closest_tile_theta_deg = tile.theta_deg;
-            }
-        }
+        auto [tangent, _] = sampleTangentPoint(sample);
+        double theta_rad = std::atan2(tangent[1], tangent[0]);
+        double theta_deg = theta_rad * 180.0 / CV_PI;
+        
 
-        //
-        placeTileBackground(sample, params.tile_size, closest_tile_theta_deg);
+        placeTileBackground(sample, params.tile_size, theta_deg);
     }
 }
 
@@ -893,16 +917,80 @@ void Mosaic::placeTileAllBackground() {
 
 
 
+void Mosaic::computeDistanceField() { 
+
+    distance = cv::Mat::zeros(segmented.size(), CV_8UC3);
+    gradX = cv::Mat::zeros(segmented.size(), CV_8UC3);
+    gradY = cv::Mat::zeros(segmented.size(), CV_8UC3);
+
+
+    // Step 1: Convert to grayscale and binary edge map
+    cv::Mat gray, binary;
+    cv::cvtColor(segmented, gray, cv::COLOR_BGR2GRAY);
+    cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
+
+    // Step 2: Invert binary
+    cv::Mat inverted = 255 - binary;
+
+    // Step 3: Compute distance transform
+    cv::distanceTransform(inverted, distance, cv::DIST_L2, 3);
+
+    // Step 4: Compute gradients
+    cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
+    cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
+
+    distance.convertTo(distance, CV_8U);
+
+}
 
 
 
 
+std::tuple<cv::Vec2f, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
+
+    if (distance.empty() || gradX.empty() || gradY.empty()) { 
+        computeDistanceField();
+    }
+
+    int x = pt.x;
+    int y = pt.y;
+
+    if (x < 0 || x >= distance.cols || y < 0 || y >= distance.rows) {
+    return {cv::Vec2f(0.0f, 0.0f), 0.0f};
+    }
+
+    float dx = gradX.at<float>(y, x);
+    float dy = gradY.at<float>(y, x);
+
+    // Rotate 90° counter-clockwise to get tangent
+    float tx = -dy;
+    float ty = dx;
+
+    float magnitude = std::sqrt(tx * tx + ty * ty);
+    cv::Vec2f tangent(0.0f, 0.0f);
+    if (magnitude > 1e-5f) {
+    tangent = cv::Vec2f(tx / magnitude, ty / magnitude);
+    }
+
+    float dist = distance.at<float>(y, x);
+    return {tangent, dist};
+}
 
 
 std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField() {
 
-    int num_points = 10;
-    std::vector<cv::Point> samplePoints = samplePointsRandom(segmented, num_points);
+    
+
+
+    // int grid_size = 15;
+    // std::vector<cv::Point> samplePoints = samplePointsGrid(segmented, grid_size);
+
+    // int num_points = 1000;
+    // std::vector<cv::Point> samplePoints = samplePointsRandom(segmented, num_points);
+
+    int grid_size = 25;
+    int max_step = 4;
+    std::vector<cv::Point> samplePoints = samplePointsRandomGrid(segmented, grid_size, max_step);
 
 
     std::vector<std::tuple<cv::Point, cv::Vec2f, float>> results;
@@ -911,81 +999,61 @@ std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField(
         return results;
     }
 
-    // Step 1: Convert to grayscale and threshold to get binary edge map
-    cv::Mat gray, binary;
-    cv::cvtColor(segmented, gray, cv::COLOR_BGR2GRAY);
-    cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
-
-    // Step 2: Invert binary image (distanceTransform treats non-zero as background)
-    cv::Mat inverted = 255 - binary;
-
-    // Step 3: Compute distance transform
-    cv::Mat distance;
-    cv::distanceTransform(inverted, distance, cv::DIST_L2, 3);
-
-    // Step 4: Compute gradients of distance map
-    cv::Mat gradX, gradY;
-    cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
-    cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
-
-    // Step 5: For each sample point, compute tangent and distance
+    
+    // Step 5: Evaluate tangent and distance at each point
     for (const cv::Point& pt : samplePoints) {
-        int x = pt.x;
-        int y = pt.y;
-
-        // Bounds check
-        if (x < 0 || x >= distance.cols || y < 0 || y >= distance.rows)
-            continue;
-
-        float dx = gradX.at<float>(y, x);
-        float dy = gradY.at<float>(y, x);
-
-        // Rotate 90° counter-clockwise to get tangent
-        float tx = -dy;
-        float ty = dx;
-
-        float magnitude = std::sqrt(tx * tx + ty * ty);
-        cv::Vec2f tangent(0.0f, 0.0f);
-        if (magnitude > 1e-5f) {
-            tangent = cv::Vec2f(tx / magnitude, ty / magnitude);
-        }
-
-        float dist = distance.at<float>(y, x);
-
+        auto [tangent, dist] = sampleTangentPoint(pt);
         results.emplace_back(pt, tangent, dist);
     }
 
+    // Visualization
+    vector_field = cv::Mat::zeros(segmented.size(), CV_8UC3);
+    const int length = 20;
+    float gamma = 0.3; // to strecth color map; 
 
-
-    // Draw arrow on vector_field at every point
-    for (const auto& [pt, tangent, dist] : results) {
-        std::cout << "Point: " << pt
-                  << " | Tangent: (" << tangent[0] << ", " << tangent[1] << ")"
-                  << " | Distance: " << dist << "\n";
+    float minDist = std::numeric_limits<float>::max();
+    float maxDist = std::numeric_limits<float>::lowest();
+    for (const auto& [_, __, dist] : results) {
+        minDist = std::min(minDist, dist);
+        maxDist = std::max(maxDist, dist);
     }
 
 
+    for (const auto& [pt, tangent, dist] : results) {
+        // std::cout << "Point: " << pt
+        //         << " | Tangent: (" << tangent[0] << ", " << tangent[1] << ")"
+        //         << " | Distance: " << dist << "\n";
 
+        // Normalize distance to [0, 255]
+        int value = 0;
+        if (maxDist > minDist) {
+            float normalized = (dist - minDist) / (maxDist - minDist);
+            value = static_cast<int>(255.0f * std::pow(normalized, gamma));
+            value = std::clamp(value, 0, 255);
 
-    // test arrow print function
-    vector_field = cv::Mat::zeros(segmented.size(), CV_8UC3);
+        }
 
-    cv::Point center(100, 100);
-    cv::Scalar color(255, 100, 0);
-    double theta_deg = 30.0;
-    int length = 30;
+        // Create 1-pixel grayscale image
+        cv::Mat grayPixel(1, 1, CV_8U, cv::Scalar(value));
+        cv::Mat colorPixel;
+        cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_MAGMA);
 
-    Graphics::drawArrow(vector_field, center, length, theta_deg, color);
+        // Extract BGR color from the pixel
+        cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);
+        cv::Scalar color(bgr[0], bgr[1], bgr[2]);
+
+        // Compute angle and draw arrow
+        double angle_rad = std::atan2(tangent[1], tangent[0]);
+        double angle_deg = angle_rad * 180.0 / CV_PI;
+
+        Graphics::drawArrow(vector_field, pt, length, angle_deg, color);
+    }
+
+    
 
 
     return results;
 }
-
-
-
-
-
-
 
 
 
