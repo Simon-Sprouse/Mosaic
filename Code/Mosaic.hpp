@@ -30,6 +30,7 @@ struct TileInfo {
     double size;
     double theta_deg;
     int order;
+    int frontier;
 };
 
 class Mosaic { 
@@ -65,7 +66,7 @@ class Mosaic {
         void connectSamplesToNearestTiles(const std::vector<cv::Point>& samples);
         void samplePointsOnCanvas();
 
-        void placeTileBackground(cv::Point center, double size, double theta_deg);
+        void placeTileBackground(cv::Point center, double size, double theta_deg, int frontier=0);
         void placeTileAllBackground();
 
         void computeDistanceField();

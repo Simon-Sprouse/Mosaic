@@ -295,6 +295,14 @@ void Mosaic::drawSquareRandomPoint(int k) {
 
 
 bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees) {
+
+    // Early exit if tile is far outside the image
+    int margin = static_cast<int>(2 * tileSize);
+    if (center.x < -margin || center.y < -margin ||
+        center.x > mask.cols + margin || center.y > mask.rows + margin) {
+        return true; // Treat as overlap so it won't be placed
+    }
+
     // 1. Compute tile corners
     float halfSize = static_cast<float>(tileSize / 2.0);
     float theta = static_cast<float>(rotationDegrees * CV_PI / 180.0);
@@ -546,6 +554,7 @@ double Mosaic::placeTile(cv::Point center, double size, string text) {
 
     // TODO add tile metadata to the 
     int order = tiles_placed.size();
+    int frontier = 0; // contour trace is frontier 0
     TileInfo current_tile = {
         center,
         size, 
@@ -860,7 +869,7 @@ void Mosaic::connectSamplesToNearestTiles(const std::vector<cv::Point>& samples)
 
 
 
-void Mosaic::placeTileBackground(cv::Point center, double size, double theta_deg) {
+void Mosaic::placeTileBackground(cv::Point center, double size, double theta_deg, int frontier) {
 
 
 
@@ -883,14 +892,9 @@ void Mosaic::placeTileBackground(cv::Point center, double size, double theta_deg
         size, 
         theta_deg,
         order,
+        frontier
     };
     tiles_placed.push_back(current_tile);
-
-
-
-
-
-
 
 
 }
@@ -901,8 +905,11 @@ void Mosaic::placeTileAllBackground() {
         return;
     }
 
+    
     int num_points = 50000;
     std::vector<cv::Point> samples = samplePointsRandom(canvas, num_points);
+
+
 
 
     for (const auto& sample : samples) {
@@ -1119,17 +1126,33 @@ void Mosaic::showFloodFillPoints() {
 
     double distance_from_center = params.tile_size * 1.5;
 
-    for (const TileInfo& tile : tiles_placed) {
-        std::vector<cv::Point> points = getFloodFillPoints(tile.center, tile.theta_deg, distance_from_center);
-        for (const cv::Point& pt : points) {
-            // Optional: choose a visible marker color (e.g., blue)
-            // cv::Scalar color(255, 255, 0); 
-            // double marker_size = 5.0;
-            // Graphics::drawSquare(flood_fill_canvas, pt, marker_size, 0, color, 3);
-            double theta_deg = findBestThetaTangentField(pt);
-            placeTileBackground(pt, params.tile_size, theta_deg);
+    const int max_frontiers = 7;
+    for (int frontier = 0; frontier < max_frontiers; frontier++) { 
+        
+
+        std::vector<TileInfo> frontier_tiles;
+        for (const TileInfo& tile : tiles_placed) {
+            if (tile.frontier == frontier) {
+                frontier_tiles.push_back(tile);
+            }
+        }
+
+        cout << frontier_tiles.size() << " tiles on frontier: " << frontier << endl;
+
+        for (const TileInfo& tile : frontier_tiles) {
+
+            std::vector<cv::Point> points = getFloodFillPoints(tile.center, tile.theta_deg, distance_from_center);
+            for (const cv::Point& pt : points) {
+
+                double theta_deg = findBestThetaTangentField(pt);
+                placeTileBackground(pt, params.tile_size, theta_deg, frontier + 1); // add tiles to next frontier
+            }
+
+            
         }
     }
+
+    
 }
 
 
