@@ -21,13 +21,13 @@ int main() {
 
     cout << "Hello From Mosaic" << endl;
 
-    // const string image_path = "../Images/einstein.jpg";
-    const string image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/panda2.jpg";
+    const string image_path = "../Images/flower.jpg";
+    // const string image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/panda2.jpg";
     string results_dir = "../Results";
 
 
     mosaic_gen::HyperParameters params;
-    params.resize_factor = 0.5;
+    params.resize_factor = 2;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -115,7 +115,8 @@ int main() {
     my_mosaic.saveImage(my_mosaic.vector_field, results_dir, "vector_field");
 
 
-    
+    // save gif
+    my_mosaic.saveGif(80, results_dir, "animation");
   
 
 

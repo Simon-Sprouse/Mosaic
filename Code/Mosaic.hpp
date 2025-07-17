@@ -82,6 +82,7 @@ class Mosaic {
         void printColorLengthsK(int k);
         
         void saveImage(const cv::Mat& image, const std::string& output_dir, const std::string& suffix);
+        void saveGif(int tilesPerFrame, const std::string& output_dir, const std::string& suffix);
 
 
         cv::Mat original;

@@ -2,6 +2,8 @@
 #include "graphics.hpp"
 #include "optimize.hpp"
 
+#include "gif.h"
+
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <random>
@@ -1173,6 +1175,7 @@ void Mosaic::showFloodFillPoints() {
 
 
 
+
 /*
 PRINT FUNCTIONS >>
 */
@@ -1276,5 +1279,38 @@ void Mosaic::saveImage(const cv::Mat& image, const std::string& output_dir, cons
 }
 
 
+void Mosaic::saveGif(int tilesPerFrame, const std::string& output_dir, const std::string& suffix) {
+    int width = canvas.cols;
+    int height = canvas.rows;
+
+    std::string gifFilename = output_dir + "/" + image_name + "_" + suffix + ".gif";
+
+    GifWriter writer;
+    GifBegin(&writer, gifFilename.c_str(), width, height, 10); // delay in 1/100s
+
+    cv::Mat gifCanvas = cv::Mat::zeros(canvas.size(), CV_8UC3);
+    for (size_t i = 0; i < tiles_placed.size(); i += tilesPerFrame) {
+        for (size_t j = i; j < std::min(i + tilesPerFrame, tiles_placed.size()); ++j) {
+            const TileInfo& tile = tiles_placed[j];
+            cv::Scalar color = sampleTileColor(tile);
+            Graphics::drawSquare(gifCanvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
+        }
+
+        // Convert to RGBA
+        cv::Mat rgba;
+        cv::cvtColor(gifCanvas, rgba, cv::COLOR_BGR2RGBA);
+
+        GifWriteFrame(&writer, rgba.data, width, height, 10);
+    }
+
+    GifEnd(&writer);
+    std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
+}
+
+
+
 
 }
+
+
+
