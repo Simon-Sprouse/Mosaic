@@ -10,6 +10,8 @@
 #include <cmath>
 #include <filesystem>
 #include <stack>
+#include <sstream>
+#include <fstream>
 
 using namespace std;
 namespace fs = std::__fs::filesystem;
@@ -294,16 +296,22 @@ void Mosaic::drawSquareRandomPoint(int k) {
 }
 
 
+bool Mosaic::tileInBounds(const cv::Point& center, double tileSize) { 
+    // Early exit if tile is far outside the image
+    // int margin = static_cast<int>(2 * tileSize);
+    int margin = 0;
+
+    if (center.x < -margin || center.y < -margin ||
+        center.x > mask.cols + margin || center.y > mask.rows + margin) {
+        return false;
+    }
+    return true;
+}
 
 
 bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees) {
 
-    // Early exit if tile is far outside the image
-    int margin = static_cast<int>(2 * tileSize);
-    if (center.x < -margin || center.y < -margin ||
-        center.x > mask.cols + margin || center.y > mask.rows + margin) {
-        return true; // Treat as overlap so it won't be placed
-    }
+
 
     // 1. Compute tile corners
     float halfSize = static_cast<float>(tileSize / 2.0);
@@ -530,6 +538,9 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
 
     // check for validity
     if (tileOverlapsMask(center, size, theta_deg)) { 
+        return ERROR_CODE_NO_VALID_THETA;
+    }
+    if (!tileInBounds(center, size)) { 
         return ERROR_CODE_NO_VALID_THETA;
     }
 
@@ -805,62 +816,9 @@ std::vector<cv::Point> Mosaic::samplePointsRandomGrid(const cv::Mat& image, int 
 
 
 
-void Mosaic::samplePointsOnCanvas() {
-
-
-    canvas = cv::Mat::zeros(edges.size(), CV_8UC3);
-    
-
-
-    int grid_size = 20;
-    std::vector<cv::Point> points = samplePointsGrid(canvas, grid_size);
-    cv::Scalar sample_color(100, 100, 0);
-
-    for (cv::Point point : points) { 
-        Graphics::drawSquare(canvas, point, 5, 0, sample_color, 2.0);
-    }
 
 
 
-    cv::Scalar point_color(255, 255, 255);
-
-    for (TileInfo tile : tiles_placed) { 
-        Graphics::drawSquare(canvas, tile.center, 5, tile.theta_deg, point_color, 3);
-    }
-
-
-    connectSamplesToNearestTiles(points);
-
-
-
-}
-
-
-
-// just to show voronoi map
-void Mosaic::connectSamplesToNearestTiles(const std::vector<cv::Point>& samples) {
-    if (tiles_placed.empty()) {
-        std::cerr << "No tiles placed to map samples to." << std::endl;
-        return;
-    }
-
-    for (const auto& sample : samples) {
-        double min_dist = std::numeric_limits<double>::max();
-        cv::Point closest_tile;
-
-        for (const auto& tile : tiles_placed) {
-            double dist = euclideanDistance(sample, tile.center);
-            if (dist < min_dist) {
-                min_dist = dist;
-                closest_tile = tile.center;
-            }
-        }
-
-        // Draw line from sample to its closest tile
-        cv::Scalar line_color(0, 255, 255);  // Yellowish
-        Graphics::drawLine(canvas, sample, closest_tile, 1, line_color);
-    }
-}
 
 
 
@@ -881,10 +839,14 @@ void Mosaic::placeTileBackground(cv::Point center, double size, double theta_deg
         return;
     }
 
+    if (!tileInBounds(center, size)) {
+        return;
+    }
+
     // Draw aligned square
     // cv::Scalar color = cv::Scalar(150, 150, 0);
     cv::Scalar color = cv::Scalar(255, 255, 255);
-    Graphics::drawSquare(canvas, center, size, theta_deg, color, 2.0);
+    Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, std::to_string(frontier));
     Graphics::drawSquare(mask, center, size, theta_deg, color, 2.0);
 
     // TODO add tile metadata to the 
@@ -924,7 +886,6 @@ void Mosaic::placeTileAllBackground() {
         placeTileBackground(sample, params.tile_size, theta_deg);
     }
 }
-
 
 
 
@@ -1122,16 +1083,12 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta
 
 
 void Mosaic::showFloodFillPoints() {
-    // Clone current tile layout for visualization
-
     flood_fill_canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
-
     double distance_from_center = params.tile_size * 1.5;
 
-    const int max_frontiers = 7;
+    const int max_frontiers = params.max_frontiers;
     for (int frontier = 0; frontier < max_frontiers; frontier++) { 
         
-
         std::vector<TileInfo> frontier_tiles;
         for (const TileInfo& tile : tiles_placed) {
             if (tile.frontier == frontier) {
@@ -1140,21 +1097,26 @@ void Mosaic::showFloodFillPoints() {
         }
 
         cout << frontier_tiles.size() << " tiles on frontier: " << frontier << endl;
+        if (frontier_tiles.size() == 0) { 
+            return;
+        }
 
+        // Collect all flood fill points for this frontier
+        std::vector<cv::Point> all_flood_points;
         for (const TileInfo& tile : frontier_tiles) {
-
             std::vector<cv::Point> points = getFloodFillPoints(tile.center, tile.theta_deg, distance_from_center);
-            for (const cv::Point& pt : points) {
+            all_flood_points.insert(all_flood_points.end(), points.begin(), points.end());
+        }
 
-                double theta_deg = findBestThetaTangentField(pt);
-                placeTileBackground(pt, params.tile_size, theta_deg, frontier + 1); // add tiles to next frontier
-            }
+        // Remove duplicates/nearby points before placing tiles
+        std::vector<cv::Point> unique_points = filterUniqueIntersections(all_flood_points);
 
-            
+        // Now place tiles at unique positions
+        for (const cv::Point& pt : unique_points) {
+            double theta_deg = findBestThetaTangentField(pt);
+            placeTileBackground(pt, params.tile_size, theta_deg, frontier + 1);
         }
     }
-
-    
 }
 
 
@@ -1306,6 +1268,52 @@ void Mosaic::saveGif(int tilesPerFrame, const std::string& output_dir, const std
     GifEnd(&writer);
     std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
 }
+
+
+
+
+void Mosaic::saveTileInfo(const std::string& output_dir, const std::string& suffix) { 
+
+
+
+    std::ostringstream oss;
+
+    // Write the CSV header
+    oss << "center_x,center_y,size,theta_deg,order,frontier\n";
+
+    // Iterate through each TileInfo struct in the vector
+    for (const auto& tile : tiles_placed) {
+        oss << tile.center.x << ","
+            << tile.center.y << ","
+            << tile.size << ","
+            << tile.theta_deg << ","
+            << tile.order << ","
+            << tile.frontier << "\n";
+    }
+
+
+
+
+    std::string fileName = output_dir + "/" + image_name + "_" + suffix + ".csv";
+    std::ofstream outFile(fileName); // Open the file for writing
+    if (outFile.is_open()) {
+        outFile << oss.str(); // Write the CSV content to the file
+        outFile.close();      // Close the file
+        std::cout << "CSV data successfully written to " << fileName << std::endl;
+    } else {
+        std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
+    }
+
+
+
+}
+
+
+
+
+
+
+
 
 
 

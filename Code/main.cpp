@@ -21,8 +21,7 @@ int main() {
 
     cout << "Hello From Mosaic" << endl;
 
-    const string image_path = "../Images/flower.jpg";
-    // const string image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/panda2.jpg";
+    const string image_path = "../Images/einstein.jpg";
     string results_dir = "../Results";
 
 
@@ -36,8 +35,9 @@ int main() {
     params.min_segment_length = 20;
     params.segment_angle_window = 10;
     params.tile_size = 10;
-    params.number_of_rings = 40;
+    params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
+    params.max_frontiers = 4;
 
     
 
@@ -88,7 +88,9 @@ int main() {
 
     // show flood fill points
     my_mosaic.showFloodFillPoints();
+    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "frontiers_canvas");
     my_mosaic.saveImage(my_mosaic.mask, results_dir, "flood_fill_points");
+    // my_mosaic.saveTileInfo(results_dir, "frontiers");
    
 
 

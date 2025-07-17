@@ -22,6 +22,7 @@ struct HyperParameters {
     int tile_size;
     int number_of_rings;
     int step_size;
+    int max_frontiers;
 
 };
 
@@ -51,6 +52,7 @@ class Mosaic {
         void selectSegment(int k);
         cv::Point getRandomPointOnSegment(int k);
         void drawSquareRandomPoint(int k); // test
+        bool tileInBounds(const cv::Point& center, double tileSize);
         bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
         double findBestTheta(cv::Point center, double size);
         double placeTile(cv::Point center, double size, string text="");
@@ -63,8 +65,7 @@ class Mosaic {
         std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
         std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
         std::vector<cv::Point> samplePointsRandomGrid(const cv::Mat& image, int grid_size, int max_step);
-        void connectSamplesToNearestTiles(const std::vector<cv::Point>& samples);
-        void samplePointsOnCanvas();
+
 
         void placeTileBackground(cv::Point center, double size, double theta_deg, int frontier=0);
         void placeTileAllBackground();
@@ -83,6 +84,7 @@ class Mosaic {
         
         void saveImage(const cv::Mat& image, const std::string& output_dir, const std::string& suffix);
         void saveGif(int tilesPerFrame, const std::string& output_dir, const std::string& suffix);
+        void saveTileInfo(const std::string& output_dir, const std::string& suffix);
 
 
         cv::Mat original;
