@@ -51,6 +51,7 @@ class Mosaic {
         cv::Point getRandomPointOnSegment(int k);
         void drawSquareRandomPoint(int k); // test
         bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
+        double findBestTheta(cv::Point center, double size);
         double placeTile(cv::Point center, double size, string text="");
         void placeTileSegment(int k);
         void placeTileAllSegments();
@@ -70,7 +71,8 @@ class Mosaic {
         void computeDistanceField();
         std::tuple<cv::Vec2f, float> sampleTangentPoint(const cv::Point& pt);
         std::vector<std::tuple<cv::Point, cv::Vec2f, float>> sampleTangentField();
-
+        std::vector<cv::Point> getFloodFillPoints(cv::Point center, double theta_deg, double distance);
+        void showFloodFillPoints();
         
         void printColorToPixels();
         void printColorLengths();
@@ -105,8 +107,13 @@ class Mosaic {
 
     private: 
 
+
+
         HyperParameters params;
         std::vector<TileInfo> tiles_placed;
+
+        const double ERROR_CODE_NO_VALID_THETA = -420.69;
+
 
         struct Vec3bHash {
             std::size_t operator()(const cv::Vec3b& color) const noexcept {
@@ -129,6 +136,8 @@ class Mosaic {
 
         std::unordered_map<cv::Vec3b, std::vector<cv::Point>, Vec3bHash, Vec3bEqual> segment_pixels;
         std::vector<std::pair<cv::Vec3b, double>> segment_lengths;
+
+
 
 };
 

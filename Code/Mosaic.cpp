@@ -84,6 +84,7 @@ void Mosaic::cannyFilter() {
     cv::Canny(blurred, edges, params.canny_threshold_1, params.canny_threshold_2);
 }
 
+
 int Mosaic::detectContours() { 
     if (edges.empty()) {
         cerr << "DetectContours called but no edges" << endl;
@@ -279,7 +280,6 @@ cv::Point Mosaic::getRandomPointOnSegment(int k) {
 
 
 
-
 void Mosaic::drawSquareRandomPoint(int k) { 
 
     cv::Point center = getRandomPointOnSegment(k);
@@ -468,10 +468,7 @@ std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::P
 
 
 
-
-
-// Returns theta_deg if placed, -420 if not placed
-double Mosaic::placeTile(cv::Point center, double size, string text) {
+double Mosaic::findBestTheta(cv::Point center, double size) { 
 
     double radius = size * 1.0; // HUGE impact on alignment TODO do some geometry
 
@@ -500,7 +497,7 @@ double Mosaic::placeTile(cv::Point center, double size, string text) {
     // Check if enough points for PCA
     if (region_pixels.size() < 2) {
         std::cerr << "Not enough stroke pixels for PCA near point: " << center << std::endl;
-        return -420.00;
+        return ERROR_CODE_NO_VALID_THETA;
     }
 
     // Build matrix for PCA
@@ -523,7 +520,23 @@ double Mosaic::placeTile(cv::Point center, double size, string text) {
 
     // check for validity
     if (tileOverlapsMask(center, size, theta_deg)) { 
-        return -420.00;
+        return ERROR_CODE_NO_VALID_THETA;
+    }
+
+    return theta_deg;
+}
+
+
+
+// Returns theta_deg if placed, -420 if not placed
+double Mosaic::placeTile(cv::Point center, double size, string text) {
+
+    // findBestTheta handles overlap check & pca error
+    double theta_deg = findBestTheta(center, size);
+
+    // pass error so dfs stops
+    if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
+        return ERROR_CODE_NO_VALID_THETA;
     }
 
     // Draw aligned square
@@ -586,7 +599,8 @@ void Mosaic::placeTileSegment(int k) {
 
         double theta_deg = placeTile(current_center, size, std::to_string(squares_placed));
         // no valid placement
-        if (theta_deg < -360) { 
+        if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
+            // cout << "no valid theta" << endl;
             continue;
         }
         squares_placed++;
@@ -1055,6 +1069,58 @@ std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField(
     return results;
 }
 
+
+
+
+
+std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta_deg, double distance) {
+
+    cv::Point2f center_f(center.x, center.y);
+
+    std::vector<cv::Point> flood_points;
+
+    // Convert degrees to radians
+    double theta_rad = theta_deg * CV_PI / 180.0;
+
+    // Unit vectors in square's rotated X and Y directions
+    cv::Point2f dx(std::cos(theta_rad), std::sin(theta_rad));       // direction along tile width
+    cv::Point2f dy(-std::sin(theta_rad), std::cos(theta_rad));      // direction along tile height
+
+    // Offset distance from center to each direction
+    double offset = distance;
+
+    // Compute four flood fill target points
+    cv::Point2f right  = center_f + dx * offset;
+    cv::Point2f left   = center_f - dx * offset;
+    cv::Point2f down   = center_f + dy * offset;
+    cv::Point2f up     = center_f - dy * offset;
+
+    // Round to integer points for display
+    flood_points.push_back(cv::Point(cvRound(right.x), cvRound(right.y)));
+    flood_points.push_back(cv::Point(cvRound(left.x), cvRound(left.y)));
+    flood_points.push_back(cv::Point(cvRound(down.x), cvRound(down.y)));
+    flood_points.push_back(cv::Point(cvRound(up.x), cvRound(up.y)));
+
+    return flood_points;
+}
+
+
+void Mosaic::showFloodFillPoints() {
+    // Clone current tile layout for visualization
+    canvas = mask.clone();
+
+    double distance = params.tile_size * 1.5;
+
+    for (const TileInfo& tile : tiles_placed) {
+        std::vector<cv::Point> points = getFloodFillPoints(tile.center, tile.theta_deg, distance);
+        for (const cv::Point& pt : points) {
+            // Optional: choose a visible marker color (e.g., blue)
+            cv::Scalar color(255, 0, 0); 
+            double marker_size = 5.0;
+            Graphics::drawSquare(canvas, pt, marker_size, 0.0, color, 1);
+        }
+    }
+}
 
 
 
