@@ -26,7 +26,7 @@ int main() {
 
 
     mosaic_gen::HyperParameters params;
-    params.resize_factor = 0.8;
+    params.resize_factor = 1.5;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -87,7 +87,7 @@ int main() {
 
     // show flood fill points
     my_mosaic.showFloodFillPoints();
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "flood_fill_points");
+    my_mosaic.saveImage(my_mosaic.mask, results_dir, "flood_fill_points");
    
 
 

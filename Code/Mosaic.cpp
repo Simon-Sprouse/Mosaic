@@ -990,6 +990,13 @@ std::tuple<cv::Vec2f, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
     return {tangent, dist};
 }
 
+double Mosaic::findBestThetaTangentField(cv::Point center) { 
+    auto [tangent, dist] = sampleTangentPoint(center);
+    double theta_rad = std::atan2(tangent[1], tangent[0]);
+    double theta_deg = theta_rad * 180.0 / CV_PI;
+    return theta_deg;
+};
+
 
 std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField() {
 
@@ -1073,7 +1080,7 @@ std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField(
 
 
 
-std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta_deg, double distance) {
+std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta_deg, double distance_from_center) {
 
     cv::Point2f center_f(center.x, center.y);
 
@@ -1087,7 +1094,7 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta
     cv::Point2f dy(-std::sin(theta_rad), std::cos(theta_rad));      // direction along tile height
 
     // Offset distance from center to each direction
-    double offset = distance;
+    double offset = distance_from_center;
 
     // Compute four flood fill target points
     cv::Point2f right  = center_f + dx * offset;
@@ -1107,17 +1114,20 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta
 
 void Mosaic::showFloodFillPoints() {
     // Clone current tile layout for visualization
-    canvas = mask.clone();
 
-    double distance = params.tile_size * 1.5;
+    flood_fill_canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
+
+    double distance_from_center = params.tile_size * 1.5;
 
     for (const TileInfo& tile : tiles_placed) {
-        std::vector<cv::Point> points = getFloodFillPoints(tile.center, tile.theta_deg, distance);
+        std::vector<cv::Point> points = getFloodFillPoints(tile.center, tile.theta_deg, distance_from_center);
         for (const cv::Point& pt : points) {
             // Optional: choose a visible marker color (e.g., blue)
-            cv::Scalar color(255, 0, 0); 
-            double marker_size = 5.0;
-            Graphics::drawSquare(canvas, pt, marker_size, 0.0, color, 1);
+            // cv::Scalar color(255, 255, 0); 
+            // double marker_size = 5.0;
+            // Graphics::drawSquare(flood_fill_canvas, pt, marker_size, 0, color, 3);
+            double theta_deg = findBestThetaTangentField(pt);
+            placeTileBackground(pt, params.tile_size, theta_deg);
         }
     }
 }
