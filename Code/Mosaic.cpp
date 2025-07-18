@@ -1055,6 +1055,9 @@ std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField(
 
 
 
+
+
+
 std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta_deg, double distance_from_center) {
 
     cv::Point2f center_f(center.x, center.y);
@@ -1087,6 +1090,68 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta
 }
 
 
+
+
+std::vector<cv::Point> Mosaic::getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points) {
+    std::vector<cv::Point> flood_points;
+
+    if (num_points <= 0) return flood_points;
+
+    // Convert center to float
+    cv::Point2f center_f(center.x, center.y);
+
+    // Convert angle to radians
+    double theta_rad = theta_deg * CV_PI / 180.0;
+
+    // Rotated basis vectors
+    cv::Point2f dx(std::cos(theta_rad), std::sin(theta_rad));       // along width
+    cv::Point2f dy(-std::sin(theta_rad), std::cos(theta_rad));      // along height
+
+    // Define half-size
+    double h = distance_from_center;
+
+    // Corners of the square (in local unrotated coordinates)
+    std::vector<cv::Point2f> square = {
+        cv::Point2f(-h, -h),  // top-left
+        cv::Point2f(h, -h),   // top-right
+        cv::Point2f(h, h),    // bottom-right
+        cv::Point2f(-h, h)    // bottom-left
+    };
+
+    // Total perimeter of square
+    double perimeter = 8 * h;
+
+    for (int i = 0; i < num_points; ++i) {
+        double t = (i / (double)num_points) * perimeter;
+
+        cv::Point2f local;
+
+        if (t < 2 * h) {
+            // Top edge
+            local = square[0] + cv::Point2f(t, 0);
+        } else if (t < 4 * h) {
+            // Right edge
+            local = square[1] + cv::Point2f(0, t - 2 * h);
+        } else if (t < 6 * h) {
+            // Bottom edge
+            local = square[2] + cv::Point2f(-(t - 4 * h), 0);
+        } else {
+            // Left edge
+            local = square[3] + cv::Point2f(0, -(t - 6 * h));
+        }
+
+        // Rotate the local point using the dx/dy basis
+        cv::Point2f rotated = center_f + dx * local.x + dy * local.y;
+
+        // Convert to integer and store
+        flood_points.push_back(cv::Point(cvRound(rotated.x), cvRound(rotated.y)));
+    }
+
+    return flood_points;
+}
+
+
+
 void Mosaic::showFloodFillPoints() {
     flood_fill_canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
     double distance_from_center = params.tile_size * 1.5;
@@ -1109,17 +1174,19 @@ void Mosaic::showFloodFillPoints() {
         // Collect all flood fill points for this frontier
         std::vector<cv::Point> all_flood_points;
         for (const TileInfo& tile : frontier_tiles) {
-            std::vector<cv::Point> points = getFloodFillPoints(tile.center, tile.theta_deg, distance_from_center);
+            int num_points = 16;
+            std::vector<cv::Point> points = getFloodFillPoints2(tile.center, tile.theta_deg, distance_from_center, num_points);
             all_flood_points.insert(all_flood_points.end(), points.begin(), points.end());
         }
 
-        // Remove duplicates/nearby points before placing tiles
-        std::vector<cv::Point> unique_points = filterUniqueIntersections(all_flood_points);
 
         // Now place tiles at unique positions
-        for (const cv::Point& pt : unique_points) {
+        for (const cv::Point& pt : all_flood_points) {
             double theta_deg = findBestThetaTangentField(pt);
-            placeTileBackground(pt, params.tile_size, theta_deg, frontier + 1);
+            if (!tileOverlapsMask(pt, params.tile_size, theta_deg)) { 
+                placeTileBackground(pt, params.tile_size, theta_deg, frontier + 1);
+            }
+            
         }
     }
 }

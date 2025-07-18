@@ -76,6 +76,7 @@ class Mosaic {
         double findBestThetaTangentField(cv::Point center);
         std::vector<std::tuple<cv::Point, cv::Vec2f, float>> sampleTangentField();
         std::vector<cv::Point> getFloodFillPoints(cv::Point center, double theta_deg, double distance);
+        std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         void showFloodFillPoints();
         
         void printColorToPixels();

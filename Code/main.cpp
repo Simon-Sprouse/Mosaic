@@ -25,7 +25,7 @@ int main() {
     // Load Object
 
     mosaic_gen::HyperParameters params;
-    params.image_path = "../Images/flower.jpg";
+    params.image_path = "../Images/einstein.jpg";
     params.results_dir = "../Results";
     params.resize_factor = 1;
     params.blur_kernel_size = 3;
@@ -38,7 +38,7 @@ int main() {
     params.tile_size = 10;
     params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
-    params.max_frontiers = 7;
+    params.max_frontiers = 40;
 
     Mosaic my_mosaic(params);
 
