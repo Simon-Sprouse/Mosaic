@@ -24,6 +24,8 @@ struct HyperParameters {
     int number_of_rings;
     int step_size;
     int max_frontiers;
+    int flood_fill_neighbor_points;
+    int flood_fill_point_jitter;
 
 };
 
@@ -65,7 +67,7 @@ class Mosaic {
         void reconstructPlacedTiles();
         std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
         std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
-        std::vector<cv::Point> samplePointsRandomGrid(const cv::Mat& image, int grid_size, int max_step);
+        std::vector<cv::Point> jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size);
 
 
         void placeTileBackground(cv::Point center, double size, double theta_deg, int frontier=0);
@@ -75,7 +77,7 @@ class Mosaic {
         std::tuple<cv::Vec2f, float> sampleTangentPoint(const cv::Point& pt);
         double findBestThetaTangentField(cv::Point center);
         std::vector<std::tuple<cv::Point, cv::Vec2f, float>> sampleTangentField();
-        std::vector<cv::Point> getFloodFillPoints(cv::Point center, double theta_deg, double distance);
+        
         std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         void showFloodFillPoints();
         

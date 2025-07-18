@@ -787,40 +787,32 @@ std::vector<cv::Point> Mosaic::samplePointsRandom(const cv::Mat& image, int num_
     return random_points;
 }
 
-std::vector<cv::Point> Mosaic::samplePointsRandomGrid(const cv::Mat& image, int grid_size, int max_step) {
+
+
+
+std::vector<cv::Point> Mosaic::jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size) {
     std::vector<cv::Point> jittered_points;
 
-    if (image.empty() || grid_size <= 0 || max_step < 0) {
-        return jittered_points;
+    if (max_step < 0 || input_points.empty()) {
+        return input_points;  // No jittering needed
     }
-
-    int width = image.cols;
-    int height = image.rows;
 
     static std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<int> offset_dist(-max_step, max_step);
 
-    for (int y = 0; y < height; y += grid_size) {
-        for (int x = 0; x < width; x += grid_size) {
-            int jitter_x = x + offset_dist(rng);
-            int jitter_y = y + offset_dist(rng);
+    for (const auto& pt : input_points) {
+        int jitter_x = pt.x + offset_dist(rng);
+        int jitter_y = pt.y + offset_dist(rng);
 
-            // Clamp to image bounds
-            jitter_x = std::clamp(jitter_x, 0, width - 1);
-            jitter_y = std::clamp(jitter_y, 0, height - 1);
+        // Clamp to image bounds
+        jitter_x = std::clamp(jitter_x, 0, image_size.width - 1);
+        jitter_y = std::clamp(jitter_y, 0, image_size.height - 1);
 
-            jittered_points.emplace_back(jitter_x, jitter_y);
-        }
+        jittered_points.emplace_back(jitter_x, jitter_y);
     }
 
     return jittered_points;
 }
-
-
-
-
-
-
 
 
 
@@ -986,7 +978,8 @@ std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField(
 
     int grid_size = 25;
     int max_step = 4;
-    std::vector<cv::Point> samplePoints = samplePointsRandomGrid(segmented, grid_size, max_step);
+    std::vector<cv::Point> grid_points = samplePointsGrid(segmented, grid_size);
+    std::vector<cv::Point> samplePoints = jitterPoints(grid_points, max_step, segmented.size());
 
 
     std::vector<std::tuple<cv::Point, cv::Vec2f, float>> results;
@@ -1057,37 +1050,6 @@ std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField(
 
 
 
-
-std::vector<cv::Point> Mosaic::getFloodFillPoints(cv::Point center, double theta_deg, double distance_from_center) {
-
-    cv::Point2f center_f(center.x, center.y);
-
-    std::vector<cv::Point> flood_points;
-
-    // Convert degrees to radians
-    double theta_rad = theta_deg * CV_PI / 180.0;
-
-    // Unit vectors in square's rotated X and Y directions
-    cv::Point2f dx(std::cos(theta_rad), std::sin(theta_rad));       // direction along tile width
-    cv::Point2f dy(-std::sin(theta_rad), std::cos(theta_rad));      // direction along tile height
-
-    // Offset distance from center to each direction
-    double offset = distance_from_center;
-
-    // Compute four flood fill target points
-    cv::Point2f right  = center_f + dx * offset;
-    cv::Point2f left   = center_f - dx * offset;
-    cv::Point2f down   = center_f + dy * offset;
-    cv::Point2f up     = center_f - dy * offset;
-
-    // Round to integer points for display
-    flood_points.push_back(cv::Point(cvRound(right.x), cvRound(right.y)));
-    flood_points.push_back(cv::Point(cvRound(left.x), cvRound(left.y)));
-    flood_points.push_back(cv::Point(cvRound(down.x), cvRound(down.y)));
-    flood_points.push_back(cv::Point(cvRound(up.x), cvRound(up.y)));
-
-    return flood_points;
-}
 
 
 
@@ -1174,9 +1136,11 @@ void Mosaic::showFloodFillPoints() {
         // Collect all flood fill points for this frontier
         std::vector<cv::Point> all_flood_points;
         for (const TileInfo& tile : frontier_tiles) {
-            int num_points = 16;
+            int num_points = params.flood_fill_neighbor_points;
+            int max_step = params.flood_fill_point_jitter;
             std::vector<cv::Point> points = getFloodFillPoints2(tile.center, tile.theta_deg, distance_from_center, num_points);
-            all_flood_points.insert(all_flood_points.end(), points.begin(), points.end());
+            std::vector<cv::Point> jittered_points = jitterPoints(points, max_step, mask.size());
+            all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
         }
 
 
@@ -1325,6 +1289,7 @@ void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
     std::string gifFilename = output_dir + "/" + image_name + "_" + suffix + ".gif";
 
     GifWriter writer;
+
     GifBegin(&writer, gifFilename.c_str(), width, height, 10); // delay in 1/100s
 
     cv::Mat gifCanvas = cv::Mat::zeros(canvas.size(), CV_8UC3);
@@ -1340,6 +1305,17 @@ void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
         cv::cvtColor(gifCanvas, rgba, cv::COLOR_BGR2RGBA);
 
         GifWriteFrame(&writer, rgba.data, width, height, 10);
+    }
+
+
+    // Hold on final frame by repeating it
+
+    int final_hold_frames = 10;
+
+    cv::Mat rgbaFinal;
+    cv::cvtColor(gifCanvas, rgbaFinal, cv::COLOR_BGR2RGBA);
+    for (int k = 0; k < final_hold_frames; ++k) {
+        GifWriteFrame(&writer, rgbaFinal.data, width, height, 10);
     }
 
     GifEnd(&writer);
