@@ -76,7 +76,6 @@ class Mosaic {
         void computeDistanceField();
         std::tuple<cv::Vec2f, float> sampleTangentPoint(const cv::Point& pt);
         double findBestThetaTangentField(cv::Point center);
-        std::vector<std::tuple<cv::Point, cv::Vec2f, float>> sampleTangentField();
         
         std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         void showFloodFillPoints();
@@ -91,27 +90,25 @@ class Mosaic {
         void saveTileInfo(const std::string& suffix);
 
 
+        string image_name;
+
         cv::Mat original;
         cv::Mat resized;
         cv::Mat grayscale;
         cv::Mat blurred;
         cv::Mat edges;
         cv::Mat segmented;
+        cv::Mat distance;
+        cv::Mat gradX;
+        cv::Mat gradY;
 
         cv::Mat selected_segment;
         cv::Mat canvas;
         cv::Mat mask;
 
-        cv::Mat vector_field;
-        cv::Mat distance;
-        cv::Mat gradX;
-        cv::Mat gradY;
+    
 
-
-        cv::Mat flood_fill_canvas;
-
-        std::string file_path;
-        std::string image_name;
+        
 
 
     private: 

@@ -34,8 +34,9 @@ void Mosaic::loadImage() {
         return;
     }
 
-    file_path = image_path;
-    image_name = fs::path(image_path).stem().string();
+    image_name = fs::path(params.image_path).stem().string();
+   
+    
 
 }
 
@@ -965,89 +966,6 @@ double Mosaic::findBestThetaTangentField(cv::Point center) {
 };
 
 
-std::vector<std::tuple<cv::Point, cv::Vec2f, float>> Mosaic::sampleTangentField() {
-
-    
-
-
-    // int grid_size = 15;
-    // std::vector<cv::Point> samplePoints = samplePointsGrid(segmented, grid_size);
-
-    // int num_points = 1000;
-    // std::vector<cv::Point> samplePoints = samplePointsRandom(segmented, num_points);
-
-    int grid_size = 25;
-    int max_step = 4;
-    std::vector<cv::Point> grid_points = samplePointsGrid(segmented, grid_size);
-    std::vector<cv::Point> samplePoints = jitterPoints(grid_points, max_step, segmented.size());
-
-
-    std::vector<std::tuple<cv::Point, cv::Vec2f, float>> results;
-
-    if (segmented.empty() || samplePoints.empty()) {
-        return results;
-    }
-
-    
-    // Step 5: Evaluate tangent and distance at each point
-    for (const cv::Point& pt : samplePoints) {
-        auto [tangent, dist] = sampleTangentPoint(pt);
-        results.emplace_back(pt, tangent, dist);
-    }
-
-    // Visualization
-    vector_field = cv::Mat::zeros(segmented.size(), CV_8UC3);
-    const int length = 20;
-    float gamma = 0.3; // to strecth color map; 
-
-    float minDist = std::numeric_limits<float>::max();
-    float maxDist = std::numeric_limits<float>::lowest();
-    for (const auto& [_, __, dist] : results) {
-        minDist = std::min(minDist, dist);
-        maxDist = std::max(maxDist, dist);
-    }
-
-
-    for (const auto& [pt, tangent, dist] : results) {
-        // std::cout << "Point: " << pt
-        //         << " | Tangent: (" << tangent[0] << ", " << tangent[1] << ")"
-        //         << " | Distance: " << dist << "\n";
-
-        // Normalize distance to [0, 255]
-        int value = 0;
-        if (maxDist > minDist) {
-            float normalized = (dist - minDist) / (maxDist - minDist);
-            value = static_cast<int>(255.0f * std::pow(normalized, gamma));
-            value = std::clamp(value, 0, 255);
-
-        }
-
-        // Create 1-pixel grayscale image
-        cv::Mat grayPixel(1, 1, CV_8U, cv::Scalar(value));
-        cv::Mat colorPixel;
-        cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_MAGMA);
-
-        // Extract BGR color from the pixel
-        cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);
-        cv::Scalar color(bgr[0], bgr[1], bgr[2]);
-
-        // Compute angle and draw arrow
-        double angle_rad = std::atan2(tangent[1], tangent[0]);
-        double angle_deg = angle_rad * 180.0 / CV_PI;
-
-        Graphics::drawArrow(vector_field, pt, length, angle_deg, color);
-    }
-
-    
-
-
-    return results;
-}
-
-
-
-
-
 
 
 
@@ -1115,7 +1033,7 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints2(cv::Point center, double thet
 
 
 void Mosaic::showFloodFillPoints() {
-    flood_fill_canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
+
     double distance_from_center = params.tile_size * 1.5;
 
     const int max_frontiers = params.max_frontiers;
@@ -1259,6 +1177,7 @@ void Mosaic::saveImage(const cv::Mat& image,  const std::string& suffix) {
 
     string output_dir = params.results_dir;
 
+
     if (image.empty()) { 
         return;
     }
@@ -1282,6 +1201,7 @@ void Mosaic::saveImage(const cv::Mat& image,  const std::string& suffix) {
 void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
 
     string output_dir = params.results_dir;
+
 
     int width = canvas.cols;
     int height = canvas.rows;
@@ -1328,6 +1248,7 @@ void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
 void Mosaic::saveTileInfo(const std::string& suffix) { 
 
     string output_dir = params.results_dir;
+
 
     std::ostringstream oss;
 

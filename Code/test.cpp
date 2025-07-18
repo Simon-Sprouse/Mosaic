@@ -29,8 +29,71 @@ namespace Test {
         mosaic.saveImage(distance_visual, "distance_field");
 
         // tangent field
-        mosaic.sampleTangentField();
-        mosaic.saveImage(mosaic.vector_field, "vector_field");
+
+
+        int grid_size = 25;
+        int max_step = 4;
+        std::vector<cv::Point> grid_points = mosaic.samplePointsGrid(mosaic.segmented, grid_size);
+        std::vector<cv::Point> samplePoints = mosaic.jitterPoints(grid_points, max_step, mosaic.segmented.size());
+    
+    
+        std::vector<std::tuple<cv::Point, cv::Vec2f, float>> results;
+    
+        if (mosaic.segmented.empty() || samplePoints.empty()) {
+            return;
+        }
+    
+        
+        // Step 5: Evaluate tangent and distance at each point
+        for (const cv::Point& pt : samplePoints) {
+            auto [tangent, dist] = mosaic.sampleTangentPoint(pt);
+            results.emplace_back(pt, tangent, dist);
+        }
+    
+        // Visualization
+        cv::Mat vector_field = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
+        const int length = 20;
+        float gamma = 0.3; // to strecth color map; 
+    
+        float minDist = std::numeric_limits<float>::max();
+        float maxDist = std::numeric_limits<float>::lowest();
+        for (const auto& [_, __, dist] : results) {
+            minDist = std::min(minDist, dist);
+            maxDist = std::max(maxDist, dist);
+        }
+    
+    
+        for (const auto& [pt, tangent, dist] : results) {
+            // std::cout << "Point: " << pt
+            //         << " | Tangent: (" << tangent[0] << ", " << tangent[1] << ")"
+            //         << " | Distance: " << dist << "\n";
+    
+            // Normalize distance to [0, 255]
+            int value = 0;
+            if (maxDist > minDist) {
+                float normalized = (dist - minDist) / (maxDist - minDist);
+                value = static_cast<int>(255.0f * std::pow(normalized, gamma));
+                value = std::clamp(value, 0, 255);
+    
+            }
+    
+            // Create 1-pixel grayscale image
+            cv::Mat grayPixel(1, 1, CV_8U, cv::Scalar(value));
+            cv::Mat colorPixel;
+            cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_MAGMA);
+    
+            // Extract BGR color from the pixel
+            cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);
+            cv::Scalar color(bgr[0], bgr[1], bgr[2]);
+    
+            // Compute angle and draw arrow
+            double angle_rad = std::atan2(tangent[1], tangent[0]);
+            double angle_deg = angle_rad * 180.0 / CV_PI;
+    
+            Graphics::drawArrow(vector_field, pt, length, angle_deg, color);
+        }
+    
+        mosaic.saveImage(vector_field, "vector_field");
 
         
     }
@@ -120,6 +183,8 @@ namespace Test {
 
     }
 
+    
+
     void runTimedProcess(mosaic_gen::Mosaic& mosaic) { 
 
         auto start = chrono::high_resolution_clock::now();
@@ -163,17 +228,12 @@ namespace Test {
         mosaic.placeTileAllSegments();
         mosaic.saveImage(mosaic.mask, "mask");
 
-
-
-
-
         // show flood fill points
         mosaic.showFloodFillPoints();
         mosaic.saveImage(mosaic.canvas, "frontiers_canvas");
         mosaic.saveImage(mosaic.mask, "flood_fill_points");
         
     
-
 
         // sample points
         mosaic.placeTileAllBackground();
@@ -196,8 +256,6 @@ namespace Test {
         auto end = chrono::high_resolution_clock::now();
         chrono::duration<double> elapsed_time = end - start;
         cout << "Time to complete: " << elapsed_time.count() << " seconds" << endl;
-
-
 
 
 
