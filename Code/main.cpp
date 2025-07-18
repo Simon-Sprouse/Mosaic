@@ -5,6 +5,7 @@
 #include "graphics.hpp"
 
 #include "Mosaic.hpp"
+#include "test.hpp"
 
 using namespace std;
 namespace fs = std::__fs::filesystem;
@@ -17,16 +18,16 @@ using mosaic_gen::Mosaic;
 
 int main() { 
 
-    auto start = chrono::high_resolution_clock::now();
 
-    cout << "Hello From Mosaic" << endl;
+    cout << "Hello From Mosaic" << endl << endl;
 
-    const string image_path = "../Images/einstein.jpg";
-    string results_dir = "../Results";
 
+    // Load Object
 
     mosaic_gen::HyperParameters params;
-    params.resize_factor = 2;
+    params.image_path = "../Images/flower.jpg";
+    params.results_dir = "../Results";
+    params.resize_factor = 1;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -37,94 +38,21 @@ int main() {
     params.tile_size = 10;
     params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
-    params.max_frontiers = 4;
+    params.max_frontiers = 7;
 
-    
-
-    // Load Image
-
-    Mosaic my_mosaic(image_path);
-    cout << "Loaded image: " << my_mosaic.image_name << endl;
-    cout << "Original dimensions: " << my_mosaic.original.size() << endl;
+    Mosaic my_mosaic(params);
 
 
-    // Set hyperparameters
-    my_mosaic.setParameters(params);
+
+    // RUN TESTS
+    Test::runAllTests(my_mosaic);
 
 
-    // Resize Image
-
-    my_mosaic.resizeOriginal();
-    my_mosaic.saveImage(my_mosaic.resized, results_dir, "resized");
-    cout << "Resized image to size: " << my_mosaic.resized.size() << endl;
-
-    // Grayscale Image
-    my_mosaic.grayImage();
-    my_mosaic.saveImage(my_mosaic.grayscale, results_dir, "gray");
-
-    // Blur Image
-    my_mosaic.blurImage();
-    my_mosaic.saveImage(my_mosaic.blurred, results_dir, "blurred");
-
-    // Canny Filter
-    my_mosaic.cannyFilter();
-    my_mosaic.saveImage(my_mosaic.edges, results_dir, "canny_edges");
-
-    // Detect Contours
-    int contour_count = my_mosaic.detectContours();
-    my_mosaic.saveImage(my_mosaic.segmented, results_dir, "segmented_edges");
-    cout << "Detected: " << contour_count << " edges" << endl;
 
 
-    // Rank Segments
-    my_mosaic.rankSegments();
-
+    // RUN PROCESS
+    Test::runTimedProcess(my_mosaic);
    
-    // Place tiles on all segments
-    my_mosaic.placeTileAllSegments();
-    my_mosaic.saveImage(my_mosaic.mask, results_dir, "mask");
-
-
-
-    // show flood fill points
-    my_mosaic.showFloodFillPoints();
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "frontiers_canvas");
-    my_mosaic.saveImage(my_mosaic.mask, results_dir, "flood_fill_points");
-    // my_mosaic.saveTileInfo(results_dir, "frontiers");
-   
-
-
-    // sample points
-    my_mosaic.placeTileAllBackground();
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "samples");
-
-    // store placed tiles and reconstruct
-    my_mosaic.reconstructPlacedTiles();
-    my_mosaic.saveImage(my_mosaic.canvas, results_dir, "reconstruction");
-
-
-
-
-
-    // distance field
-    my_mosaic.computeDistanceField();
-    cv::Mat distance_visual;
-    my_mosaic.distance.convertTo(distance_visual, CV_8U, 255.0 / cv::norm(my_mosaic.distance, cv::NORM_INF));
-    my_mosaic.saveImage(distance_visual, results_dir, "distance_field");
-
-    // tangent field
-    my_mosaic.sampleTangentField();
-    my_mosaic.saveImage(my_mosaic.vector_field, results_dir, "vector_field");
-
-
-    // save gif
-    my_mosaic.saveGif(80, results_dir, "animation");
-  
-
-
-    auto end = chrono::high_resolution_clock::now();
-    chrono::duration<double> elapsed_time = end - start;
-    cout << "Time to complete: " << elapsed_time.count() << " seconds" << endl;
 
     return 0;
 }

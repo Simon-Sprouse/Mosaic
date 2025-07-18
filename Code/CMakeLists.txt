@@ -12,6 +12,7 @@ add_executable(mosaic_tiler
     mosaic.cpp
     graphics.cpp 
     optimize.cpp
+    test.cpp
 )
 target_include_directories(mosaic_tiler PRIVATE ${OpenCv_INCLUDE_DIRS})
 target_link_libraries(mosaic_tiler ${OpenCV_LIBS})

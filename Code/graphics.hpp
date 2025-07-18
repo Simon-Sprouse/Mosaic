@@ -1,5 +1,4 @@
-#ifndef GRAPHICS_HPP
-#define GRAPHICS_HPP
+#pragma once
 
 #include <opencv2/opencv.hpp>
 #include <string>
@@ -13,4 +12,3 @@ namespace Graphics {
     void drawArrow(cv::Mat& image, const cv::Point& center, int length, double angle_deg, const cv::Scalar& color);
 }
 
-#endif

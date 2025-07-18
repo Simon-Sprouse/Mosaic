@@ -1,5 +1,4 @@
-#ifndef MOSAIC_BUILDER_HPP
-#define MOSAIC_BUILDER_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -11,6 +10,8 @@ namespace mosaic_gen {
 
 struct HyperParameters { 
 
+    string image_path;
+    string results_dir;
     double resize_factor;
     int blur_kernel_size;
     double blur_sigma;
@@ -39,10 +40,10 @@ class Mosaic {
     public: 
 
         // param constructor
-        Mosaic(const string& image_path);
+        Mosaic(const HyperParameters& hp);
 
-        void setParameters(const HyperParameters& hp);
 
+        void loadImage();
         void resizeOriginal();
         void grayImage();
         void blurImage();
@@ -82,9 +83,9 @@ class Mosaic {
         void printColorToPixelsK(int k);
         void printColorLengthsK(int k);
         
-        void saveImage(const cv::Mat& image, const std::string& output_dir, const std::string& suffix);
-        void saveGif(int tilesPerFrame, const std::string& output_dir, const std::string& suffix);
-        void saveTileInfo(const std::string& output_dir, const std::string& suffix);
+        void saveImage(const cv::Mat& image, const std::string& suffix);
+        void saveGif(int tilesPerFrame, const std::string& suffix);
+        void saveTileInfo(const std::string& suffix);
 
 
         cv::Mat original;
@@ -148,4 +149,3 @@ class Mosaic {
 
 }
 
-#endif

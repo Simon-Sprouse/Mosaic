@@ -19,7 +19,14 @@ namespace fs = std::__fs::filesystem;
 namespace mosaic_gen {
 
 // param constructor
-Mosaic::Mosaic(const std::string& image_path) { 
+Mosaic::Mosaic(const HyperParameters& hp) { 
+    params = hp;
+}
+
+
+
+void Mosaic::loadImage() { 
+    string image_path = params.image_path;
     original = cv::imread(image_path);
 
     if (original.empty()) { 
@@ -33,9 +40,7 @@ Mosaic::Mosaic(const std::string& image_path) {
 }
 
 // set hyperparameters
-void Mosaic::setParameters(const HyperParameters& hp) { 
-    params = hp;
-}
+
 
 
 void Mosaic::resizeOriginal() { 
@@ -1219,7 +1224,9 @@ void Mosaic::printColorLengthsK(int k) {
 
 
 
-void Mosaic::saveImage(const cv::Mat& image, const std::string& output_dir, const std::string& suffix) { 
+void Mosaic::saveImage(const cv::Mat& image,  const std::string& suffix) { 
+
+    string output_dir = params.results_dir;
 
     if (image.empty()) { 
         return;
@@ -1241,7 +1248,10 @@ void Mosaic::saveImage(const cv::Mat& image, const std::string& output_dir, cons
 }
 
 
-void Mosaic::saveGif(int tilesPerFrame, const std::string& output_dir, const std::string& suffix) {
+void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
+
+    string output_dir = params.results_dir;
+
     int width = canvas.cols;
     int height = canvas.rows;
 
@@ -1272,9 +1282,9 @@ void Mosaic::saveGif(int tilesPerFrame, const std::string& output_dir, const std
 
 
 
-void Mosaic::saveTileInfo(const std::string& output_dir, const std::string& suffix) { 
+void Mosaic::saveTileInfo(const std::string& suffix) { 
 
-
+    string output_dir = params.results_dir;
 
     std::ostringstream oss;
 
