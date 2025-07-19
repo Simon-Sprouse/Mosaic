@@ -25,9 +25,10 @@ int main() {
     // Load Object
 
     mosaic_gen::HyperParameters params;
-    params.image_path = "../Images/flower.jpg";
+    params.image_path = "../Images/einstein.jpg";
+    // params.image_path = "/Users/simonsprouse/Desktop/Art/Screenshot 2024-10-05 at 9.58.54 PM.png";
     params.results_dir = "../Results";
-    params.resize_factor = 1;
+    params.resize_factor = 4;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -37,10 +38,11 @@ int main() {
     params.segment_angle_window = 10;
     params.tile_size = 10;
     params.number_of_rings = 10;
-    params.step_size = 0.5 * params.tile_size;
+    params.step_size = 0.75 * params.tile_size;
     params.max_frontiers = 40;
     params.flood_fill_neighbor_points = 16;
     params.flood_fill_point_jitter = 1;
+    params.random_background_points = 50000;
 
     Mosaic my_mosaic(params);
 

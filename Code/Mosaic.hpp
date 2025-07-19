@@ -26,6 +26,7 @@ struct HyperParameters {
     int max_frontiers;
     int flood_fill_neighbor_points;
     int flood_fill_point_jitter;
+    int random_background_points;
 
 };
 
@@ -57,20 +58,22 @@ class Mosaic {
         void drawSquareRandomPoint(int k); // test
         bool tileInBounds(const cv::Point& center, double tileSize);
         bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
+        bool isValidTile(cv::Point center, double tileSize, double theta_deg);
         double findBestTheta(cv::Point center, double size);
-        double placeTile(cv::Point center, double size, string text="");
+        void placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
         void placeTileSegment(int k);
         void placeTileAllSegments();
         std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
         cv::Scalar sampleTileColor(const TileInfo& tile);
         void reconstructPlacedTiles();
+        double randomDouble(double min_val, double max_val);
         std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
         std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
         std::vector<cv::Point> jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size);
 
 
-        void placeTileBackground(cv::Point center, double size, double theta_deg, int frontier=0);
+       
         void placeTileAllBackground();
 
         void computeDistanceField();

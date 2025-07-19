@@ -490,6 +490,19 @@ std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::P
 }
 
 
+bool Mosaic::isValidTile(cv::Point center, double size, double theta_deg) {
+    // check for validity
+    if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
+        return false;
+    }
+    if (tileOverlapsMask(center, size, theta_deg)) { 
+        return false;
+    }
+    if (!tileInBounds(center, size)) { 
+        return false;
+    }
+    return true;
+}
 
 
 double Mosaic::findBestTheta(cv::Point center, double size) { 
@@ -542,29 +555,17 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
     // cout << "Best theta: " << theta_deg << endl;
 
 
-    // check for validity
-    if (tileOverlapsMask(center, size, theta_deg)) { 
-        return ERROR_CODE_NO_VALID_THETA;
-    }
-    if (!tileInBounds(center, size)) { 
-        return ERROR_CODE_NO_VALID_THETA;
-    }
+    
 
     return theta_deg;
 }
 
 
+void Mosaic::placeTile(cv::Point center, double size, double theta_deg, int frontier, string text) {
 
-// Returns theta_deg if placed, -420 if not placed
-double Mosaic::placeTile(cv::Point center, double size, string text) {
 
-    // findBestTheta handles overlap check & pca error
-    double theta_deg = findBestTheta(center, size);
 
-    // pass error so dfs stops
-    if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
-        return ERROR_CODE_NO_VALID_THETA;
-    }
+
 
     // Draw aligned square
     cv::Scalar color = cv::Scalar(255, 255, 0);
@@ -573,21 +574,14 @@ double Mosaic::placeTile(cv::Point center, double size, string text) {
 
     // TODO add tile metadata to the 
     int order = tiles_placed.size();
-    int frontier = 0; // contour trace is frontier 0
     TileInfo current_tile = {
         center,
         size, 
         theta_deg,
         order,
+        frontier
     };
     tiles_placed.push_back(current_tile);
-
-    return theta_deg;
-
-
-
-
-
 
 }
 
@@ -609,28 +603,27 @@ void Mosaic::placeTileSegment(int k) {
 
 
 
-
-
-    
-
     stack<cv::Point> s;
     cv::Point current_center;
     s.push(center);
     int squares_placed = 0;
+    int frontier = 0;
 
 
     while(!s.empty()) { 
         current_center = s.top();
         s.pop();
 
-        // cout << "current center: " << current_center << endl;
 
-        double theta_deg = placeTile(current_center, size, std::to_string(squares_placed));
-        // no valid placement
-        if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
-            // cout << "no valid theta" << endl;
+        
+        double theta_deg = findBestTheta(current_center, size);
+        if (!isValidTile(current_center, size, theta_deg)) { 
             continue;
         }
+        
+        placeTile(current_center, size, theta_deg, frontier, std::to_string(squares_placed));
+
+        
         squares_placed++;
 
 
@@ -651,9 +644,6 @@ void Mosaic::placeTileSegment(int k) {
         }
 
         allIntersections = filterUniqueIntersections(allIntersections);
-        // cout << "number of intersections kept after filter: " << allIntersections.size() << endl;
-
-
 
 
         // sort and add closest points to top of stack
@@ -670,12 +660,6 @@ void Mosaic::placeTileSegment(int k) {
     }
 
     
-
-
-
-
-
-
 
 
 
@@ -741,10 +725,18 @@ void Mosaic::reconstructPlacedTiles() {
 
     for (TileInfo tile : tiles_placed) { 
         color = sampleTileColor(tile);
-        Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
+        Graphics::drawSquare(canvas, tile.center, tile.size * 1.1, tile.theta_deg, color, tile.size);
     }
 
 
+}
+
+
+
+double Mosaic::randomDouble(double min_val, double max_val) {
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<double> dist(min_val, max_val);
+    return dist(rng);
 }
 
 
@@ -827,40 +819,6 @@ std::vector<cv::Point> Mosaic::jitterPoints(const std::vector<cv::Point>& input_
 
 
 
-void Mosaic::placeTileBackground(cv::Point center, double size, double theta_deg, int frontier) {
-
-
-
-
-    // check for validity
-    if (tileOverlapsMask(center, size, theta_deg)) { 
-        return;
-    }
-
-    if (!tileInBounds(center, size)) {
-        return;
-    }
-
-    // Draw aligned square
-    // cv::Scalar color = cv::Scalar(150, 150, 0);
-    cv::Scalar color = cv::Scalar(255, 255, 255);
-    Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, std::to_string(frontier));
-    Graphics::drawSquare(mask, center, size, theta_deg, color, 2.0);
-
-    // TODO add tile metadata to the 
-    int order = tiles_placed.size();
-    TileInfo current_tile = {
-        center,
-        size, 
-        theta_deg,
-        order,
-        frontier
-    };
-    tiles_placed.push_back(current_tile);
-
-
-}
-
 void Mosaic::placeTileAllBackground() {
     if (tiles_placed.empty()) {
         std::cerr << "No tiles placed to map samples to." << std::endl;
@@ -868,9 +826,9 @@ void Mosaic::placeTileAllBackground() {
     }
 
     
-    int num_points = 50000;
+    int num_points = params.random_background_points;
     std::vector<cv::Point> samples = samplePointsRandom(canvas, num_points);
-
+    int frontier = -1;
 
 
 
@@ -881,7 +839,11 @@ void Mosaic::placeTileAllBackground() {
         double theta_deg = theta_rad * 180.0 / CV_PI;
         
 
-        placeTileBackground(sample, params.tile_size, theta_deg);
+        
+        if (!isValidTile(sample, params.tile_size, theta_deg)) { 
+            continue;
+        }
+        placeTile(sample, params.tile_size, theta_deg, frontier);
     }
 }
 
@@ -962,6 +924,12 @@ double Mosaic::findBestThetaTangentField(cv::Point center) {
     auto [tangent, dist] = sampleTangentPoint(center);
     double theta_rad = std::atan2(tangent[1], tangent[0]);
     double theta_deg = theta_rad * 180.0 / CV_PI;
+
+
+   
+    
+
+
     return theta_deg;
 };
 
@@ -1066,7 +1034,7 @@ void Mosaic::showFloodFillPoints() {
         for (const cv::Point& pt : all_flood_points) {
             double theta_deg = findBestThetaTangentField(pt);
             if (!tileOverlapsMask(pt, params.tile_size, theta_deg)) { 
-                placeTileBackground(pt, params.tile_size, theta_deg, frontier + 1);
+                placeTile(pt, params.tile_size, theta_deg, frontier + 1);
             }
             
         }
