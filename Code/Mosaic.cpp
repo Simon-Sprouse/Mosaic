@@ -533,7 +533,7 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
 
     // Check if enough points for PCA
     if (region_pixels.size() < 2) {
-        std::cerr << "Not enough stroke pixels for PCA near point: " << center << std::endl;
+        // std::cerr << "Not enough stroke pixels for PCA near point: " << center << std::endl;
         return ERROR_CODE_NO_VALID_THETA;
     }
 
@@ -570,7 +570,7 @@ void Mosaic::placeTile(cv::Point center, double size, double theta_deg, int fron
     // Draw aligned square
     cv::Scalar color = cv::Scalar(255, 255, 0);
     Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, text);
-    Graphics::drawSquare(mask, center, size, theta_deg, color, 2.0);
+    Graphics::drawSquare(mask, center, size, theta_deg, color, size);
 
     // TODO add tile metadata to the 
     int order = tiles_placed.size();
@@ -678,7 +678,7 @@ void Mosaic::placeTileAllSegments() {
         placeTileSegment(i);
     }
 
-    cout << "Placed tiles along: " << number_of_segments << " segments" << endl;
+    // cout << "Placed tiles along: " << number_of_segments << " segments" << endl;
     
 }
 
@@ -1014,7 +1014,7 @@ void Mosaic::showFloodFillPoints() {
             }
         }
 
-        cout << frontier_tiles.size() << " tiles on frontier: " << frontier << endl;
+        // cout << frontier_tiles.size() << " tiles on frontier: " << frontier << endl;
         if (frontier_tiles.size() == 0) { 
             return;
         }
@@ -1207,7 +1207,7 @@ void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
     }
 
     GifEnd(&writer);
-    std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
+    // std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
 }
 
 
@@ -1241,7 +1241,7 @@ void Mosaic::saveTileInfo(const std::string& suffix) {
     if (outFile.is_open()) {
         outFile << oss.str(); // Write the CSV content to the file
         outFile.close();      // Close the file
-        std::cout << "CSV data successfully written to " << fileName << std::endl;
+        // std::cout << "CSV data successfully written to " << fileName << std::endl;
     } else {
         std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
     }

@@ -16,6 +16,7 @@ namespace Test {
     void printTestFooter(chrono::duration<double> elapsed);
     void runAllTests(mosaic_gen::Mosaic& mosaic);
     void runTimedProcess(mosaic_gen::Mosaic& mosaic);
+    void oldMain(mosaic_gen::Mosaic& mosaic);
 
 
 

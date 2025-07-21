@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <iomanip>
 
 
 
@@ -53,7 +54,7 @@ namespace Test {
         // Visualization
         cv::Mat vector_field = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
         const int length = 20;
-        float gamma = 0.3; // to strecth color map; 
+        float gamma = 0.6; // to strecth color map; 
     
         float minDist = std::numeric_limits<float>::max();
         float maxDist = std::numeric_limits<float>::lowest();
@@ -64,7 +65,7 @@ namespace Test {
     
     
         for (const auto& [pt, tangent, dist] : results) {
-            // std::cout << "Point: " << pt
+            // cout << "Point: " << pt
             //         << " | Tangent: (" << tangent[0] << ", " << tangent[1] << ")"
             //         << " | Distance: " << dist << "\n";
     
@@ -80,7 +81,7 @@ namespace Test {
             // Create 1-pixel grayscale image
             cv::Mat grayPixel(1, 1, CV_8U, cv::Scalar(value));
             cv::Mat colorPixel;
-            cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_MAGMA);
+            cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_SPRING);
     
             // Extract BGR color from the pixel
             cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);
@@ -100,7 +101,12 @@ namespace Test {
 
 
     void squeebTest() { 
-        const int squeeb = 6;
+        int n = 10000;
+        for (int i = 0; i < n; i++) { 
+            for (int j = 0; j < n; j++) { 
+                int squeeb = 420;
+            }
+        }
     }
 
 
@@ -139,42 +145,64 @@ namespace Test {
 
 
 
-    void printTestHeader(const std::string& test_name) { 
-        cout << "Running Test: " << test_name;
+    void printTestHeader(const std::string& test_name) {
+        std::cout << std::left << std::setw(40) << ("[Running] " + test_name)
+                  << " | ";
+        std::cout.flush(); // flush in case timing starts immediately after
+    }
+    
+    void printTestFooter(std::chrono::duration<double> elapsed) {
+        std::cout << std::right << std::setw(12)
+                  << std::fixed << std::setprecision(4)
+                  << elapsed.count() << " s" << std::endl;
     }
 
-    void printTestFooter(chrono::duration<double> elapsed) { 
-        cout << "   " << elapsed.count() << " seconds" << endl;
+    void printHorizontalBar() { 
+        cout << std::string(41, '~') << " " << std::string(15, '~') << endl;
     }
+
+    void printTotalTime(std::chrono::duration<double> total_time) { 
+
+
+        cout << std::left << std::setw(40) << "[Total Time]"
+        << std::right << std::setw(15) << std::fixed << std::setprecision(4)
+        << total_time.count() << " s" << endl;
+    }
+    
 
     template <typename Func>
-    void timeFunction(const std::string& name, Func&& fn) {
+    chrono::duration<double> timeFunction(const std::string& name, Func&& fn) {
         printTestHeader(name);
         auto start = std::chrono::high_resolution_clock::now();
         fn(); // run the test
         auto elapsed = std::chrono::high_resolution_clock::now() - start;
         printTestFooter(elapsed);
+        return elapsed;
     }
 
 
     void runAllTests(mosaic_gen::Mosaic& mosaic) { 
 
-        cout << "Running tests... " << endl;
+        cout << "RUNNING TESTS... " << endl;
+        printHorizontalBar();
 
+        chrono::duration<double> total_time(0.0);
 
-        timeFunction("Vector Field", [&]() {
+        total_time += timeFunction("Vector Field", [&]() {
             showDistanceVectorField(mosaic);
         });
 
-        timeFunction("Squeeb Test", [&]() {
+        total_time += timeFunction("Squeeb Test", [&]() {
             squeebTest();
         });
 
-        timeFunction("Flood Fill Points", [&]() {
+        total_time += timeFunction("Flood Fill Points", [&]() {
             testFloodFillPoints(mosaic);
         });
 
 
+        printHorizontalBar();
+        printTotalTime(total_time);
 
         cout << endl;
 
@@ -183,9 +211,53 @@ namespace Test {
 
     }
 
-    
-
     void runTimedProcess(mosaic_gen::Mosaic& mosaic) { 
+
+        cout << "RUNNING PROCESS... " << endl;
+        printHorizontalBar();
+
+        chrono::duration<double> total_time(0.0);
+
+        total_time += timeFunction("loading image", [&]() {mosaic.loadImage();});
+        total_time += timeFunction("resize image", [&]() {mosaic.resizeOriginal();});
+        mosaic.saveImage(mosaic.resized, "resized_original");
+
+        total_time += timeFunction("convert image to grayscale", [&]() {mosaic.grayImage();});
+        mosaic.saveImage(mosaic.grayscale, "grayscale");
+
+        total_time += timeFunction("blur image", [&]() {mosaic.blurImage();});
+        mosaic.saveImage(mosaic.blurred, "blurred");
+
+        total_time += timeFunction("apply canny filter", [&]() {mosaic.cannyFilter();});
+        mosaic.saveImage(mosaic.edges, "canny_edges");
+
+        total_time += timeFunction("detecting contours", [&]() {mosaic.detectContours();});
+        total_time += timeFunction("ranking contours", [&]() {mosaic.rankSegments();});
+        total_time += timeFunction("place tiles along contours", [&]() {mosaic.placeTileAllSegments();});
+        mosaic.saveImage(mosaic.mask, "mask_contours");
+
+        total_time += timeFunction("place tiles with flood fill", [&]() {mosaic.showFloodFillPoints();});
+        mosaic.saveImage(mosaic.mask, "mask_flood_fill");
+
+        total_time += timeFunction("place tiles randomly", [&]() {mosaic.placeTileAllBackground();});
+        mosaic.saveImage(mosaic.mask, "mask_random_fill");
+
+        total_time += timeFunction("recontruct image", [&]() {mosaic.reconstructPlacedTiles();});
+        mosaic.saveImage(mosaic.canvas,  "reconstruction");
+
+        total_time += timeFunction("create gif from tile info", [&]() {mosaic.saveGif(20, "animation");});
+
+        total_time += timeFunction("save tile info as csv", [&]() {mosaic.saveTileInfo("frontiers");});
+
+        printHorizontalBar();
+        printTotalTime(total_time);
+        
+
+        cout << endl;
+
+    }
+
+    void oldMainx(mosaic_gen::Mosaic& mosaic) { 
 
         auto start = chrono::high_resolution_clock::now();
 
