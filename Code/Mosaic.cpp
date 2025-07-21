@@ -561,7 +561,7 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
 }
 
 
-void Mosaic::placeTile(cv::Point center, double size, double theta_deg, int frontier, string text) {
+TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int frontier, string text) {
 
 
 
@@ -582,6 +582,8 @@ void Mosaic::placeTile(cv::Point center, double size, double theta_deg, int fron
         frontier
     };
     tiles_placed.push_back(current_tile);
+
+    return current_tile;
 
 }
 
@@ -725,7 +727,7 @@ void Mosaic::reconstructPlacedTiles() {
 
     for (TileInfo tile : tiles_placed) { 
         color = sampleTileColor(tile);
-        Graphics::drawSquare(canvas, tile.center, tile.size * 1.1, tile.theta_deg, color, tile.size);
+        Graphics::drawSquare(canvas, tile.center, tile.size * 1.0, tile.theta_deg, color, tile.size);
     }
 
 
@@ -1003,22 +1005,12 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints2(cv::Point center, double thet
 void Mosaic::showFloodFillPoints() {
 
     double distance_from_center = params.tile_size * 1.5;
-
     const int max_frontiers = params.max_frontiers;
-    for (int frontier = 0; frontier < max_frontiers; frontier++) { 
+    int frontier = 1;
+    std::vector<TileInfo> frontier_tiles(tiles_placed);
+
+    while (!frontier_tiles.empty() && frontier <= max_frontiers) { 
         
-        std::vector<TileInfo> frontier_tiles;
-        for (const TileInfo& tile : tiles_placed) {
-            if (tile.frontier == frontier) {
-                frontier_tiles.push_back(tile);
-            }
-        }
-
-        // cout << frontier_tiles.size() << " tiles on frontier: " << frontier << endl;
-        if (frontier_tiles.size() == 0) { 
-            return;
-        }
-
         // Collect all flood fill points for this frontier
         std::vector<cv::Point> all_flood_points;
         for (const TileInfo& tile : frontier_tiles) {
@@ -1029,15 +1021,21 @@ void Mosaic::showFloodFillPoints() {
             all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
         }
 
+        // TODO sort somehow
 
+        std::vector<TileInfo> next_frontier_tiles;
         // Now place tiles at unique positions
         for (const cv::Point& pt : all_flood_points) {
             double theta_deg = findBestThetaTangentField(pt);
             if (!tileOverlapsMask(pt, params.tile_size, theta_deg)) { 
-                placeTile(pt, params.tile_size, theta_deg, frontier + 1);
+                TileInfo current_tile = placeTile(pt, params.tile_size, theta_deg, frontier + 1);
+                next_frontier_tiles.push_back(current_tile);
             }
             
         }
+
+        frontier_tiles = next_frontier_tiles;
+        frontier++;
     }
 }
 

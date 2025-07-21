@@ -81,7 +81,7 @@ namespace Test {
             // Create 1-pixel grayscale image
             cv::Mat grayPixel(1, 1, CV_8U, cv::Scalar(value));
             cv::Mat colorPixel;
-            cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_SPRING);
+            cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_INFERNO);
     
             // Extract BGR color from the pixel
             cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);

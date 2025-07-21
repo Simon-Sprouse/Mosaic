@@ -60,7 +60,7 @@ class Mosaic {
         bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
         bool isValidTile(cv::Point center, double tileSize, double theta_deg);
         double findBestTheta(cv::Point center, double size);
-        void placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
+        TileInfo placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
         void placeTileSegment(int k);
         void placeTileAllSegments();
         std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
