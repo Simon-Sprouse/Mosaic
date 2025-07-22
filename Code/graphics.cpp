@@ -7,8 +7,6 @@ using namespace std;
 
 namespace Graphics { 
 
-
-
     void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width) {
         if (image.empty()) {
             std::cerr << "drawSquare: Input image is empty." << std::endl;
@@ -21,59 +19,73 @@ namespace Graphics {
         }
     
         double half_size = size / 2.0;
-        double theta = angle_deg * CV_PI / 180.0;
     
-        // Compute outer square corners
-        std::vector<cv::Point2f> outerCorners = {
-            {static_cast<float>(-half_size), static_cast<float>(-half_size)},
-            {static_cast<float>( half_size), static_cast<float>(-half_size)},
-            {static_cast<float>( half_size), static_cast<float>( half_size)},
-            {static_cast<float>(-half_size), static_cast<float>( half_size)}
-        };
-        
-    
-        // If border width too large, fill the whole square
+        // If border is too big, just draw the whole filled square
         if (border_width * 2 >= static_cast<int>(size)) {
-            std::vector<cv::Point> filledCorners;
+            double theta = angle_deg * CV_PI / 180.0;
+            std::vector<cv::Point2d> outerCorners = {
+                {-half_size, -half_size},
+                { half_size, -half_size},
+                { half_size,  half_size},
+                {-half_size,  half_size}
+            };
+            std::vector<cv::Point> rotatedCorners;
             for (const auto& pt : outerCorners) {
                 float x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
                 float y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
-                filledCorners.emplace_back(cvRound(center.x + x), cvRound(center.y + y));
+                rotatedCorners.emplace_back(cvRound(center.x + x), cvRound(center.y + y));
             }
-            std::vector<std::vector<cv::Point>> contour{ filledCorners };
+            std::vector<std::vector<cv::Point>> contour{ rotatedCorners };
             cv::fillPoly(image, contour, color);
             return;
         }
     
-        // Compute inner square corners (inset by border_width)
-        double inner_half = half_size - border_width;
-        std::vector<cv::Point2f> innerCorners = {
-            {static_cast<float>(-inner_half), static_cast<float>(-inner_half)},
-            {static_cast<float>( inner_half), static_cast<float>(-inner_half)},
-            {static_cast<float>( inner_half), static_cast<float>( inner_half)},
-            {static_cast<float>(-inner_half), static_cast<float>( inner_half)}
+        // Compute rotation matrix
+        double theta = angle_deg * CV_PI / 180.0;
+        auto rotate = [theta](cv::Point2d pt) -> cv::Point2d {
+            return {
+                pt.x * std::cos(theta) - pt.y * std::sin(theta),
+                pt.x * std::sin(theta) + pt.y * std::cos(theta)
+            };
         };
     
+        double inner_half = half_size - border_width;
+    
+        // Local-space corners
+        std::vector<cv::Point2d> outer = {
+            {-half_size, -half_size},
+            { half_size, -half_size},
+            { half_size,  half_size},
+            {-half_size,  half_size}
+        };
+        std::vector<cv::Point2d> inner = {
+            {-inner_half, -inner_half},
+            { inner_half, -inner_half},
+            { inner_half,  inner_half},
+            {-inner_half,  inner_half}
+        };
+    
+        // Rotate and shift to world coordinates
         std::vector<cv::Point> outerPts, innerPts;
         for (int i = 0; i < 4; ++i) {
-            float ox = outerCorners[i].x * std::cos(theta) - outerCorners[i].y * std::sin(theta);
-            float oy = outerCorners[i].x * std::sin(theta) + outerCorners[i].y * std::cos(theta);
-            outerPts.emplace_back(cvRound(center.x + ox), cvRound(center.y + oy));
-    
-            float ix = innerCorners[i].x * std::cos(theta) - innerCorners[i].y * std::sin(theta);
-            float iy = innerCorners[i].x * std::sin(theta) + innerCorners[i].y * std::cos(theta);
-            innerPts.emplace_back(cvRound(center.x + ix), cvRound(center.y + iy));
+            auto o = rotate(outer[i]);
+            auto io = rotate(inner[i]);
+            outerPts.emplace_back(cvRound(center.x + o.x), cvRound(center.y + o.y));
+            innerPts.emplace_back(cvRound(center.x + io.x), cvRound(center.y + io.y));
         }
-
-
     
-        // Fill outer square
-        std::vector<std::vector<cv::Point>> outerContour{ outerPts };
-        cv::fillPoly(image, outerContour, color);
-    
-        // Cut out the inner square (fill with black or background)
-        std::vector<std::vector<cv::Point>> innerContour{ innerPts };
-        cv::fillPoly(image, innerContour, cv::Vec3b(0, 0, 0)); // You can use background color if needed
+        // Draw 4 trapezoids (border strips)
+        for (int i = 0; i < 4; ++i) {
+            int next = (i + 1) % 4;
+            std::vector<cv::Point> quad = {
+                outerPts[i],
+                outerPts[next],
+                innerPts[next],
+                innerPts[i]
+            };
+            std::vector<std::vector<cv::Point>> contour{ quad };
+            cv::fillPoly(image, contour, color);
+        }
     }
     
 

@@ -53,7 +53,7 @@ class Mosaic {
 
         // param constructor
         Mosaic(const HyperParameters& hp);
-
+        void resetData();
 
         void loadImage();
         void resizeOriginal();

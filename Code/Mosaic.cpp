@@ -25,6 +25,30 @@ Mosaic::Mosaic(const HyperParameters& hp) {
     params = hp;
 }
 
+void Mosaic::resetData() {
+    image_name.clear();
+
+    original.release();
+    resized.release();
+    grayscale.release();
+    blurred.release();
+    edges.release();
+    segmented.release();
+    distance.release();
+    gradX.release();
+    gradY.release();
+
+    selected_segment.release();
+    canvas.release();
+    mask.release();
+
+    segments.clear();
+    segment_lengths.clear();
+
+    tiles_placed.clear();
+}
+
+
 
 
 void Mosaic::loadImage() { 
@@ -579,9 +603,9 @@ TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int 
 
 
     // Draw aligned square
-    cv::Vec3b color = cv::Vec3b(255, 255, 0);
-    Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, text);
-    Graphics::drawSquare(mask, center, size, theta_deg, color, size);
+    // cv::Vec3b color = cv::Vec3b(255, 255, 0);
+    // Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, text);
+    Graphics::drawSquare(mask, center, size, theta_deg, cv::Vec3b(255), size);
 
     // TODO add tile metadata to the 
     int order = tiles_placed.size();

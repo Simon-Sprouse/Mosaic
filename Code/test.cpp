@@ -210,6 +210,79 @@ namespace Test {
     }
 
 
+
+    void testIntersections(mosaic_gen::Mosaic& mosaic) { 
+
+
+
+        // necessary progress
+        mosaic.loadImage();
+        mosaic.resizeOriginal();
+        mosaic.grayImage();
+        mosaic.blurImage();
+        mosaic.cannyFilter();
+        mosaic.detectContours();
+        mosaic.rankSegments();
+        int k = 0;
+        mosaic.selectSegment(k);
+
+        cv::Mat intersection_canvas = mosaic.selected_segment.clone();
+        double point_size = 4;
+        cv::Vec3b center_color(0, 0, 255);
+        cv::Vec3b point_color(255, 255, 0);
+        cv::Vec3b ring_color(0, 255, 0);
+
+        
+
+
+
+        cv::Point point = mosaic.getRandomPointOnSegment(k);
+        
+
+
+
+        double initial_size = mosaic.params.tile_size;
+        double theta_deg = mosaic.findBestTheta(point, initial_size);
+        Graphics::drawSquare(intersection_canvas, point, point_size, theta_deg, center_color, point_size);
+
+        std::vector<cv::Point> allIntersections;
+        
+
+        for (int i = 0; i < mosaic.params.number_of_rings; ++i) {
+
+
+            double currentSize = initial_size + i * mosaic.params.step_size;
+
+            std::vector<cv::Point> ringIntersections = mosaic.findTileEdgeIntersections(
+                mosaic.selected_segment, point, currentSize, theta_deg
+            );
+
+            // draw ring
+            Graphics::drawSquare(intersection_canvas, point, currentSize, theta_deg, ring_color, 1);
+
+            allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+        }
+
+        allIntersections = mosaic.filterUniqueIntersections(allIntersections);
+
+
+        
+        for (cv::Point intersection : allIntersections) {
+            Graphics::drawSquare(intersection_canvas, intersection, point_size, theta_deg, point_color, point_size);
+        }
+
+        mosaic.saveImage(intersection_canvas, "test_intersections");
+
+
+
+    }
+
+
+
+
+
+
+
     void visualizePlacementMethod(mosaic_gen::Mosaic& mosaic) { 
 
         // necessary progress
@@ -285,7 +358,6 @@ namespace Test {
 
     void printTotalTime(std::chrono::duration<double> total_time) { 
 
-
         cout << std::left << std::setw(40) << "[Total Time]"
         << std::right << std::setw(15) << std::fixed << std::setprecision(4)
         << total_time.count() << " s" << endl;
@@ -316,7 +388,8 @@ namespace Test {
         total_time += timeFunction("Flood Fill Points", [&]() {testFloodFillPoints(mosaic);});
         total_time += timeFunction("Test Contours", [&]() {testContours(mosaic);});
         total_time += timeFunction("Select Segment", [&]() {testSegmentSelection(mosaic);});
-        total_time += timeFunction("Visualize Placement", [&]() {visualizePlacementMethod(mosaic);});
+        total_time += timeFunction("Test Intersections", [&]() {testIntersections(mosaic);});
+        // total_time += timeFunction("Visualize Placement", [&]() {visualizePlacementMethod(mosaic);});
 
 
 
@@ -331,6 +404,9 @@ namespace Test {
     }
 
     void runTimedProcess(mosaic_gen::Mosaic& mosaic) { 
+
+        // clean start
+        mosaic.resetData();
 
         cout << "RUNNING PROCESS... " << endl;
         printHorizontalBar();
@@ -356,12 +432,7 @@ namespace Test {
         mosaic.saveImage(mosaic.mask, "mask_contours");
 
         total_time += timeFunction("place tiles with flood fill", [&]() {mosaic.showFloodFillPoints();});
-        mosaic.saveImage(mosaic.mask, "mask_flood_fill");
-
-
-    
-
-        total_time += timeFunction("place tiles randomly", [&]() {mosaic.fillGapsRandom();});
+        total_time += timeFunction("place tiles with gap fill", [&]() {mosaic.fillGapsRandom();});
         mosaic.saveImage(mosaic.mask, "mask_random_fill");
 
         total_time += timeFunction("recontruct image", [&]() {mosaic.reconstructPlacedTiles();});

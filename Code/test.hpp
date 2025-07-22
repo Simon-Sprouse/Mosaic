@@ -13,6 +13,7 @@ namespace Test {
     void testFloodFillPoints(mosaic_gen::Mosaic& mosaic);
     void testContours(mosaic_gen::Mosaic& mosaic);
     void testSegmentSelection(mosaic_gen::Mosaic& mosaic);
+    void testIntersections(mosaic_gen::Mosaic& mosaic);
     void visualizePlacementMethod(mosaic_gen::Mosaic& mosaic);
 
     void printTestHeader(const std::string& test_name);
