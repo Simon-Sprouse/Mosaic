@@ -7,7 +7,9 @@ using namespace std;
 
 namespace Graphics { 
 
-    void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Scalar& color, int border_width) {
+
+
+    void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width) {
         if (image.empty()) {
             std::cerr << "drawSquare: Input image is empty." << std::endl;
             return;
@@ -62,6 +64,8 @@ namespace Graphics {
             float iy = innerCorners[i].x * std::sin(theta) + innerCorners[i].y * std::cos(theta);
             innerPts.emplace_back(cvRound(center.x + ix), cvRound(center.y + iy));
         }
+
+
     
         // Fill outer square
         std::vector<std::vector<cv::Point>> outerContour{ outerPts };
@@ -69,12 +73,12 @@ namespace Graphics {
     
         // Cut out the inner square (fill with black or background)
         std::vector<std::vector<cv::Point>> innerContour{ innerPts };
-        cv::fillPoly(image, innerContour, cv::Scalar(0, 0, 0)); // You can use background color if needed
+        cv::fillPoly(image, innerContour, cv::Vec3b(0, 0, 0)); // You can use background color if needed
     }
     
 
 
-    void drawSquareText(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Scalar& color, int border_width, const std::string& text) {
+    void drawSquareText(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width, const std::string& text) {
         // Draw the square
         drawSquare(image, center, size, angle_deg, color, border_width);
 
@@ -115,7 +119,7 @@ namespace Graphics {
     }
 
 
-    void drawArrow(cv::Mat& image, const cv::Point& center, int length, double angle_deg, const cv::Scalar& color) {
+    void drawArrow(cv::Mat& image, const cv::Point& center, int length, double angle_deg, const cv::Vec3b& color) {
         if (image.empty()) {
             std::cerr << "drawArrow: Input image is empty." << std::endl;
             return;

@@ -26,7 +26,7 @@ struct HyperParameters {
     int step_size;
     int max_frontiers;
     int flood_fill_neighbor_points;
-    int flood_fill_point_jitter;
+    double distance_from_center;
     int random_background_points;
 
     std::function<int(int)> jitterFunc;
@@ -73,7 +73,7 @@ class Mosaic {
         void placeTileAllSegments();
         std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
-        cv::Scalar sampleTileColor(const TileInfo& tile);
+        cv::Vec3b sampleTileColor(const TileInfo& tile);
         void reconstructPlacedTiles();
         double randomDouble(double min_val, double max_val);
         std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
@@ -81,8 +81,6 @@ class Mosaic {
         std::vector<cv::Point> jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size);
 
 
-       
-        void placeTileAllBackground();
 
         void computeDistanceField();
         std::tuple<cv::Vec2f, float> sampleTangentPoint(const cv::Point& pt);
@@ -121,13 +119,15 @@ class Mosaic {
 
         HyperParameters params;
 
+        std::vector<TileInfo> tiles_placed;
+
 
     private: 
 
 
 
         
-        std::vector<TileInfo> tiles_placed;
+        
 
         const double ERROR_CODE_NO_VALID_THETA = -420.69;
 

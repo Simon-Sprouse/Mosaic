@@ -361,7 +361,7 @@ bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double r
     // 3. Create tile mask and check full overlap
     cv::Mat tileMask = cv::Mat::zeros(mask.size(), CV_8UC1);
     std::vector<std::vector<cv::Point>> contour{worldCorners};
-    cv::fillPoly(tileMask, contour, cv::Scalar(255));
+    cv::fillPoly(tileMask, contour, cv::Vec3b(255));
 
     cv::Mat overlap;
     cv::bitwise_and(mask, tileMask, overlap);
@@ -433,7 +433,7 @@ std::vector<cv::Point> Mosaic::findTileEdgeIntersections(const cv::Mat& segment_
     for (const auto& pt : worldCorners)
         contour[0].push_back(cv::Point(cvRound(pt.x), cvRound(pt.y)));
 
-    cv::fillPoly(tileMask, contour, cv::Scalar(255));
+    cv::fillPoly(tileMask, contour, cv::Vec3b(255));
 
     // Bitwise AND between binary segment mask and tile mask
     cv::Mat overlap;
@@ -579,7 +579,7 @@ TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int 
 
 
     // Draw aligned square
-    cv::Scalar color = cv::Scalar(255, 255, 0);
+    cv::Vec3b color = cv::Vec3b(255, 255, 0);
     Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, text);
     Graphics::drawSquare(mask, center, size, theta_deg, color, size);
 
@@ -612,7 +612,7 @@ void Mosaic::placeTileSegment(int k) {
     cv::Point center = getRandomPointOnSegment(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
 
     double size = params.tile_size;
-    cv::Scalar color(255, 255, 0);
+
 
 
 
@@ -702,7 +702,7 @@ void Mosaic::placeTileAllSegments() {
 
 
 
-cv::Scalar Mosaic::sampleTileColor(const TileInfo& tile) {
+cv::Vec3b Mosaic::sampleTileColor(const TileInfo& tile) {
     float halfSize = static_cast<float>(tile.size / 2.0);
     float theta = static_cast<float>(tile.theta_deg * CV_PI / 180.0f);
 
@@ -723,10 +723,20 @@ cv::Scalar Mosaic::sampleTileColor(const TileInfo& tile) {
     // Create mask for the rotated tile
     cv::Mat mask = cv::Mat::zeros(resized.size(), CV_8UC1);
     std::vector<std::vector<cv::Point>> contour{worldCorners};
-    cv::fillPoly(mask, contour, cv::Scalar(255));
+    cv::fillPoly(mask, contour, cv::Vec3b(255));
 
     // Return average color from resized image under tile
-    return cv::mean(resized, mask);
+    cv::Scalar color = cv::mean(resized, mask);
+
+
+    cv::Vec3b vecColor(
+        static_cast<uchar>(color[0]),
+        static_cast<uchar>(color[1]),
+        static_cast<uchar>(color[2])
+    );
+
+
+    return vecColor;
 }
 
 
@@ -734,7 +744,7 @@ void Mosaic::reconstructPlacedTiles() {
 
     // reset canvas
     canvas = cv::Mat::zeros(edges.size(), CV_8UC3);
-    cv::Scalar color;
+    cv::Vec3b color;
 
     for (TileInfo tile : tiles_placed) { 
         color = sampleTileColor(tile);
@@ -832,33 +842,6 @@ std::vector<cv::Point> Mosaic::jitterPoints(const std::vector<cv::Point>& input_
 
 
 
-void Mosaic::placeTileAllBackground() {
-    if (tiles_placed.empty()) {
-        std::cerr << "No tiles placed to map samples to." << std::endl;
-        return;
-    }
-
-    
-    int num_points = params.random_background_points;
-    std::vector<cv::Point> samples = samplePointsRandom(canvas, num_points);
-    int frontier = -1;
-
-
-
-    for (const auto& sample : samples) {
-
-        auto [tangent, _] = sampleTangentPoint(sample);
-        double theta_rad = std::atan2(tangent[1], tangent[0]);
-        double theta_deg = theta_rad * 180.0 / CV_PI;
-        
-
-        
-        if (!isValidTile(sample, params.tile_size, theta_deg)) { 
-            continue;
-        }
-        placeTile(sample, params.tile_size, theta_deg, frontier);
-    }
-}
 
 
 
@@ -1015,7 +998,7 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints2(cv::Point center, double thet
 
 void Mosaic::showFloodFillPoints() {
 
-    double distance_from_center = params.tile_size * 1.5;
+    double distance_from_center = params.distance_from_center;
     const int max_frontiers = params.max_frontiers;
     int frontier = 1;
     std::vector<TileInfo> frontier_tiles(tiles_placed);
@@ -1066,7 +1049,7 @@ inline double vectorToAngleDegrees(const cv::Vec2f& vec) {
     return std::atan2(vec[1], vec[0]) * 180.0 / CV_PI;
 }
 
-// Gap-filling function
+// Gap-filling function (UNUSED)
 void Mosaic::fillGapsUsingDistanceField() {
     
     if (distance.empty() || gradX.empty() || gradY.empty()) { 
@@ -1154,7 +1137,8 @@ void Mosaic::fillGapsRandom() {
 
         if (isValidTile(point, tile_size, theta_deg)) {
 
-            placeTile(point, tile_size, theta_deg); 
+            int frontier = -1;
+            placeTile(point, tile_size, theta_deg, frontier); 
             ++num_tiles_placed;
         }
     }
@@ -1229,7 +1213,7 @@ void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
     for (size_t i = 0; i < tiles_placed.size(); i += tilesPerFrame) {
         for (size_t j = i; j < std::min(i + tilesPerFrame, tiles_placed.size()); ++j) {
             const TileInfo& tile = tiles_placed[j];
-            cv::Scalar color = sampleTileColor(tile);
+            cv::Vec3b color = sampleTileColor(tile);
             Graphics::drawSquare(gifCanvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
         }
 

@@ -34,11 +34,11 @@ int main() {
     // Load Object
 
     mosaic_gen::HyperParameters params;
-    // params.image_path = "../Images/flower.jpg";
-    params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
+    params.image_path = "../Images/flower.jpg";
+    // params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
     // params.image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/dunes.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 0.7;
+    params.resize_factor = 1.5;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -49,9 +49,10 @@ int main() {
     params.tile_size = 10;
     params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
-    params.max_frontiers = 10;
+    params.max_frontiers = 40;
     params.flood_fill_neighbor_points = 16;
-    params.flood_fill_point_jitter = 0;
+    params.distance_from_center = params.tile_size * 1.5;
+
     params.random_background_points = 50000;
     params.jitterFunc = [](int frontier) -> int {
         if (frontier < 4) return 0;
@@ -81,3 +82,22 @@ int main() {
 
     return 0;
 }
+
+
+
+
+/*
+TODO LIST
+
+- replace drawSquare scalar function in all instances with vec3b
+- finish visualizations
+- utils/math/random file
+- color sampling options
+- rename functions and variables
+- use fried classes to move data back into mosiac private
+
+
+
+
+
+*/

@@ -86,13 +86,13 @@ namespace Test {
     
             // Extract BGR color from the pixel
             cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);
-            cv::Scalar color(bgr[0], bgr[1], bgr[2]);
+   
     
             // Compute angle and draw arrow
             double angle_rad = std::atan2(tangent[1], tangent[0]);
             double angle_deg = angle_rad * 180.0 / CV_PI;
     
-            Graphics::drawArrow(vector_field, pt, length, angle_deg, color);
+            Graphics::drawArrow(vector_field, pt, length, angle_deg, bgr);
         }
     
         mosaic.saveImage(vector_field, "vector_field");
@@ -125,12 +125,12 @@ namespace Test {
 
         double tile_size = 30;
         double theta_deg = 20;
-        cv::Scalar color(255, 255, 255);
+        cv::Vec3b color(255, 255, 255);
         Graphics::drawSquare(mosaic.canvas, pt, tile_size, theta_deg, color, 5);
 
         int num_points = 16;
         std::vector<cv::Point> next_points = mosaic.getFloodFillPoints2(pt, theta_deg, tile_size * 1.5, num_points);
-        cv::Scalar point_color(255, 255, 0);
+        cv::Vec3b point_color(255, 255, 0);
         for (cv::Point pt : next_points) { 
             Graphics::drawSquare(mosaic.canvas, pt, 5, theta_deg, point_color, 5);
           
@@ -210,6 +210,46 @@ namespace Test {
     }
 
 
+    void visualizePlacementMethod(mosaic_gen::Mosaic& mosaic) { 
+
+        // necessary progress
+        mosaic.loadImage();
+        mosaic.resizeOriginal();
+        mosaic.grayImage();
+        mosaic.blurImage();
+        mosaic.cannyFilter();
+        mosaic.detectContours();
+        mosaic.rankSegments();
+        mosaic.placeTileAllSegments();
+        mosaic.showFloodFillPoints();
+        mosaic.fillGapsRandom();
+
+
+        cv::Vec3b contour_color(0, 0, 255);
+        cv::Vec3b flood_fill_color(0, 255, 0);
+        cv::Vec3b gap_fill_color(255, 0, 0);
+
+
+        cv::Mat frontier_canvas = cv::Mat::zeros(mosaic.edges.size(), CV_8UC3);
+
+        for (mosaic_gen::TileInfo tile : mosaic.tiles_placed) { 
+            if (tile.frontier == 0) { 
+                Graphics::drawSquare(frontier_canvas, tile.center, tile.size, tile.theta_deg, contour_color, tile.size);
+            }
+            else if (tile.frontier > 0) { 
+                Graphics::drawSquare(frontier_canvas, tile.center, tile.size, tile.theta_deg, flood_fill_color, tile.size);
+            }
+            else { 
+                Graphics::drawSquare(frontier_canvas, tile.center, tile.size, tile.theta_deg, gap_fill_color, tile.size);
+            }
+        }
+
+        mosaic.saveImage(frontier_canvas, "frontier_canvas");
+
+
+
+
+    }
 
 
 
@@ -276,6 +316,8 @@ namespace Test {
         total_time += timeFunction("Flood Fill Points", [&]() {testFloodFillPoints(mosaic);});
         total_time += timeFunction("Test Contours", [&]() {testContours(mosaic);});
         total_time += timeFunction("Select Segment", [&]() {testSegmentSelection(mosaic);});
+        total_time += timeFunction("Visualize Placement", [&]() {visualizePlacementMethod(mosaic);});
+
 
 
         printHorizontalBar();
@@ -336,81 +378,5 @@ namespace Test {
         cout << endl;
 
     }
-
-    void oldMain(mosaic_gen::Mosaic& mosaic) { 
-
-        auto start = chrono::high_resolution_clock::now();
-
-         // load image
-        cout << "Loaded image: " << mosaic.image_name << endl;
-        cout << "Original dimensions: " << mosaic.original.size() << endl;
-
-        mosaic.loadImage();
-
-
-        // Resize Image
-
-        mosaic.resizeOriginal();
-        mosaic.saveImage(mosaic.resized, "resized");
-        cout << "Resized image to size: " << mosaic.resized.size() << endl;
-
-        // Grayscale Image
-        mosaic.grayImage();
-        mosaic.saveImage(mosaic.grayscale, "gray");
-
-        // Blur Image
-        mosaic.blurImage();
-        mosaic.saveImage(mosaic.blurred, "blurred");
-
-        // Canny Filter
-        mosaic.cannyFilter();
-        mosaic.saveImage(mosaic.edges, "canny_edges");
-
-        // Detect Contours
-        int contour_count = mosaic.detectContours();
-        mosaic.saveImage(mosaic.segmented, "segmented_edges");
-        cout << "Detected: " << contour_count << " edges" << endl;
-
-
-        // Rank Segments
-        mosaic.rankSegments();
-
-    
-        // Place tiles on all segments
-        mosaic.placeTileAllSegments();
-        mosaic.saveImage(mosaic.mask, "mask");
-
-        // show flood fill points
-        mosaic.showFloodFillPoints();
-        mosaic.saveImage(mosaic.canvas, "frontiers_canvas");
-        mosaic.saveImage(mosaic.mask, "flood_fill_points");
-        
-    
-
-        // sample points
-        mosaic.placeTileAllBackground();
-        mosaic.saveImage(mosaic.canvas, "samples");
-
-        // store placed tiles and reconstruct
-        mosaic.reconstructPlacedTiles();
-        mosaic.saveImage(mosaic.canvas,  "reconstruction");
-        
-
-
-        // save gif
-        mosaic.saveGif(20, "animation");
-
-        // save csv tile placements
-        mosaic.saveTileInfo("frontiers");
-    
-
-
-        auto end = chrono::high_resolution_clock::now();
-        chrono::duration<double> elapsed_time = end - start;
-        cout << "Time to complete: " << elapsed_time.count() << " seconds" << endl;
-
-
-
-        }
 
 }
