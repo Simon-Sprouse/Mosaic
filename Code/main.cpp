@@ -34,10 +34,10 @@ int main() {
     // Load Object
 
     mosaic_gen::HyperParameters params;
-    // params.image_path = "../Images/einstein.jpg";
-    params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
+    params.image_path = "../Images/flower.jpg";
+    // params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
     params.results_dir = "../Results";
-    params.resize_factor = 0.7;
+    params.resize_factor = 0.8;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -48,7 +48,7 @@ int main() {
     params.tile_size = 10;
     params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
-    params.max_frontiers = 40;
+    params.max_frontiers = 4;
     params.flood_fill_neighbor_points = 128;
     params.flood_fill_point_jitter = 1;
     params.random_background_points = 50000;

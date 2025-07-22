@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <iomanip>
+#include <random>
 
 
 
@@ -143,6 +144,87 @@ namespace Test {
     
 
 
+    void testContours(mosaic_gen::Mosaic& mosaic) { 
+
+        // necessary progress
+        mosaic.loadImage();
+        mosaic.resizeOriginal();
+        mosaic.grayImage();
+        mosaic.blurImage();
+        mosaic.cannyFilter();
+        mosaic.detectContours();
+        mosaic.rankSegments();
+
+        cv::Mat segment_canvas = cv::Mat::zeros(mosaic.edges.size(), CV_8UC3);
+        std::vector<cv::Vec3b> colors_used;
+
+
+        std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<int> color_dist(64, 255);
+
+        for (std::vector<cv::Point> segment : mosaic.segments) { 
+            cv::Vec3b color;
+            do {
+                color = cv::Vec3b(color_dist(rng), color_dist(rng), color_dist(rng));
+            } while (std::find(colors_used.begin(), colors_used.end(), color) != colors_used.end());
+            
+            colors_used.push_back(color);
+            
+            for (const auto& pt : segment) {
+                if (pt.y >= 0 && pt.y < segment_canvas.rows && pt.x >= 0 && pt.x < segment_canvas.cols) {
+                    segment_canvas.at<cv::Vec3b>(pt.y, pt.x) = color;
+                }
+            }
+        }
+
+        mosaic.saveImage(segment_canvas, "segment_canvas");
+
+       
+
+    }
+
+
+    void testSegmentSelection(mosaic_gen::Mosaic& mosaic) { 
+
+        // necessary progress
+        mosaic.loadImage();
+        mosaic.resizeOriginal();
+        mosaic.grayImage();
+        mosaic.blurImage();
+        mosaic.cannyFilter();
+        mosaic.detectContours();
+        mosaic.rankSegments();
+
+        
+
+        int k = 2;
+        mosaic.selectSegment(k);
+
+        const cv::Mat img = mosaic.selected_segment;
+
+
+
+        mosaic.saveImage(mosaic.selected_segment, "selected_segment");
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     void printTestHeader(const std::string& test_name) {
@@ -188,17 +270,12 @@ namespace Test {
 
         chrono::duration<double> total_time(0.0);
 
-        total_time += timeFunction("Vector Field", [&]() {
-            showDistanceVectorField(mosaic);
-        });
-
-        total_time += timeFunction("Squeeb Test", [&]() {
-            squeebTest();
-        });
-
-        total_time += timeFunction("Flood Fill Points", [&]() {
-            testFloodFillPoints(mosaic);
-        });
+        // call test functions
+        total_time += timeFunction("Vector Field", [&]() {showDistanceVectorField(mosaic);});
+        total_time += timeFunction("Squeeb Test", [&]() {squeebTest();});
+        total_time += timeFunction("Flood Fill Points", [&]() {testFloodFillPoints(mosaic);});
+        total_time += timeFunction("Test Contours", [&]() {testContours(mosaic);});
+        total_time += timeFunction("Select Segment", [&]() {testSegmentSelection(mosaic);});
 
 
         printHorizontalBar();
@@ -257,7 +334,7 @@ namespace Test {
 
     }
 
-    void oldMainx(mosaic_gen::Mosaic& mosaic) { 
+    void oldMain(mosaic_gen::Mosaic& mosaic) { 
 
         auto start = chrono::high_resolution_clock::now();
 

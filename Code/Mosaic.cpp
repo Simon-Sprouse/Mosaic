@@ -7,6 +7,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <random>
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <stack>
@@ -108,12 +109,10 @@ int Mosaic::detectContours() {
     // Create an output color image
     segmented = cv::Mat::zeros(edges.size(), CV_8UC3);
     int contour_id = 0;
-    std::vector<cv::Vec3b> colors_used;
 
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<int> color_dist(64, 255);
+ 
 
-    for (const auto& contour : contours) {
+    for (const std::vector<cv::Point>& contour : contours) {
         if (contour.size() < 3)
             continue;
 
@@ -150,46 +149,70 @@ int Mosaic::detectContours() {
             if (b - a < params.min_segment_length)
                 continue;
 
-            // Generate a new color not used yet
-            cv::Vec3b color;
-            do {
-                color = cv::Vec3b(color_dist(rng), color_dist(rng), color_dist(rng));
-            } while (std::find(colors_used.begin(), colors_used.end(), color) != colors_used.end());
 
-            colors_used.push_back(color);
 
+            segments.push_back(std::vector<cv::Point>());
             for (int j = a; j < b; ++j) {
-                const auto& pt = contour[j];
-                if (pt.y >= 0 && pt.y < segmented.rows && pt.x >= 0 && pt.x < segmented.cols) {
-                    segmented.at<cv::Vec3b>(pt.y, pt.x) = color;
+                const cv::Point& point = contour[j];
+                if (point.y >= 0 && point.y < segmented.rows && point.x >= 0 && point.x < segmented.cols) {
+                    segmented.at<cv::Vec3b>(point.y, point.x) = cv::Vec3b(255, 255, 255);
+                    segments.at(segments.size() - 1).push_back(point);
                 }
+                
+               
             }
 
             ++contour_id;
         }
     }
 
+    // vvv PRINTS FOR DEBUGGING vvv
+    // cout << endl << "detected " << contour_id << " contours" << endl;
+    // cout << endl << "segments.size(): " << segments.size() << endl;
+    // cout << endl << "segments.at(0).size(): " << segments.at(0).size() << endl;
+    // for (const auto& pt : segments.at(0)) { 
+    //     cout << pt;
+    // }
+
     return contour_id;
 }
 
+
+
+void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments,
+                          std::vector<double>& lengths)
+{
+
+
+    
+    // Pair lengths with their corresponding segment
+    std::vector<std::pair<double, std::vector<cv::Point>>> paired;
+
+    for (size_t i = 0; i < lengths.size(); ++i) {
+        paired.emplace_back(lengths[i], segments[i]);
+    }
+
+    // Sort by length (ascending)
+    std::sort(paired.begin(), paired.end(),
+              [](const auto& a, const auto& b) {
+                  return a.first > b.first;
+              });
+
+    // Unpack back into segments and lengths
+    for (size_t i = 0; i < paired.size(); ++i) {
+        lengths[i] = paired[i].first;
+        segments[i] = std::move(paired[i].second);
+    }
+}
+
+
 void Mosaic::rankSegments() { 
-    if (segmented.empty()) {
+    if (segments.empty()) {
         std::cerr << "rankSegments called but segmented image is empty" << std::endl;
         return;
     }
 
-    segment_pixels.clear();
-    segment_lengths.clear();
 
-    // Collect pixels for each color (excluding black)
-    for (int y = 0; y < segmented.rows; ++y) {
-        for (int x = 0; x < segmented.cols; ++x) {
-            cv::Vec3b color = segmented.at<cv::Vec3b>(y, x);
-            if (color != cv::Vec3b(0, 0, 0)) {
-                segment_pixels[color].emplace_back(x, y);
-            }
-        }
-    }
 
     // Helper lambda for PCA length
     auto pca_length = [](const std::vector<cv::Point>& points) -> double {
@@ -212,21 +235,30 @@ void Mosaic::rankSegments() {
         return maxVal - minVal;
     };
 
-    // Compute PCA length per color segment
-    for (const auto& [color, pixels] : segment_pixels) {
-        double length = pca_length(pixels);
-        segment_lengths.emplace_back(color, length);
-    }
 
-    // Sort descending by length
-    std::sort(segment_lengths.begin(), segment_lengths.end(),
-              [](const auto& a, const auto& b) {
-                  return a.second > b.second;
-              });
+    segment_lengths.clear(); // Before computing
+
+    for (const auto& segment_pixels : segments) {
+        double length = pca_length(segment_pixels);
+        segment_lengths.push_back(length);
+    }
+    
+    // if (segments.size() != segment_lengths.size()) {
+    //     std::cerr << "[BUG] Segment length mismatch! segments: "
+    //               << segments.size() << ", lengths: " << segment_lengths.size() << std::endl;
+    // }
+    
+
+    sortSegmentsByLength(segments, segment_lengths);
+
+
 }
 
 
-void Mosaic::selectSegment(int k) { 
+void Mosaic::selectSegment(int k) {
+    
+
+
     if (segment_lengths.empty()) {
         std::cerr << "selectSegment called but segment_lengths is empty." << std::endl;
         return;
@@ -238,23 +270,17 @@ void Mosaic::selectSegment(int k) {
         return;
     }
 
-    const cv::Vec3b& selected_color = segment_lengths[k].first;
-
-    auto it = segment_pixels.find(selected_color);
-    if (it == segment_pixels.end()) {
-        std::cerr << "selectSegment: Selected color not found in segment_pixels.\n";
-        return;
-    }
-
     // Create a blank image
-    selected_segment = cv::Mat::zeros(segmented.size(), CV_8UC3);
+    selected_segment = cv::Mat::zeros(resized.size(), CV_8UC3);
 
-    // Draw only the selected segment
-    for (const auto& pt : it->second) {
-        if (pt.y >= 0 && pt.y < selected_segment.rows && pt.x >= 0 && pt.x < selected_segment.cols) {
-            selected_segment.at<cv::Vec3b>(pt.y, pt.x) = cv::Vec3b(255, 255, 255);
-        }
+
+    for (cv::Point point : segments.at(k)) {
+        // cout << "point.x: " << point.x << " point.y: " << point.y << endl;
+        selected_segment.at<cv::Vec3b>(point.y, point.x) = cv::Vec3b(255, 255, 255);
     }
+
+
+
 }
 
 
@@ -264,16 +290,8 @@ cv::Point Mosaic::getRandomPointOnSegment(int k) {
         throw std::out_of_range("Segment index k is out of range");
     }
 
-    // Get the color for segment k (assuming segment_lengths[k].first is the color)
-    const cv::Vec3b& color = segment_lengths[k].first;
 
-    // Find the vector of points corresponding to this color
-    auto it = segment_pixels.find(color);
-    if (it == segment_pixels.end()) {
-        throw std::runtime_error("Color not found in segment_pixels");
-    }
-
-    const std::vector<cv::Point>& points = it->second;
+    const std::vector<cv::Point>& points = segments.at(k);
 
     if (points.empty()) {
         throw std::runtime_error("No points in the selected segment");
@@ -289,17 +307,6 @@ cv::Point Mosaic::getRandomPointOnSegment(int k) {
 
 
 
-
-void Mosaic::drawSquareRandomPoint(int k) { 
-
-    cv::Point center = getRandomPointOnSegment(k);
-    cv::Scalar color = cv::Scalar(255, 0, 255);
-
-    canvas = selected_segment.clone();
-    Graphics::drawSquare(canvas, center, 40.0, 12.0, color, 2.0);
-
-
-}
 
 
 bool Mosaic::tileInBounds(const cv::Point& center, double tileSize) { 
@@ -1047,87 +1054,6 @@ void Mosaic::showFloodFillPoints() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-/*
-PRINT FUNCTIONS >>
-*/
-
-// Helper to print Vec3b as (B,G,R)
-std::string Mosaic::vec3bToString(const cv::Vec3b& color) {
-    return "(" + std::to_string(color[0]) + ", " + 
-                 std::to_string(color[1]) + ", " + 
-                 std::to_string(color[2]) + ")";
-}
-
-// Helper to print Point as (x,y)
-std::string Mosaic::pointToString(const cv::Point& pt) {
-    return "(" + std::to_string(pt.x) + ", " + std::to_string(pt.y) + ")";
-}
-
-// Print color_to_pixels unordered_map
-void Mosaic::printColorToPixels() {
-    std::cout << "Color to Pixels Map:\n";
-    for (const auto& [color, points] : segment_pixels) {
-        std::cout << "  Color " << vec3bToString(color) << " -> [";
-        for (size_t i = 0; i < std::min(points.size(), size_t(5)); ++i) {
-            std::cout << pointToString(points[i]);
-            if (i != std::min(points.size(), size_t(5)) - 1) std::cout << ", ";
-        }
-        if (points.size() > 5) std::cout << "...";
-        std::cout << "] (" << points.size() << " points)\n";
-    }
-}
-
-
-// Print color_lengths vector
-void Mosaic::printColorLengths() {
-    std::cout << "Color Lengths:\n";
-    for (const auto& [color, length] : segment_lengths) {
-        std::cout << "  Color " << vec3bToString(color) << " -> Length: " << length << "\n";
-    }
-}
-
-
-void Mosaic::printColorToPixelsK(int k) {
-    int count = 0;
-    std::cout << "Color to Pixels Map:\n";
-    for (const auto& [color, points] : segment_pixels) {
-        if (count >= k) { 
-            break;
-        }
-        std::cout << "  Color " << vec3bToString(color) << " -> [";
-        for (size_t i = 0; i < std::min(points.size(), size_t(5)); ++i) {
-            std::cout << pointToString(points[i]);
-            if (i != std::min(points.size(), size_t(5)) - 1) std::cout << ", ";
-        }
-        if (points.size() > 5) std::cout << "...";
-        std::cout << "] (" << points.size() << " points)\n";
-        count++;
-    }
-}
-
-
-void Mosaic::printColorLengthsK(int k) {
-    int count = 0;
-    std::cout << "Color Lengths:\n";
-    for (const auto& [color, length] : segment_lengths) {
-        if (count >= k) { 
-            break;
-        }
-        std::cout << "  Color " << vec3bToString(color) << " -> Length: " << length << "\n";
-        count++;
-    }
-}
 
 
 

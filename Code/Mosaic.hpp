@@ -55,7 +55,6 @@ class Mosaic {
         void rankSegments();
         void selectSegment(int k);
         cv::Point getRandomPointOnSegment(int k);
-        void drawSquareRandomPoint(int k); // test
         bool tileInBounds(const cv::Point& center, double tileSize);
         bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
         bool isValidTile(cv::Point center, double tileSize, double theta_deg);
@@ -83,11 +82,7 @@ class Mosaic {
         std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         void showFloodFillPoints();
         
-        void printColorToPixels();
-        void printColorLengths();
-        void printColorToPixelsK(int k);
-        void printColorLengthsK(int k);
-        
+      
         void saveImage(const cv::Mat& image, const std::string& suffix);
         void saveGif(int tilesPerFrame, const std::string& suffix);
         void saveTileInfo(const std::string& suffix);
@@ -110,6 +105,8 @@ class Mosaic {
         cv::Mat mask;
 
     
+        std::vector<std::vector<cv::Point>> segments;
+        std::vector<double> segment_lengths;
 
         
 
@@ -122,29 +119,6 @@ class Mosaic {
         std::vector<TileInfo> tiles_placed;
 
         const double ERROR_CODE_NO_VALID_THETA = -420.69;
-
-
-        struct Vec3bHash {
-            std::size_t operator()(const cv::Vec3b& color) const noexcept {
-                return std::hash<int>()(
-                    (static_cast<int>(color[0]) << 16) |
-                    (static_cast<int>(color[1]) << 8) |
-                    (static_cast<int>(color[2]))
-                );
-            }
-        };
-        
-        struct Vec3bEqual {
-            bool operator()(const cv::Vec3b& a, const cv::Vec3b& b) const noexcept {
-                return a[0] == b[0] && a[1] == b[1] && a[2] == b[2];
-            }
-        };
-
-        std::string vec3bToString(const cv::Vec3b& color);
-        std::string pointToString(const cv::Point& pt);
-
-        std::unordered_map<cv::Vec3b, std::vector<cv::Point>, Vec3bHash, Vec3bEqual> segment_pixels;
-        std::vector<std::pair<cv::Vec3b, double>> segment_lengths;
 
 
 
