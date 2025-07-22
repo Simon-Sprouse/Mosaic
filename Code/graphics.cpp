@@ -123,7 +123,7 @@ namespace Graphics {
     
         // Parameters for arrow size (in pixels)
 
-        const int headLength = static_cast<int>(length / 3);        // length of each arrowhead wing
+        const int headLength = static_cast<int>(length / 2);        // length of each arrowhead wing
         const double headAngleDeg = 30;  // angle between shaft and arrowhead wing
         const int thickness = 3;
     

@@ -13,6 +13,7 @@
 #include <stack>
 #include <sstream>
 #include <fstream>
+#include <queue>
 
 using namespace std;
 namespace fs = std::__fs::filesystem;
@@ -324,7 +325,10 @@ bool Mosaic::tileInBounds(const cv::Point& center, double tileSize) {
 
 bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees) {
 
-
+    // 0. super fast check (5% speedup)
+    if (mask.at<uchar>(center) > 0) { 
+        return true;
+    }
 
     // 1. Compute tile corners
     float halfSize = static_cast<float>(tileSize / 2.0);
@@ -345,7 +349,7 @@ bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double r
         worldCorners.emplace_back(cvRound(centerF.x + x), cvRound(centerF.y + y));
     }
 
-    // 2. FAST CORNER CHECK (early exit if any corner already marked in mask)
+    // 2. FAST CORNER CHECK (40:1 speed up for flood fill)
     for (const auto& pt : worldCorners) {
         if (pt.x >= 0 && pt.x < mask.cols && pt.y >= 0 && pt.y < mask.rows) {
             if (mask.at<uchar>(pt) > 0) {
@@ -1022,7 +1026,7 @@ void Mosaic::showFloodFillPoints() {
         std::vector<cv::Point> all_flood_points;
         for (const TileInfo& tile : frontier_tiles) {
             int num_points = params.flood_fill_neighbor_points;
-            int max_step = params.flood_fill_point_jitter;
+            int max_step = params.getJitter(frontier);
             std::vector<cv::Point> points = getFloodFillPoints2(tile.center, tile.theta_deg, distance_from_center, num_points);
             std::vector<cv::Point> jittered_points = jitterPoints(points, max_step, mask.size());
             all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
@@ -1045,6 +1049,123 @@ void Mosaic::showFloodFillPoints() {
         frontier++;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// Helper to convert direction vector to degrees
+inline double vectorToAngleDegrees(const cv::Vec2f& vec) {
+    return std::atan2(vec[1], vec[0]) * 180.0 / CV_PI;
+}
+
+// Gap-filling function
+void Mosaic::fillGapsUsingDistanceField() {
+    
+    if (distance.empty() || gradX.empty() || gradY.empty()) { 
+        computeDistanceField();
+    }
+
+    double tile_size = params.tile_size;
+    int max_tiles_to_place = params.random_background_points;
+
+    // Priority queue of (distance, point), max-heap
+    using PQEntry = std::pair<float, cv::Point>;
+    auto cmp = [](const PQEntry& a, const PQEntry& b) {
+        return a.first > b.first; // min-heap
+    };
+    std::priority_queue<PQEntry, std::vector<PQEntry>, decltype(cmp)> pq(cmp);
+
+    for (int y = 0; y < distance.rows; ++y) {
+        for (int x = 0; x < distance.cols; ++x) {
+            float dist = distance.at<float>(y, x);
+            if (dist >= tile_size * 0.5) { // threshold: skip very narrow gaps
+                pq.emplace(dist, cv::Point(x, y));
+            }
+        }
+    }
+
+    int num_tiles_placed = 0;
+
+    while (!pq.empty() && num_tiles_placed < max_tiles_to_place) {
+        auto [dist, pt] = pq.top();
+        pq.pop();
+
+        // Sample guidance field
+        auto [vec, contour_dist] = sampleTangentPoint(pt);
+        double theta_deg = vectorToAngleDegrees(vec);
+
+        if (isValidTile(pt, tile_size, theta_deg)) {
+
+            int frontier = -2;
+            placeTile(pt, tile_size, theta_deg, frontier); 
+            ++num_tiles_placed;
+        }
+    }
+
+    std::cout << "Filled " << num_tiles_placed << " gaps using distance field.\n";
+}
+
+
+
+
+
+
+
+void Mosaic::fillGapsRandom() { 
+    if (distance.empty() || gradX.empty() || gradY.empty()) { 
+        computeDistanceField();
+    }
+
+    double tile_size = params.tile_size;
+    int max_tiles_to_place = params.random_background_points;
+
+    std::vector<cv::Point> points;
+    for (int y = 0; y < distance.rows; ++y) {
+        for (int x = 0; x < distance.cols; ++x) {
+            float dist = distance.at<float>(y, x);
+            if (dist >= tile_size * 0.5) { // threshold: skip very narrow gaps
+                points.push_back(cv::Point(x, y));
+            }
+        }
+    }
+    
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    std::shuffle(points.begin(), points.end(), rng);
+
+
+
+    int num_tiles_placed = 0;
+
+   for (const cv::Point& point : points) {
+
+
+        // Sample guidance field
+        auto [vec, contour_dist] = sampleTangentPoint(point);
+        double theta_deg = vectorToAngleDegrees(vec);
+
+        if (isValidTile(point, tile_size, theta_deg)) {
+
+            placeTile(point, tile_size, theta_deg); 
+            ++num_tiles_placed;
+        }
+    }
+
+    // std::cout << "Filled " << num_tiles_placed << " gaps using distance field.\n";
+}
+
+
+
+
+
 
 
 

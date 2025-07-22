@@ -33,8 +33,8 @@ namespace Test {
         // tangent field
 
 
-        int grid_size = 25;
-        int max_step = 4;
+        int grid_size = static_cast<int>(mosaic.params.tile_size * 1.5);
+        int max_step = static_cast<int>(mosaic.params.tile_size * 0.5);
         std::vector<cv::Point> grid_points = mosaic.samplePointsGrid(mosaic.segmented, grid_size);
         std::vector<cv::Point> samplePoints = mosaic.jitterPoints(grid_points, max_step, mosaic.segmented.size());
     
@@ -54,7 +54,7 @@ namespace Test {
     
         // Visualization
         cv::Mat vector_field = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
-        const int length = 20;
+        const int length = mosaic.params.tile_size;
         float gamma = 0.6; // to strecth color map; 
     
         float minDist = std::numeric_limits<float>::max();
@@ -316,7 +316,10 @@ namespace Test {
         total_time += timeFunction("place tiles with flood fill", [&]() {mosaic.showFloodFillPoints();});
         mosaic.saveImage(mosaic.mask, "mask_flood_fill");
 
-        total_time += timeFunction("place tiles randomly", [&]() {mosaic.placeTileAllBackground();});
+
+    
+
+        total_time += timeFunction("place tiles randomly", [&]() {mosaic.fillGapsRandom();});
         mosaic.saveImage(mosaic.mask, "mask_random_fill");
 
         total_time += timeFunction("recontruct image", [&]() {mosaic.reconstructPlacedTiles();});

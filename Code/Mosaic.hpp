@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 #include <opencv2/core.hpp>
 
 using namespace std;
@@ -27,6 +28,14 @@ struct HyperParameters {
     int flood_fill_neighbor_points;
     int flood_fill_point_jitter;
     int random_background_points;
+
+    std::function<int(int)> jitterFunc;
+    int getJitter(int frontier) const {
+        if (jitterFunc) {
+            return jitterFunc(frontier);
+        }
+        return 0; // Default jitter
+    }
 
 };
 
@@ -81,6 +90,8 @@ class Mosaic {
         
         std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         void showFloodFillPoints();
+        void fillGapsUsingDistanceField();
+        void fillGapsRandom();
         
       
         void saveImage(const cv::Mat& image, const std::string& suffix);
@@ -108,14 +119,14 @@ class Mosaic {
         std::vector<std::vector<cv::Point>> segments;
         std::vector<double> segment_lengths;
 
-        
+        HyperParameters params;
 
 
     private: 
 
 
 
-        HyperParameters params;
+        
         std::vector<TileInfo> tiles_placed;
 
         const double ERROR_CODE_NO_VALID_THETA = -420.69;

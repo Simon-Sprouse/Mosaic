@@ -34,10 +34,11 @@ int main() {
     // Load Object
 
     mosaic_gen::HyperParameters params;
-    params.image_path = "../Images/flower.jpg";
-    // params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
+    // params.image_path = "../Images/flower.jpg";
+    params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
+    // params.image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/dunes.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 0.8;
+    params.resize_factor = 0.7;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -48,10 +49,15 @@ int main() {
     params.tile_size = 10;
     params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
-    params.max_frontiers = 4;
-    params.flood_fill_neighbor_points = 128;
-    params.flood_fill_point_jitter = 1;
+    params.max_frontiers = 10;
+    params.flood_fill_neighbor_points = 16;
+    params.flood_fill_point_jitter = 0;
     params.random_background_points = 50000;
+    params.jitterFunc = [](int frontier) -> int {
+        if (frontier < 4) return 0;
+        if (frontier < 8) return 2;
+        return 10;
+    };
 
     Mosaic my_mosaic(params);
     my_mosaic.loadImage();
