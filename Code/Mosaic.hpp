@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <string>
 #include <vector>
 #include <functional>
@@ -24,6 +25,7 @@ struct HyperParameters {
     int tile_size;
     int number_of_rings;
     int step_size;
+    int min_intersection_distance;
     int max_frontiers;
     int flood_fill_neighbor_points;
     double distance_from_center;
@@ -75,20 +77,15 @@ class Mosaic {
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
         cv::Vec3b sampleTileColor(const TileInfo& tile);
         void reconstructPlacedTiles();
-        double randomDouble(double min_val, double max_val);
-        std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
-        std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
-        std::vector<cv::Point> jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size);
-
+      
 
 
         void computeDistanceField();
-        std::tuple<cv::Vec2f, float> sampleTangentPoint(const cv::Point& pt);
+        std::tuple<cv::Vec2d, float> sampleTangentPoint(const cv::Point& pt);
         double findBestThetaTangentField(cv::Point center);
         
         std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         void showFloodFillPoints();
-        void fillGapsUsingDistanceField();
         void fillGapsRandom();
         
       

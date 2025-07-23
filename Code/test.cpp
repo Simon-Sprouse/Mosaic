@@ -1,5 +1,6 @@
 #include "test.hpp"
 #include "graphics.hpp"
+#include "random.hpp"
 
 #include <opencv2/opencv.hpp>
 #include <chrono>
@@ -35,8 +36,8 @@ namespace Test {
 
         int grid_size = static_cast<int>(mosaic.params.tile_size * 1.5);
         int max_step = static_cast<int>(mosaic.params.tile_size * 0.5);
-        std::vector<cv::Point> grid_points = mosaic.samplePointsGrid(mosaic.segmented, grid_size);
-        std::vector<cv::Point> samplePoints = mosaic.jitterPoints(grid_points, max_step, mosaic.segmented.size());
+        std::vector<cv::Point> grid_points = Random::samplePointsGrid(mosaic.segmented, grid_size);
+        std::vector<cv::Point> samplePoints = Random::jitterPoints(grid_points, max_step, mosaic.segmented.size());
     
     
         std::vector<std::tuple<cv::Point, cv::Vec2f, float>> results;
@@ -172,7 +173,7 @@ namespace Test {
             int num_points = mosaic.params.flood_fill_neighbor_points;
             int max_step = mosaic.params.getJitter(frontier);
             std::vector<cv::Point> points = mosaic.getFloodFillPoints2(tile.center, tile.theta_deg, mosaic.params.distance_from_center, num_points);
-            std::vector<cv::Point> jittered_points = mosaic.jitterPoints(points, max_step, mosaic.mask.size());
+            std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mosaic.mask.size());
            
 
 

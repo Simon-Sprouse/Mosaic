@@ -49,6 +49,7 @@ int main() {
     params.tile_size = 10;
     params.number_of_rings = 10;
     params.step_size = 0.5 * params.tile_size;
+    params.min_intersection_distance = params.tile_size;
     params.max_frontiers = 40;
     params.flood_fill_neighbor_points = 16;
     params.distance_from_center = params.tile_size * 1.5;

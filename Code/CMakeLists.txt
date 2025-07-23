@@ -9,9 +9,10 @@ find_package(OpenCV REQUIRED)
 
 add_executable(mosaic_tiler 
     main.cpp 
-    mosaic.cpp
+    Mosaic.cpp
     graphics.cpp 
-    optimize.cpp
+    geometry.cpp
+    random.cpp
     test.cpp
 )
 target_include_directories(mosaic_tiler PRIVATE ${OpenCv_INCLUDE_DIRS})

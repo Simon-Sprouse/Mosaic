@@ -1,6 +1,7 @@
 #include "Mosaic.hpp"
 #include "graphics.hpp"
-#include "optimize.hpp"
+#include "geometry.hpp"
+#include "random.hpp"
 
 #include "gif.h"
 
@@ -231,48 +232,20 @@ void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments,
 }
 
 
+
+
 void Mosaic::rankSegments() { 
     if (segments.empty()) {
         std::cerr << "rankSegments called but segmented image is empty" << std::endl;
         return;
     }
 
-
-
-    // Helper lambda for PCA length
-    auto pca_length = [](const std::vector<cv::Point>& points) -> double {
-        if (points.size() < 2)
-            return 0.0;
-
-        cv::Mat data(points.size(), 2, CV_64F);
-        for (size_t i = 0; i < points.size(); ++i) {
-            data.at<double>(i, 0) = points[i].x;
-            data.at<double>(i, 1) = points[i].y;
-        }
-
-        cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 1);
-        cv::Mat projected;
-        pca.project(data, projected);
-
-        double minVal, maxVal;
-        cv::minMaxLoc(projected.col(0), &minVal, &maxVal);
-
-        return maxVal - minVal;
-    };
-
-
     segment_lengths.clear(); // Before computing
 
     for (const auto& segment_pixels : segments) {
-        double length = pca_length(segment_pixels);
+        double length = Geometry::pcaLength(segment_pixels);
         segment_lengths.push_back(length);
     }
-    
-    // if (segments.size() != segment_lengths.size()) {
-    //     std::cerr << "[BUG] Segment length mismatch! segments: "
-    //               << segments.size() << ", lengths: " << segment_lengths.size() << std::endl;
-    // }
-    
 
     sortSegmentsByLength(segments, segment_lengths);
 
@@ -315,19 +288,13 @@ cv::Point Mosaic::getRandomPointOnSegment(int k) {
         throw std::out_of_range("Segment index k is out of range");
     }
 
-
     const std::vector<cv::Point>& points = segments.at(k);
 
     if (points.empty()) {
         throw std::runtime_error("No points in the selected segment");
     }
 
-    // Random engine and distribution
-    static std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<> dist(0, static_cast<int>(points.size()) - 1);
-
-    // Pick a random index and return the point
-    return points[dist(rng)];
+    return Random::selectFromVector<cv::Point>(points);
 }
 
 
@@ -497,31 +464,14 @@ std::vector<cv::Point> Mosaic::findTileEdgeIntersections(const cv::Mat& segment_
 
 
 
-double euclideanDistance(const cv::Point& a, const cv::Point& b) {
-    double dx = static_cast<double>(a.x - b.x);
-    double dy = static_cast<double>(a.y - b.y);
-    return std::sqrt(dx * dx + dy * dy);
-}
+
 
 std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::Point>& inputPoints) {
-    std::vector<cv::Point> uniquePoints;
+    
 
-    const double MIN_INTERSECTION_DIST = 10;  // adjust as needed
+    const double min_dist = params.min_intersection_distance; 
 
-    for (const auto& pt : inputPoints) {
-        bool isFarEnough = true;
-        for (const auto& kept : uniquePoints) {
-            if (euclideanDistance(pt, kept) < MIN_INTERSECTION_DIST) {
-                isFarEnough = false;
-                break;
-            }
-        }
-        if (isFarEnough) {
-            uniquePoints.push_back(pt);
-        }
-    }
-
-    return uniquePoints;
+    return Geometry::filterUniquePoints(inputPoints, min_dist);
 }
 
 
@@ -545,6 +495,7 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
     double radius = size * 1.0; // HUGE impact on alignment TODO do some geometry
 
     // Convert to grayscale if needed
+    // TODO move into geometry and reuse gray_segment
     cv::Mat gray;
     if (selected_segment.channels() > 1) {
         cv::cvtColor(selected_segment, gray, cv::COLOR_BGR2GRAY);
@@ -557,7 +508,7 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
     cv::findNonZero(gray, all_stroke_pixels);
 
     // Filter to those within circular radius
-    std::vector<cv::Point2f> region_pixels;
+    std::vector<cv::Point2d> region_pixels;
     for (const auto& pt : all_stroke_pixels) {
         double dx = pt.x - center.x;
         double dy = pt.y - center.y;
@@ -568,27 +519,11 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
 
     // Check if enough points for PCA
     if (region_pixels.size() < 2) {
-        // std::cerr << "Not enough stroke pixels for PCA near point: " << center << std::endl;
         return ERROR_CODE_NO_VALID_THETA;
     }
 
-    // Build matrix for PCA
-    cv::Mat data(region_pixels.size(), 2, CV_64F);
-    for (size_t i = 0; i < region_pixels.size(); ++i) {
-        data.at<double>(i, 0) = region_pixels[i].x;
-        data.at<double>(i, 1) = region_pixels[i].y;
-    }
-
-    // Run PCA to get dominant direction
-    cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 1);
-    cv::Vec2d direction = pca.eigenvectors.row(0);
-
-    // Convert to angle in degrees
-    double theta_rad = std::atan2(direction[1], direction[0]);
-    double theta_deg = theta_rad * 180.0 / CV_PI;
-
-    // cout << "Best theta: " << theta_deg << endl;
-
+    cv::Vec2d direction = Geometry::pcaDirection(region_pixels);
+    double theta_deg = Geometry::vectorToAngleDegrees(direction);
 
     
 
@@ -687,10 +622,11 @@ void Mosaic::placeTileSegment(int k) {
 
 
         // filter and sort -- add closest points to top of stack
+        // TODO geometry
         allIntersections = filterUniqueIntersections(allIntersections);
         std::sort(allIntersections.begin(), allIntersections.end(),
         [&current_center](const cv::Point& a, const cv::Point& b) {
-            return euclideanDistance(a, current_center) < euclideanDistance(b, current_center);
+            return Geometry::euclideanDistance(a, current_center) < Geometry::euclideanDistance(b, current_center);
         });
         std::reverse(allIntersections.begin(), allIntersections.end());
 
@@ -784,104 +720,6 @@ void Mosaic::reconstructPlacedTiles() {
 
 
 
-double Mosaic::randomDouble(double min_val, double max_val) {
-    static std::mt19937 rng(std::random_device{}());
-    std::uniform_real_distribution<double> dist(min_val, max_val);
-    return dist(rng);
-}
-
-
-
-std::vector<cv::Point> Mosaic::samplePointsGrid(const cv::Mat& image, int grid_size) { 
-    std::vector<cv::Point> grid_points;
-
-    if (image.empty() || grid_size <= 0) {
-        return grid_points;
-    }
-
-    for (int y = 0; y < image.rows; y += grid_size) {
-        for (int x = 0; x < image.cols; x += grid_size) {
-            grid_points.emplace_back(x, y);
-        }
-    }
-
-    return grid_points;
-}
-
-std::vector<cv::Point> Mosaic::samplePointsRandom(const cv::Mat& image, int num_points) {
-    std::vector<cv::Point> random_points;
-
-    if (image.empty() || num_points <= 0) {
-        return random_points;
-    }
-
-    int width = image.cols;
-    int height = image.rows;
-
-    static std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<int> dist_x(0, width - 1);
-    std::uniform_int_distribution<int> dist_y(0, height - 1);
-
-    for (int i = 0; i < num_points; ++i) {
-        int x = dist_x(rng);
-        int y = dist_y(rng);
-        random_points.emplace_back(x, y);
-    }
-
-    return random_points;
-}
-
-
-
-
-std::vector<cv::Point> Mosaic::jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size) {
-    std::vector<cv::Point> jittered_points;
-
-    if (max_step < 0 || input_points.empty()) {
-        return input_points;  // No jittering needed
-    }
-
-    static std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<int> offset_dist(-max_step, max_step);
-
-    for (const auto& pt : input_points) {
-        int jitter_x = pt.x + offset_dist(rng);
-        int jitter_y = pt.y + offset_dist(rng);
-
-        // Clamp to image bounds
-        jitter_x = std::clamp(jitter_x, 0, image_size.width - 1);
-        jitter_y = std::clamp(jitter_y, 0, image_size.height - 1);
-
-        jittered_points.emplace_back(jitter_x, jitter_y);
-    }
-
-    return jittered_points;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -907,14 +745,13 @@ void Mosaic::computeDistanceField() {
     cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
     cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
 
-    
 
 }
 
 
 
 
-std::tuple<cv::Vec2f, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
+std::tuple<cv::Vec2d, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
 
     if (distance.empty() || gradX.empty() || gradY.empty()) { 
         computeDistanceField();
@@ -924,7 +761,7 @@ std::tuple<cv::Vec2f, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
     int y = pt.y;
 
     if (x < 0 || x >= distance.cols || y < 0 || y >= distance.rows) {
-    return {cv::Vec2f(0.0f, 0.0f), 0.0f};
+    return {cv::Vec2d(0.0f, 0.0f), 0.0f};
     }
 
     float dx = gradX.at<float>(y, x);
@@ -935,9 +772,9 @@ std::tuple<cv::Vec2f, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
     float ty = dx;
 
     float magnitude = std::sqrt(tx * tx + ty * ty);
-    cv::Vec2f tangent(0.0f, 0.0f);
+    cv::Vec2d tangent(0.0f, 0.0f);
     if (magnitude > 1e-5f) {
-    tangent = cv::Vec2f(tx / magnitude, ty / magnitude);
+    tangent = cv::Vec2d(tx / magnitude, ty / magnitude);
     }
 
     float dist = distance.at<float>(y, x);
@@ -1039,7 +876,7 @@ void Mosaic::showFloodFillPoints() {
             int num_points = params.flood_fill_neighbor_points;
             int max_step = params.getJitter(frontier);
             std::vector<cv::Point> points = getFloodFillPoints2(tile.center, tile.theta_deg, distance_from_center, num_points);
-            std::vector<cv::Point> jittered_points = jitterPoints(points, max_step, mask.size());
+            std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
             all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
         }
 
@@ -1060,72 +897,6 @@ void Mosaic::showFloodFillPoints() {
         frontier++;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-// Helper to convert direction vector to degrees
-inline double vectorToAngleDegrees(const cv::Vec2f& vec) {
-    return std::atan2(vec[1], vec[0]) * 180.0 / CV_PI;
-}
-
-// Gap-filling function (UNUSED)
-void Mosaic::fillGapsUsingDistanceField() {
-    
-    if (distance.empty() || gradX.empty() || gradY.empty()) { 
-        computeDistanceField();
-    }
-
-    double tile_size = params.tile_size;
-    int max_tiles_to_place = params.random_background_points;
-
-    // Priority queue of (distance, point), max-heap
-    using PQEntry = std::pair<float, cv::Point>;
-    auto cmp = [](const PQEntry& a, const PQEntry& b) {
-        return a.first > b.first; // min-heap
-    };
-    std::priority_queue<PQEntry, std::vector<PQEntry>, decltype(cmp)> pq(cmp);
-
-    for (int y = 0; y < distance.rows; ++y) {
-        for (int x = 0; x < distance.cols; ++x) {
-            float dist = distance.at<float>(y, x);
-            if (dist >= tile_size * 0.5) { // threshold: skip very narrow gaps
-                pq.emplace(dist, cv::Point(x, y));
-            }
-        }
-    }
-
-    int num_tiles_placed = 0;
-
-    while (!pq.empty() && num_tiles_placed < max_tiles_to_place) {
-        auto [dist, pt] = pq.top();
-        pq.pop();
-
-        // Sample guidance field
-        auto [vec, contour_dist] = sampleTangentPoint(pt);
-        double theta_deg = vectorToAngleDegrees(vec);
-
-        if (isValidTile(pt, tile_size, theta_deg)) {
-
-            int frontier = -2;
-            placeTile(pt, tile_size, theta_deg, frontier); 
-            ++num_tiles_placed;
-        }
-    }
-
-    std::cout << "Filled " << num_tiles_placed << " gaps using distance field.\n";
-}
-
-
-
 
 
 
@@ -1161,7 +932,7 @@ void Mosaic::fillGapsRandom() {
 
         // Sample guidance field
         auto [vec, contour_dist] = sampleTangentPoint(point);
-        double theta_deg = vectorToAngleDegrees(vec);
+        double theta_deg = Geometry::vectorToAngleDegrees(vec);
 
         if (isValidTile(point, tile_size, theta_deg)) {
 
@@ -1306,6 +1077,8 @@ void Mosaic::saveTileInfo(const std::string& suffix) {
 
 
 }
+
+
 
 
 
