@@ -7,7 +7,6 @@
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include <random>
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
@@ -24,6 +23,13 @@ namespace mosaic_gen {
 // param constructor
 Mosaic::Mosaic(const HyperParameters& hp) { 
     params = hp;
+
+    loadImage();
+    resizeOriginal();
+    cout << "Loaded image: " << image_name << endl;
+    cout << "Original dimensions: " << original.size() << endl;
+    cout << "Resized image to size: " << resized.size() << endl;
+    cout << endl;
 }
 
 void Mosaic::resetData() {
@@ -919,9 +925,8 @@ void Mosaic::fillGapsRandom() {
         }
     }
     
-    std::random_device rd;
-    std::mt19937 rng(rd());
-    std::shuffle(points.begin(), points.end(), rng);
+
+    Random::shuffleVector(points);
 
 
 

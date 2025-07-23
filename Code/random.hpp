@@ -6,6 +6,7 @@
 #include <opencv2/core.hpp>
 
 namespace Random { 
+
     template<typename T>
     T selectFromVector(const std::vector<T>& vec) { 
          // Random engine and distribution
@@ -14,6 +15,13 @@ namespace Random {
 
         // Pick a random index and return the value
         return vec[dist(rng)];
+    }
+
+    template<typename T>
+    void shuffleVector(std::vector<T>& vec) { 
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        std::shuffle(vec.begin(), vec.end(), rng);
     }
 
     double randomDouble(double min_val, double max_val); 

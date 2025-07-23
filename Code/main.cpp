@@ -53,7 +53,6 @@ int main() {
     params.max_frontiers = 40;
     params.flood_fill_neighbor_points = 16;
     params.distance_from_center = params.tile_size * 1.5;
-
     params.random_background_points = 50000;
     params.jitterFunc = [](int frontier) -> int {
         if (frontier < 4) return 0;
@@ -62,23 +61,19 @@ int main() {
     };
 
     Mosaic my_mosaic(params);
-    my_mosaic.loadImage();
-    my_mosaic.resizeOriginal();
-    cout << "Loaded image: " << my_mosaic.image_name << endl;
-    cout << "Original dimensions: " << my_mosaic.original.size() << endl;
-    cout << "Resized image to size: " << my_mosaic.resized.size() << endl;
-    cout << endl;
+    
 
 
 
     // RUN TESTS
-    Test::runAllTests(my_mosaic);
+    MosaicTest::Test my_test(my_mosaic);
+    my_test.runAllTests();
 
 
 
 
     // RUN PROCESS
-    Test::runTimedProcess(my_mosaic);
+    my_test.runTimedProcess();
    
 
     return 0;
@@ -97,7 +92,7 @@ TODO LIST
     - color frontiers ✅
     - show flood fill points along segment ✅
     - number segment placement ordering ✅
-- utils/math/random file
+- utils/math/random file ✅
 - color sampling options
 - rename functions and variables
 - standardize const and reference in function params

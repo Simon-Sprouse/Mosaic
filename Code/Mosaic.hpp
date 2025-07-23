@@ -8,6 +8,10 @@
 
 using namespace std;
 
+namespace MosaicTest {
+    class Test;
+}
+
 namespace mosaic_gen {
 
 struct HyperParameters { 
@@ -49,7 +53,12 @@ struct TileInfo {
     int frontier;
 };
 
+
+
+
 class Mosaic { 
+
+    friend class MosaicTest::Test;
 
     public: 
 
@@ -93,8 +102,19 @@ class Mosaic {
         void saveGif(int tilesPerFrame, const std::string& suffix);
         void saveTileInfo(const std::string& suffix);
 
-
         string image_name;
+        
+
+        
+
+    private: 
+
+        HyperParameters params;
+        
+        std::vector<std::vector<cv::Point>> segments;
+        std::vector<double> segment_lengths;
+
+        std::vector<TileInfo> tiles_placed;
 
         cv::Mat original;
         cv::Mat resized;
@@ -105,26 +125,11 @@ class Mosaic {
         cv::Mat distance;
         cv::Mat gradX;
         cv::Mat gradY;
-
         cv::Mat selected_segment;
         cv::Mat canvas;
         cv::Mat mask;
 
-    
-        std::vector<std::vector<cv::Point>> segments;
-        std::vector<double> segment_lengths;
 
-        HyperParameters params;
-
-        std::vector<TileInfo> tiles_placed;
-
-
-    private: 
-
-
-
-        
-        
 
         const double ERROR_CODE_NO_VALID_THETA = -420.69;
 

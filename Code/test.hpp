@@ -2,28 +2,58 @@
 
 #include "Mosaic.hpp"
 
-
+#include <chrono>
 #include <string>
 
 
-namespace Test { 
+namespace MosaicTest { 
 
-    void showDistanceVectorField(mosaic_gen::Mosaic& mosaic);
-    void squeebTest();
-    void testFloodFillPoints(mosaic_gen::Mosaic& mosaic);
-    void testFloodFillFrontier(mosaic_gen::Mosaic& mosaic);
-    void testContours(mosaic_gen::Mosaic& mosaic);
-    void testSegmentSelection(mosaic_gen::Mosaic& mosaic);
-    void testSegmentOrder(mosaic_gen::Mosaic& mosaic);
-    void testIntersections(mosaic_gen::Mosaic& mosaic);
-    void visualizePlacementMethod(mosaic_gen::Mosaic& mosaic);
-    void visualizePlacementOrder(mosaic_gen::Mosaic& mosaic);
-    void visualizeFrontierOrder(mosaic_gen::Mosaic& mosaic);
+    class Test {
 
-    void printTestHeader(const std::string& test_name);
-    void printTestFooter(chrono::duration<double> elapsed);
-    void runAllTests(mosaic_gen::Mosaic& mosaic);
-    void runTimedProcess(mosaic_gen::Mosaic& mosaic);
+        public: 
+
+            explicit Test(mosaic_gen::Mosaic& mosaic);
+
+            void showDistanceVectorField();
+            void squeebTest();
+            void testFloodFillPoints();
+            void testFloodFillFrontier();
+            void testContours();
+            void testSegmentSelection();
+            void testSegmentOrder();
+            void testIntersections();
+            void visualizePlacementMethod();
+            void visualizePlacementOrder();
+            void visualizeFrontierOrder();
+        
+            
+            void runAllTests();
+            void runTimedProcess();
+
+            
+
+        private: 
+
+            mosaic_gen::Mosaic& mosaic;
+
+            void printTestHeader(const std::string& test_name);
+            void printTestFooter(chrono::duration<double> elapsed);
+            void printHorizontalBar();
+            void printTotalTime(std::chrono::duration<double> total_time);
+
+            template <typename Func>
+            chrono::duration<double> timeFunction(const std::string& name, Func&& fn) {
+                printTestHeader(name);
+                auto start = std::chrono::high_resolution_clock::now();
+                fn(); // run the test
+                auto elapsed = std::chrono::high_resolution_clock::now() - start;
+                printTestFooter(elapsed);
+                return elapsed;
+            }
+
+    };
+
+    
 
 
 
