@@ -92,7 +92,8 @@ namespace Test {
             double angle_rad = std::atan2(tangent[1], tangent[0]);
             double angle_deg = angle_rad * 180.0 / CV_PI;
     
-            Graphics::drawArrow(vector_field, pt, length, angle_deg, bgr);
+            int thickness = 2;
+            Graphics::drawArrow(vector_field, pt, length, thickness, angle_deg, bgr);
         }
     
         mosaic.saveImage(vector_field, "vector_field");
@@ -137,6 +138,61 @@ namespace Test {
         }
 
         mosaic.saveImage(mosaic.canvas, "flood_fill_test");
+
+    }
+
+
+    void testFloodFillFrontier(mosaic_gen::Mosaic& mosaic) { 
+
+
+        // necessary progress
+        mosaic.loadImage();
+        mosaic.resizeOriginal();
+        mosaic.grayImage();
+        mosaic.blurImage();
+        mosaic.cannyFilter();
+        mosaic.detectContours();
+        mosaic.rankSegments();
+        mosaic.placeTileAllSegments();
+        
+
+
+
+        cv::Mat flood_fill_canvas = mosaic.segmented.clone();
+
+        
+
+        double point_size = 4;
+        cv::Vec3b tile_color(255, 255, 255);
+        cv::Vec3b point_color(0, 0, 255);
+
+        int frontier = 0;
+
+        for (const mosaic_gen::TileInfo& tile : mosaic.tiles_placed) {
+            int num_points = mosaic.params.flood_fill_neighbor_points;
+            int max_step = mosaic.params.getJitter(frontier);
+            std::vector<cv::Point> points = mosaic.getFloodFillPoints2(tile.center, tile.theta_deg, mosaic.params.distance_from_center, num_points);
+            std::vector<cv::Point> jittered_points = mosaic.jitterPoints(points, max_step, mosaic.mask.size());
+           
+
+
+            // print tile
+            int border_width = static_cast<int>(tile.size * 0.25);
+            Graphics::drawSquare(flood_fill_canvas, tile.center, tile.size, tile.theta_deg, tile_color, border_width);
+
+            // print next points
+            for (cv::Point point : jittered_points) { 
+                Graphics::drawSquare(flood_fill_canvas, point, point_size, tile.theta_deg, point_color, point_size);
+            }
+
+        }
+
+
+        
+        mosaic.saveImage(flood_fill_canvas, "flood_fill_next_points");
+        mosaic.resetData();
+
+
 
     }
 
@@ -210,6 +266,41 @@ namespace Test {
     }
 
 
+    void testSegmentOrder(mosaic_gen::Mosaic& mosaic) { 
+
+        // necessary progress
+        mosaic.loadImage();
+        mosaic.resizeOriginal();
+        mosaic.grayImage();
+        mosaic.blurImage();
+        mosaic.cannyFilter();
+        mosaic.detectContours();
+        mosaic.rankSegments();
+
+        
+
+        int k = 0;
+        mosaic.selectSegment(k);
+
+        cv::Mat segment_canvas = mosaic.selected_segment.clone();
+
+        mosaic.placeTileSegment(k);
+
+        cv::Vec3b tile_color(255, 255, 0);
+
+        for (mosaic_gen::TileInfo tile : mosaic.tiles_placed) { 
+            Graphics::drawSquareText(segment_canvas, tile.center, tile.size, tile.theta_deg, tile_color, tile.size, std::to_string(tile.order));
+        }
+        
+
+        mosaic.saveImage(segment_canvas, "segment_order");
+        mosaic.resetData();
+
+    }
+
+
+
+
 
     void testIntersections(mosaic_gen::Mosaic& mosaic) { 
 
@@ -246,7 +337,8 @@ namespace Test {
         Graphics::drawSquare(intersection_canvas, point, point_size, theta_deg, center_color, point_size);
 
         std::vector<cv::Point> allIntersections;
-        
+        int radius = static_cast<int>(initial_size * 5);
+     
 
         for (int i = 0; i < mosaic.params.number_of_rings; ++i) {
 
@@ -263,10 +355,10 @@ namespace Test {
             allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
         }
 
+
+
+
         allIntersections = mosaic.filterUniqueIntersections(allIntersections);
-
-
-        
         for (cv::Point intersection : allIntersections) {
             Graphics::drawSquare(intersection_canvas, intersection, point_size, theta_deg, point_color, point_size);
         }
@@ -280,22 +372,29 @@ namespace Test {
 
 
 
+   
+
+
+
+
 
 
 
     void visualizePlacementMethod(mosaic_gen::Mosaic& mosaic) { 
 
         // necessary progress
-        mosaic.loadImage();
-        mosaic.resizeOriginal();
-        mosaic.grayImage();
-        mosaic.blurImage();
-        mosaic.cannyFilter();
-        mosaic.detectContours();
-        mosaic.rankSegments();
-        mosaic.placeTileAllSegments();
-        mosaic.showFloodFillPoints();
-        mosaic.fillGapsRandom();
+        if (mosaic.mask.empty()) { 
+            mosaic.loadImage();
+            mosaic.resizeOriginal();
+            mosaic.grayImage();
+            mosaic.blurImage();
+            mosaic.cannyFilter();
+            mosaic.detectContours();
+            mosaic.rankSegments();
+            mosaic.placeTileAllSegments();
+            mosaic.showFloodFillPoints();
+            mosaic.fillGapsRandom();
+        }
 
 
         cv::Vec3b contour_color(0, 0, 255);
@@ -317,9 +416,137 @@ namespace Test {
             }
         }
 
-        mosaic.saveImage(frontier_canvas, "frontier_canvas");
+        mosaic.saveImage(frontier_canvas, "placement_canvas");
 
 
+
+
+    }
+
+
+
+    void visualizePlacementOrder(mosaic_gen::Mosaic& mosaic) { 
+
+        // necessary progress
+        if (mosaic.mask.empty()) { 
+            mosaic.loadImage();
+            mosaic.resizeOriginal();
+            mosaic.grayImage();
+            mosaic.blurImage();
+            mosaic.cannyFilter();
+            mosaic.detectContours();
+            mosaic.rankSegments();
+            mosaic.placeTileAllSegments();
+            mosaic.showFloodFillPoints();
+            mosaic.fillGapsRandom();
+        }
+        
+
+        // Visualization
+        cv::Mat ordering_canvas = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
+        const int length = mosaic.tiles_placed.size();
+        float gamma = 0.6; // to strecth color map; 
+    
+        float minDist = 0;
+        float maxDist = length;
+
+    
+    
+        for (mosaic_gen::TileInfo tile : mosaic.tiles_placed) {
+
+            int value = 0;
+            if (maxDist > minDist) {
+                float normalized = (tile.order - minDist) / (maxDist - minDist);
+                value = static_cast<int>(255.0f * std::pow(normalized, gamma));
+                value = std::clamp(value, 0, 255);
+    
+            }
+    
+            // Create 1-pixel grayscale image
+            cv::Mat grayPixel(1, 1, CV_8U, cv::Scalar(value));
+            cv::Mat colorPixel;
+            cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_CIVIDIS);
+    
+            // Extract BGR color from the pixel
+            cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);
+   
+    
+  
+            Graphics::drawSquare(ordering_canvas, tile.center, tile.size, tile.theta_deg, bgr, tile.size);
+        }
+    
+        mosaic.saveImage(ordering_canvas, "ordering_canvas");
+
+
+    }
+
+
+
+    void visualizeFrontierOrder(mosaic_gen::Mosaic& mosaic) { 
+
+        // necessary progress
+        if (mosaic.mask.empty()) { 
+            mosaic.loadImage();
+            mosaic.resizeOriginal();
+            mosaic.grayImage();
+            mosaic.blurImage();
+            mosaic.cannyFilter();
+            mosaic.detectContours();
+            mosaic.rankSegments();
+            mosaic.placeTileAllSegments();
+            mosaic.showFloodFillPoints();
+            mosaic.fillGapsRandom();
+        }
+        
+
+        // Visualization
+        cv::Mat ordering_canvas = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
+        const int length = mosaic.tiles_placed.size();
+        float gamma = 0.6; // to strecth color map; 
+
+
+
+        int max_frontier = 0;
+        for (mosaic_gen::TileInfo tile : mosaic.tiles_placed) { 
+            if (tile.frontier >= max_frontier) { 
+                max_frontier = tile.frontier;
+            }
+        }
+    
+        float minDist = 0;
+        float maxDist = max_frontier;
+
+    
+    
+        for (mosaic_gen::TileInfo tile : mosaic.tiles_placed) {
+
+            int current_frontier = tile.frontier;
+            if (tile.frontier < 0) { 
+                current_frontier = max_frontier + 1;
+            }
+
+            int value = 0;
+            if (maxDist > minDist) {
+                float normalized = (current_frontier - minDist) / (maxDist - minDist);
+                value = static_cast<int>(255.0f * std::pow(normalized, gamma));
+                value = std::clamp(value, 0, 255);
+    
+            }
+    
+            // Create 1-pixel grayscale image
+            cv::Mat grayPixel(1, 1, CV_8U, cv::Scalar(value));
+            cv::Mat colorPixel;
+            cv::applyColorMap(grayPixel, colorPixel, cv::COLORMAP_INFERNO);
+    
+            // Extract BGR color from the pixel
+            cv::Vec3b bgr = colorPixel.at<cv::Vec3b>(0, 0);
+   
+    
+  
+            Graphics::drawSquare(ordering_canvas, tile.center, tile.size, tile.theta_deg, bgr, tile.size);
+        }
+    
+        mosaic.saveImage(ordering_canvas, "frontier_ordering_canvas");
 
 
     }
@@ -385,11 +612,15 @@ namespace Test {
         // call test functions
         total_time += timeFunction("Vector Field", [&]() {showDistanceVectorField(mosaic);});
         total_time += timeFunction("Squeeb Test", [&]() {squeebTest();});
-        total_time += timeFunction("Flood Fill Points", [&]() {testFloodFillPoints(mosaic);});
         total_time += timeFunction("Test Contours", [&]() {testContours(mosaic);});
         total_time += timeFunction("Select Segment", [&]() {testSegmentSelection(mosaic);});
+        total_time += timeFunction("DFS Segment Order", [&]() {testSegmentOrder(mosaic);});
         total_time += timeFunction("Test Intersections", [&]() {testIntersections(mosaic);});
-        // total_time += timeFunction("Visualize Placement", [&]() {visualizePlacementMethod(mosaic);});
+        total_time += timeFunction("Flood Fill Points", [&]() {testFloodFillPoints(mosaic);});
+        total_time += timeFunction("Flood Fill Segment", [&]() {testFloodFillFrontier(mosaic);});
+        total_time += timeFunction("Visualize Placement", [&]() {visualizePlacementMethod(mosaic);});
+        total_time += timeFunction("Visualize Order", [&]() {visualizePlacementOrder(mosaic);});
+        total_time += timeFunction("Visualize Frontier", [&]() {visualizeFrontierOrder(mosaic);});
 
 
 

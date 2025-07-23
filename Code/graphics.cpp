@@ -121,7 +121,7 @@ namespace Graphics {
     
 
 
-    void drawLine(cv::Mat& image, const cv::Point& point_a, const cv::Point& point_b, int thickness, const cv::Scalar& color) {
+    void drawLine(cv::Mat& image, const cv::Point& point_a, const cv::Point& point_b, int thickness, const cv::Vec3b& color) {
         if (image.empty()) {
             std::cerr << "drawLine: Input image is empty." << std::endl;
             return;
@@ -131,7 +131,7 @@ namespace Graphics {
     }
 
 
-    void drawArrow(cv::Mat& image, const cv::Point& center, int length, double angle_deg, const cv::Vec3b& color) {
+    void drawArrow(cv::Mat& image, const cv::Point& center, int length, int thickness, double angle_deg, const cv::Vec3b& color) {
         if (image.empty()) {
             std::cerr << "drawArrow: Input image is empty." << std::endl;
             return;
@@ -139,9 +139,9 @@ namespace Graphics {
     
         // Parameters for arrow size (in pixels)
 
-        const int headLength = static_cast<int>(length / 2);        // length of each arrowhead wing
+        const int headLength = static_cast<int>(length / 3);        // length of each arrowhead wing
         const double headAngleDeg = 30;  // angle between shaft and arrowhead wing
-        const int thickness = 3;
+
     
         // Convert angle to radians
         double theta = angle_deg * CV_PI / 180.0;

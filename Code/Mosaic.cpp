@@ -506,7 +506,7 @@ double euclideanDistance(const cv::Point& a, const cv::Point& b) {
 std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::Point>& inputPoints) {
     std::vector<cv::Point> uniquePoints;
 
-    const double MIN_INTERSECTION_DIST = 10.0;  // adjust as needed
+    const double MIN_INTERSECTION_DIST = 10;  // adjust as needed
 
     for (const auto& pt : inputPoints) {
         bool isFarEnough = true;
@@ -624,6 +624,7 @@ TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int 
 
 
 
+
 void Mosaic::placeTileSegment(int k) { 
 
     if (mask.empty()) { 
@@ -666,24 +667,27 @@ void Mosaic::placeTileSegment(int k) {
 
    
         double initial_size = size;
-
         std::vector<cv::Point> allIntersections;
 
+        // vvv OLD WORKING CODE vvv
         for (int i = 0; i < params.number_of_rings; ++i) {
             double currentSize = initial_size + i * params.step_size;
-
-
+        
             std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
                 selected_segment, current_center, currentSize, theta_deg
             );
-
+        
             allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
         }
 
+
+
+
+        
+
+
+        // filter and sort -- add closest points to top of stack
         allIntersections = filterUniqueIntersections(allIntersections);
-
-
-        // sort and add closest points to top of stack
         std::sort(allIntersections.begin(), allIntersections.end(),
         [&current_center](const cv::Point& a, const cv::Point& b) {
             return euclideanDistance(a, current_center) < euclideanDistance(b, current_center);
@@ -1302,10 +1306,6 @@ void Mosaic::saveTileInfo(const std::string& suffix) {
 
 
 }
-
-
-
-
 
 
 
