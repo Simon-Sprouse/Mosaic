@@ -33,11 +33,15 @@ Mosaic::Mosaic(const HyperParameters& hp) {
 
 
     // TODO initialize mats
-    canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
+    
+}
+
+void Mosaic::setWindow(std::string name) { 
+    window_name = name;
 }
 
 void Mosaic::resetData() {
-    image_name.clear();
+
 
     original.release();
     resized.release();
@@ -60,6 +64,138 @@ void Mosaic::resetData() {
 }
 
 
+void Mosaic::runAll() {
+    loadImage();
+    resizeOriginal();
+    grayImage();
+    blurImage();
+    cannyFilter();
+    detectContours();
+    rankSegments();
+    placeTileAllSegments();
+    showFloodFillPoints();
+    fillGapsRandom();
+    renderTiles();
+}
+
+cv::Mat Mosaic::getCanvas() { 
+    return canvas.clone();
+}
+
+
+
+
+
+void Mosaic::saveImage(const cv::Mat& image,  const std::string& suffix) { 
+
+    string output_dir = params.results_dir;
+
+
+    if (image.empty()) { 
+        return;
+    }
+
+    if (!fs::exists(output_dir)) { 
+        fs::create_directory(output_dir);
+    }
+
+    std::string output_path = output_dir + "/" + image_name + "_" + suffix + ".jpg";
+    if (cv::imwrite(output_path, image)) { 
+        // cout << "Saved: " << output_path << endl;
+    }
+    else { 
+        cerr << "Failed to save: " << output_path << endl;
+    }
+
+
+}
+
+
+void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
+
+    string output_dir = params.results_dir;
+
+
+    int width = canvas.cols;
+    int height = canvas.rows;
+
+    std::string gifFilename = output_dir + "/" + image_name + "_" + suffix + ".gif";
+
+    GifWriter writer;
+
+    GifBegin(&writer, gifFilename.c_str(), width, height, 10); // delay in 1/100s
+
+    cv::Mat gifCanvas = cv::Mat::zeros(canvas.size(), CV_8UC3);
+    for (size_t i = 0; i < tiles_placed.size(); i += tilesPerFrame) {
+        for (size_t j = i; j < std::min(i + tilesPerFrame, tiles_placed.size()); ++j) {
+            const TileInfo& tile = tiles_placed[j];
+            cv::Vec3b color = sampleTileColor(tile);
+            Graphics::drawSquare(gifCanvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
+        }
+
+        // Convert to RGBA
+        cv::Mat rgba;
+        cv::cvtColor(gifCanvas, rgba, cv::COLOR_BGR2RGBA);
+
+        GifWriteFrame(&writer, rgba.data, width, height, 10);
+    }
+
+
+    // Hold on final frame by repeating it
+
+    int final_hold_frames = 10;
+
+    cv::Mat rgbaFinal;
+    cv::cvtColor(gifCanvas, rgbaFinal, cv::COLOR_BGR2RGBA);
+    for (int k = 0; k < final_hold_frames; ++k) {
+        GifWriteFrame(&writer, rgbaFinal.data, width, height, 10);
+    }
+
+    GifEnd(&writer);
+    // std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
+}
+
+
+
+
+void Mosaic::saveTileInfo(const std::string& suffix) { 
+
+    string output_dir = params.results_dir;
+
+
+    std::ostringstream oss;
+
+    // Write the CSV header
+    oss << "center_x,center_y,size,theta_deg,order,frontier\n";
+
+    // Iterate through each TileInfo struct in the vector
+    for (const auto& tile : tiles_placed) {
+        oss << tile.center.x << ","
+            << tile.center.y << ","
+            << tile.size << ","
+            << tile.theta_deg << ","
+            << tile.order << ","
+            << tile.frontier << "\n";
+    }
+
+    std::string fileName = output_dir + "/" + image_name + "_" + suffix + ".csv";
+    std::ofstream outFile(fileName); // Open the file for writing
+    if (outFile.is_open()) {
+        outFile << oss.str(); // Write the CSV content to the file
+        outFile.close();      // Close the file
+        // std::cout << "CSV data successfully written to " << fileName << std::endl;
+    } else {
+        std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
+    }
+
+
+
+}
+
+
+
+
+
 
 
 void Mosaic::loadImage() { 
@@ -72,13 +208,8 @@ void Mosaic::loadImage() {
     }
 
     image_name = fs::path(params.image_path).stem().string();
-   
-    
 
 }
-
-// set hyperparameters
-
 
 
 void Mosaic::resizeOriginal() { 
@@ -89,13 +220,7 @@ void Mosaic::resizeOriginal() {
 
     cv::resize(original, resized, cv::Size(), params.resize_factor, params.resize_factor, cv::INTER_LINEAR);
 
-
-    // construct image mats
-
-
 }
-
-
 
 
 void Mosaic::grayImage() { 
@@ -214,35 +339,28 @@ int Mosaic::detectContours() {
 }
 
 
+// TODO move this
+void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments, std::vector<double>& lengths) {
 
-void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments,
-                          std::vector<double>& lengths)
-{
-
-
-    
     // Pair lengths with their corresponding segment
     std::vector<std::pair<double, std::vector<cv::Point>>> paired;
 
     for (size_t i = 0; i < lengths.size(); ++i) {
-        paired.emplace_back(lengths[i], segments[i]);
+    paired.emplace_back(lengths[i], segments[i]);
     }
 
     // Sort by length (ascending)
     std::sort(paired.begin(), paired.end(),
-              [](const auto& a, const auto& b) {
-                  return a.first > b.first;
-              });
+    [](const auto& a, const auto& b) {
+    return a.first > b.first;
+    });
 
     // Unpack back into segments and lengths
     for (size_t i = 0; i < paired.size(); ++i) {
-        lengths[i] = paired[i].first;
-        segments[i] = std::move(paired[i].second);
+    lengths[i] = paired[i].first;
+    segments[i] = std::move(paired[i].second);
     }
 }
-
-
-
 
 void Mosaic::rankSegments() { 
     if (segments.empty()) {
@@ -261,6 +379,126 @@ void Mosaic::rankSegments() {
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void Mosaic::placeTileAllSegments() { 
+
+    // TODO - find the number of segments
+    int number_of_segments = static_cast<int>(segment_lengths.size());
+
+    for (int i = 0; i < number_of_segments; i++) {
+        placeTileSegment(i);
+    }
+
+    // cout << "Placed tiles along: " << number_of_segments << " segments" << endl;
+    
+}
+
+
+
+
+void Mosaic::placeTileSegment(int k) { 
+
+    if (mask.empty()) { 
+        mask = cv::Mat::zeros(resized.size(), CV_8UC1);
+    }
+
+    selectSegment(k);
+
+
+    cv::Point center = getRandomPointOnSegment(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
+
+    double size = params.tile_size;
+
+
+    stack<cv::Point> s;
+    cv::Point current_center;
+    s.push(center);
+    int squares_placed = 0;
+    int frontier = 0;
+
+
+    while(!s.empty()) { 
+        current_center = s.top();
+        s.pop();
+
+
+        
+        double theta_deg = findBestTheta(current_center, size);
+        if (!isValidTile(current_center, size, theta_deg)) { 
+            continue;
+        }
+        
+        placeTile(current_center, size, theta_deg, frontier, std::to_string(squares_placed));
+
+        
+        squares_placed++;
+
+
+   
+        double initial_size = size;
+        std::vector<cv::Point> allIntersections;
+
+
+        for (int i = 0; i < params.number_of_rings; ++i) {
+            double currentSize = initial_size + i * params.step_size;
+        
+            std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
+                selected_segment, current_center, currentSize, theta_deg
+            );
+        
+            allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+        }
+
+
+        // filter and sort -- add closest points to top of stack
+        // TODO geometry
+        allIntersections = filterUniqueIntersections(allIntersections);
+        std::sort(allIntersections.begin(), allIntersections.end(),
+        [&current_center](const cv::Point& a, const cv::Point& b) {
+            return Geometry::euclideanDistance(a, current_center) < Geometry::euclideanDistance(b, current_center);
+        });
+        std::reverse(allIntersections.begin(), allIntersections.end());
+
+        for (cv::Point p : allIntersections) { 
+            s.push(p);
+        }
+
+    }
+
+
+}
+
 
 
 void Mosaic::selectSegment(int k) {
@@ -292,6 +530,7 @@ void Mosaic::selectSegment(int k) {
 }
 
 
+
 cv::Point Mosaic::getRandomPointOnSegment(int k) {
     // Safety check: make sure k is in bounds
     if (k < 0 || k >= static_cast<int>(segment_lengths.size())) {
@@ -308,6 +547,61 @@ cv::Point Mosaic::getRandomPointOnSegment(int k) {
 }
 
 
+double Mosaic::findBestTheta(cv::Point center, double size) { 
+
+    double radius = size * 1.0; // HUGE impact on alignment TODO do some geometry
+
+    // Convert to grayscale if needed
+    // TODO move into geometry and reuse gray_segment
+    cv::Mat gray;
+    if (selected_segment.channels() > 1) {
+        cv::cvtColor(selected_segment, gray, cv::COLOR_BGR2GRAY);
+    } else {
+        gray = selected_segment;
+    }
+
+    // Find non-zero stroke pixels
+    std::vector<cv::Point> all_stroke_pixels;
+    cv::findNonZero(gray, all_stroke_pixels);
+
+    // Filter to those within circular radius
+    std::vector<cv::Point2d> region_pixels;
+    for (const auto& pt : all_stroke_pixels) {
+        double dx = pt.x - center.x;
+        double dy = pt.y - center.y;
+        if ((dx * dx + dy * dy) <= radius * radius) {
+            region_pixels.emplace_back(pt.x, pt.y);
+        }
+    }
+
+    // Check if enough points for PCA
+    if (region_pixels.size() < 2) {
+        return ERROR_CODE_NO_VALID_THETA;
+    }
+
+    cv::Vec2d direction = Geometry::pcaDirection(region_pixels);
+    double theta_deg = Geometry::vectorToAngleDegrees(direction);
+
+    
+
+    return theta_deg;
+}
+
+
+
+bool Mosaic::isValidTile(cv::Point center, double size, double theta_deg) {
+    // check for validity
+    if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
+        return false;
+    }
+    if (tileOverlapsMask(center, size, theta_deg)) { 
+        return false;
+    }
+    if (!tileInBounds(center, size)) { 
+        return false;
+    }
+    return true;
+}
 
 
 
@@ -372,11 +666,52 @@ bool Mosaic::tileOverlapsMask(const cv::Point& center, double tileSize, double r
 
 
 
+TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int frontier, string text) {
 
 
 
+    Graphics::drawSquare(mask, center, size, theta_deg, cv::Vec3b(255), size);
 
+    // TODO add tile metadata to the 
+    int order = tiles_placed.size();
+    TileInfo current_tile = {
+        center,
+        size, 
+        theta_deg,
+        order,
+        frontier
+    };
+    tiles_placed.push_back(current_tile);
+    tiles_to_render.push_back(current_tile);
 
+    if (tiles_to_render.size() >= params.tiles_per_frame) { 
+        renderTiles();
+        tiles_to_render.clear();
+    }
+
+    return current_tile;
+
+}
+
+void Mosaic::renderTiles() { 
+
+    if (canvas.empty()) { 
+        canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
+    }
+
+    if (window_name.empty()) { 
+        return;
+    }
+
+    for (TileInfo tile : tiles_to_render) { 
+        cv::Vec3b color = sampleTileColor(tile);
+        Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
+    }
+    cv::imshow(window_name, canvas);
+    cv::waitKey(1); // Needed for OpenCV to update GUI
+}
+
+// TODO move to geometry
 double pointLineSegmentDistance(const cv::Point2f& p, const cv::Point2f& A, const cv::Point2f& B) {
     cv::Point2f AB = B - A;
     cv::Point2f AP = p - A;
@@ -472,10 +807,6 @@ std::vector<cv::Point> Mosaic::findTileEdgeIntersections(const cv::Mat& segment_
 
 
 
-
-
-
-
 std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::Point>& inputPoints) {
     
 
@@ -485,353 +816,67 @@ std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::P
 }
 
 
-bool Mosaic::isValidTile(cv::Point center, double size, double theta_deg) {
-    // check for validity
-    if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
-        return false;
-    }
-    if (tileOverlapsMask(center, size, theta_deg)) { 
-        return false;
-    }
-    if (!tileInBounds(center, size)) { 
-        return false;
-    }
-    return true;
-}
-
-
-double Mosaic::findBestTheta(cv::Point center, double size) { 
-
-    double radius = size * 1.0; // HUGE impact on alignment TODO do some geometry
-
-    // Convert to grayscale if needed
-    // TODO move into geometry and reuse gray_segment
-    cv::Mat gray;
-    if (selected_segment.channels() > 1) {
-        cv::cvtColor(selected_segment, gray, cv::COLOR_BGR2GRAY);
-    } else {
-        gray = selected_segment;
-    }
-
-    // Find non-zero stroke pixels
-    std::vector<cv::Point> all_stroke_pixels;
-    cv::findNonZero(gray, all_stroke_pixels);
-
-    // Filter to those within circular radius
-    std::vector<cv::Point2d> region_pixels;
-    for (const auto& pt : all_stroke_pixels) {
-        double dx = pt.x - center.x;
-        double dy = pt.y - center.y;
-        if ((dx * dx + dy * dy) <= radius * radius) {
-            region_pixels.emplace_back(pt.x, pt.y);
-        }
-    }
-
-    // Check if enough points for PCA
-    if (region_pixels.size() < 2) {
-        return ERROR_CODE_NO_VALID_THETA;
-    }
-
-    cv::Vec2d direction = Geometry::pcaDirection(region_pixels);
-    double theta_deg = Geometry::vectorToAngleDegrees(direction);
-
-    
-
-    return theta_deg;
-}
-
-
-TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int frontier, string text) {
-
-
-
-    Graphics::drawSquare(mask, center, size, theta_deg, cv::Vec3b(255), size);
-
-    // TODO add tile metadata to the 
-    int order = tiles_placed.size();
-    TileInfo current_tile = {
-        center,
-        size, 
-        theta_deg,
-        order,
-        frontier
-    };
-    tiles_placed.push_back(current_tile);
-    tiles_to_render.push_back(current_tile);
-
-    if (tiles_to_render.size() >= tiles_per_frame) { 
-        renderTiles();
-        tiles_to_render.clear();
-    }
-
-    return current_tile;
-
-}
-
-void Mosaic::renderTiles() { 
-
-    for (TileInfo tile : tiles_to_render) { 
-        cv::Vec3b color = sampleTileColor(tile);
-        Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
-    }
-    cv::imshow("Mosaic Preview", canvas);
-    cv::waitKey(1); // Needed for OpenCV to update GUI
-}
-
-void Mosaic::runAll() {
-    loadImage();
-    resizeOriginal();
-    grayImage();
-    blurImage();
-    cannyFilter();
-    detectContours();
-    rankSegments();
-    placeTileAllSegments();
-    showFloodFillPoints();
-    fillGapsRandom();
-}
 
 
 
 
-void Mosaic::placeTileSegment(int k) { 
-
-    if (mask.empty()) { 
-        mask = cv::Mat::zeros(resized.size(), CV_8UC1);
-    }
-
-    selectSegment(k);
-
-
-    cv::Point center = getRandomPointOnSegment(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
-
-    double size = params.tile_size;
 
 
 
 
-    stack<cv::Point> s;
-    cv::Point current_center;
-    s.push(center);
-    int squares_placed = 0;
-    int frontier = 0;
 
 
-    while(!s.empty()) { 
-        current_center = s.top();
-        s.pop();
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+void Mosaic::showFloodFillPoints() {
+
+    double distance_from_center = params.distance_from_center;
+    const int max_frontiers = params.max_frontiers;
+    int frontier = 1;
+    std::vector<TileInfo> frontier_tiles(tiles_placed);
+
+    while (!frontier_tiles.empty() && frontier <= max_frontiers) { 
         
-        double theta_deg = findBestTheta(current_center, size);
-        if (!isValidTile(current_center, size, theta_deg)) { 
-            continue;
-        }
-        
-        placeTile(current_center, size, theta_deg, frontier, std::to_string(squares_placed));
-
-        
-        squares_placed++;
-
-
-   
-        double initial_size = size;
-        std::vector<cv::Point> allIntersections;
-
-
-        for (int i = 0; i < params.number_of_rings; ++i) {
-            double currentSize = initial_size + i * params.step_size;
-        
-            std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
-                selected_segment, current_center, currentSize, theta_deg
-            );
-        
-            allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+        // Collect all flood fill points for this frontier
+        std::vector<cv::Point> all_flood_points;
+        for (const TileInfo& tile : frontier_tiles) {
+            int num_points = params.flood_fill_neighbor_points;
+            int max_step = params.getJitter(frontier);
+            std::vector<cv::Point> points = getFloodFillPoints2(tile.center, tile.theta_deg, distance_from_center, num_points);
+            std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
+            all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
         }
 
+        // TODO sort somehow
 
-
-
-        
-
-
-        // filter and sort -- add closest points to top of stack
-        // TODO geometry
-        allIntersections = filterUniqueIntersections(allIntersections);
-        std::sort(allIntersections.begin(), allIntersections.end(),
-        [&current_center](const cv::Point& a, const cv::Point& b) {
-            return Geometry::euclideanDistance(a, current_center) < Geometry::euclideanDistance(b, current_center);
-        });
-        std::reverse(allIntersections.begin(), allIntersections.end());
-
-        for (cv::Point p : allIntersections) { 
-            s.push(p);
+        std::vector<TileInfo> next_frontier_tiles;
+        // Now place tiles at unique positions
+        for (const cv::Point& pt : all_flood_points) {
+            double theta_deg = findBestThetaTangentField(pt);
+            if (isValidTile(pt, params.tile_size, theta_deg)) { 
+                TileInfo current_tile = placeTile(pt, params.tile_size, theta_deg, frontier + 1);
+                next_frontier_tiles.push_back(current_tile);
+            }
+            
         }
 
+        frontier_tiles = next_frontier_tiles;
+        frontier++;
     }
-
-    
-
-
-
 }
-
-
-
-
-// TODO finish this function
-void Mosaic::placeTileAllSegments() { 
-
-    // TODO - find the number of segments
-    int number_of_segments = static_cast<int>(segment_lengths.size());
-
-    for (int i = 0; i < number_of_segments; i++) {
-        placeTileSegment(i);
-    }
-
-    // cout << "Placed tiles along: " << number_of_segments << " segments" << endl;
-    
-}
-
-
-
-
-
-
-
-
-cv::Vec3b Mosaic::sampleTileColor(const TileInfo& tile) {
-    float halfSize = static_cast<float>(tile.size / 2.0);
-    float theta = static_cast<float>(tile.theta_deg * CV_PI / 180.0f);
-
-    std::vector<cv::Point2f> localCorners = {
-        {-halfSize, -halfSize},
-        { halfSize, -halfSize},
-        { halfSize,  halfSize},
-        {-halfSize,  halfSize}
-    };
-
-    std::vector<cv::Point> worldCorners;
-    for (const auto& pt : localCorners) {
-        float x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
-        float y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
-        worldCorners.emplace_back(cvRound(tile.center.x + x), cvRound(tile.center.y + y));
-    }
-
-    // Create mask for the rotated tile
-    cv::Mat mask = cv::Mat::zeros(resized.size(), CV_8UC1);
-    std::vector<std::vector<cv::Point>> contour{worldCorners};
-    cv::fillPoly(mask, contour, cv::Vec3b(255));
-
-    // Return average color from resized image under tile
-    cv::Scalar color = cv::mean(resized, mask);
-
-
-    cv::Vec3b vecColor(
-        static_cast<uchar>(color[0]),
-        static_cast<uchar>(color[1]),
-        static_cast<uchar>(color[2])
-    );
-
-
-    return vecColor;
-}
-
-
-void Mosaic::reconstructPlacedTiles() { 
-
-    // reset canvas
-    canvas = cv::Mat::zeros(edges.size(), CV_8UC3);
-    cv::Vec3b color;
-
-    for (TileInfo tile : tiles_placed) { 
-        color = sampleTileColor(tile);
-        Graphics::drawSquare(canvas, tile.center, tile.size * 1.0, tile.theta_deg, color, tile.size);
-    }
-
-
-}
-
-
-
-
-
-
-void Mosaic::computeDistanceField() { 
-
-    distance = cv::Mat::zeros(segmented.size(), CV_8UC3);
-    gradX = cv::Mat::zeros(segmented.size(), CV_8UC3);
-    gradY = cv::Mat::zeros(segmented.size(), CV_8UC3);
-
-
-    // Step 1: Convert to grayscale and binary edge map
-    cv::Mat gray, binary;
-    cv::cvtColor(segmented, gray, cv::COLOR_BGR2GRAY);
-    cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
-
-    // Step 2: Invert binary
-    cv::Mat inverted = 255 - binary;
-
-    // Step 3: Compute distance transform
-    cv::distanceTransform(inverted, distance, cv::DIST_L2, 3);
-
-    // Step 4: Compute gradients
-    cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
-    cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
-
-
-}
-
-
-
-
-std::tuple<cv::Vec2d, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
-
-    if (distance.empty() || gradX.empty() || gradY.empty()) { 
-        computeDistanceField();
-    }
-
-    int x = pt.x;
-    int y = pt.y;
-
-    if (x < 0 || x >= distance.cols || y < 0 || y >= distance.rows) {
-    return {cv::Vec2d(0.0f, 0.0f), 0.0f};
-    }
-
-    float dx = gradX.at<float>(y, x);
-    float dy = gradY.at<float>(y, x);
-
-    // Rotate 90° counter-clockwise to get tangent
-    float tx = -dy;
-    float ty = dx;
-
-    float magnitude = std::sqrt(tx * tx + ty * ty);
-    cv::Vec2d tangent(0.0f, 0.0f);
-    if (magnitude > 1e-5f) {
-    tangent = cv::Vec2d(tx / magnitude, ty / magnitude);
-    }
-
-    float dist = distance.at<float>(y, x);
-    return {tangent, dist};
-}
-
-double Mosaic::findBestThetaTangentField(cv::Point center) { 
-    auto [tangent, dist] = sampleTangentPoint(center);
-    double theta_rad = std::atan2(tangent[1], tangent[0]);
-    double theta_deg = theta_rad * 180.0 / CV_PI;
-
-
-   
-    
-
-
-    return theta_deg;
-};
-
-
-
-
-
 
 
 
@@ -894,43 +939,87 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints2(cv::Point center, double thet
 }
 
 
+double Mosaic::findBestThetaTangentField(cv::Point center) { 
+    auto [tangent, dist] = sampleTangentPoint(center);
+    double theta_rad = std::atan2(tangent[1], tangent[0]);
+    double theta_deg = theta_rad * 180.0 / CV_PI;
 
-void Mosaic::showFloodFillPoints() {
 
-    double distance_from_center = params.distance_from_center;
-    const int max_frontiers = params.max_frontiers;
-    int frontier = 1;
-    std::vector<TileInfo> frontier_tiles(tiles_placed);
+    return theta_deg;
+};
 
-    while (!frontier_tiles.empty() && frontier <= max_frontiers) { 
-        
-        // Collect all flood fill points for this frontier
-        std::vector<cv::Point> all_flood_points;
-        for (const TileInfo& tile : frontier_tiles) {
-            int num_points = params.flood_fill_neighbor_points;
-            int max_step = params.getJitter(frontier);
-            std::vector<cv::Point> points = getFloodFillPoints2(tile.center, tile.theta_deg, distance_from_center, num_points);
-            std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
-            all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
-        }
 
-        // TODO sort somehow
 
-        std::vector<TileInfo> next_frontier_tiles;
-        // Now place tiles at unique positions
-        for (const cv::Point& pt : all_flood_points) {
-            double theta_deg = findBestThetaTangentField(pt);
-            if (!tileOverlapsMask(pt, params.tile_size, theta_deg)) { 
-                TileInfo current_tile = placeTile(pt, params.tile_size, theta_deg, frontier + 1);
-                next_frontier_tiles.push_back(current_tile);
-            }
-            
-        }
+std::tuple<cv::Vec2d, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
 
-        frontier_tiles = next_frontier_tiles;
-        frontier++;
+    if (distance.empty() || gradX.empty() || gradY.empty()) { 
+        computeDistanceField();
     }
+
+    int x = pt.x;
+    int y = pt.y;
+
+    if (x < 0 || x >= distance.cols || y < 0 || y >= distance.rows) {
+    return {cv::Vec2d(0.0f, 0.0f), 0.0f};
+    }
+
+    float dx = gradX.at<float>(y, x);
+    float dy = gradY.at<float>(y, x);
+
+    // Rotate 90° counter-clockwise to get tangent
+    float tx = -dy;
+    float ty = dx;
+
+    float magnitude = std::sqrt(tx * tx + ty * ty);
+    cv::Vec2d tangent(0.0f, 0.0f);
+    if (magnitude > 1e-5f) {
+    tangent = cv::Vec2d(tx / magnitude, ty / magnitude);
+    }
+
+    float dist = distance.at<float>(y, x);
+    return {tangent, dist};
 }
+
+
+
+void Mosaic::computeDistanceField() { 
+
+    distance = cv::Mat::zeros(segmented.size(), CV_8UC3);
+    gradX = cv::Mat::zeros(segmented.size(), CV_8UC3);
+    gradY = cv::Mat::zeros(segmented.size(), CV_8UC3);
+
+
+    // Step 1: Convert to grayscale and binary edge map
+    cv::Mat gray, binary;
+    cv::cvtColor(segmented, gray, cv::COLOR_BGR2GRAY);
+    cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
+
+    // Step 2: Invert binary
+    cv::Mat inverted = 255 - binary;
+
+    // Step 3: Compute distance transform
+    cv::distanceTransform(inverted, distance, cv::DIST_L2, 3);
+
+    // Step 4: Compute gradients
+    cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
+    cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -997,119 +1086,60 @@ void Mosaic::fillGapsRandom() {
 
 
 
+void Mosaic::reconstructPlacedTiles() { 
 
+    // reset canvas
+    canvas = cv::Mat::zeros(edges.size(), CV_8UC3);
+    cv::Vec3b color;
 
-
-
-
-void Mosaic::saveImage(const cv::Mat& image,  const std::string& suffix) { 
-
-    string output_dir = params.results_dir;
-
-
-    if (image.empty()) { 
-        return;
-    }
-
-    if (!fs::exists(output_dir)) { 
-        fs::create_directory(output_dir);
-    }
-
-    std::string output_path = output_dir + "/" + image_name + "_" + suffix + ".jpg";
-    if (cv::imwrite(output_path, image)) { 
-        // cout << "Saved: " << output_path << endl;
-    }
-    else { 
-        cerr << "Failed to save: " << output_path << endl;
+    for (TileInfo tile : tiles_placed) { 
+        color = sampleTileColor(tile);
+        Graphics::drawSquare(canvas, tile.center, tile.size * 1.0, tile.theta_deg, color, tile.size);
     }
 
 
 }
 
 
-void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
-
-    string output_dir = params.results_dir;
 
 
-    int width = canvas.cols;
-    int height = canvas.rows;
+cv::Vec3b Mosaic::sampleTileColor(const TileInfo& tile) {
+    float halfSize = static_cast<float>(tile.size / 2.0);
+    float theta = static_cast<float>(tile.theta_deg * CV_PI / 180.0f);
 
-    std::string gifFilename = output_dir + "/" + image_name + "_" + suffix + ".gif";
+    std::vector<cv::Point2f> localCorners = {
+        {-halfSize, -halfSize},
+        { halfSize, -halfSize},
+        { halfSize,  halfSize},
+        {-halfSize,  halfSize}
+    };
 
-    GifWriter writer;
-
-    GifBegin(&writer, gifFilename.c_str(), width, height, 10); // delay in 1/100s
-
-    cv::Mat gifCanvas = cv::Mat::zeros(canvas.size(), CV_8UC3);
-    for (size_t i = 0; i < tiles_placed.size(); i += tilesPerFrame) {
-        for (size_t j = i; j < std::min(i + tilesPerFrame, tiles_placed.size()); ++j) {
-            const TileInfo& tile = tiles_placed[j];
-            cv::Vec3b color = sampleTileColor(tile);
-            Graphics::drawSquare(gifCanvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
-        }
-
-        // Convert to RGBA
-        cv::Mat rgba;
-        cv::cvtColor(gifCanvas, rgba, cv::COLOR_BGR2RGBA);
-
-        GifWriteFrame(&writer, rgba.data, width, height, 10);
+    std::vector<cv::Point> worldCorners;
+    for (const auto& pt : localCorners) {
+        float x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
+        float y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
+        worldCorners.emplace_back(cvRound(tile.center.x + x), cvRound(tile.center.y + y));
     }
 
+    // Create mask for the rotated tile
+    cv::Mat mask = cv::Mat::zeros(resized.size(), CV_8UC1);
+    std::vector<std::vector<cv::Point>> contour{worldCorners};
+    cv::fillPoly(mask, contour, cv::Vec3b(255));
 
-    // Hold on final frame by repeating it
+    // Return average color from resized image under tile
+    cv::Scalar color = cv::mean(resized, mask);
 
-    int final_hold_frames = 10;
 
-    cv::Mat rgbaFinal;
-    cv::cvtColor(gifCanvas, rgbaFinal, cv::COLOR_BGR2RGBA);
-    for (int k = 0; k < final_hold_frames; ++k) {
-        GifWriteFrame(&writer, rgbaFinal.data, width, height, 10);
-    }
+    cv::Vec3b vecColor(
+        static_cast<uchar>(color[0]),
+        static_cast<uchar>(color[1]),
+        static_cast<uchar>(color[2])
+    );
 
-    GifEnd(&writer);
-    // std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
+
+    return vecColor;
 }
 
-
-
-
-void Mosaic::saveTileInfo(const std::string& suffix) { 
-
-    string output_dir = params.results_dir;
-
-
-    std::ostringstream oss;
-
-    // Write the CSV header
-    oss << "center_x,center_y,size,theta_deg,order,frontier\n";
-
-    // Iterate through each TileInfo struct in the vector
-    for (const auto& tile : tiles_placed) {
-        oss << tile.center.x << ","
-            << tile.center.y << ","
-            << tile.size << ","
-            << tile.theta_deg << ","
-            << tile.order << ","
-            << tile.frontier << "\n";
-    }
-
-
-
-
-    std::string fileName = output_dir + "/" + image_name + "_" + suffix + ".csv";
-    std::ofstream outFile(fileName); // Open the file for writing
-    if (outFile.is_open()) {
-        outFile << oss.str(); // Write the CSV content to the file
-        outFile.close();      // Close the file
-        // std::cout << "CSV data successfully written to " << fileName << std::endl;
-    } else {
-        std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
-    }
-
-
-
-}
 
 
 

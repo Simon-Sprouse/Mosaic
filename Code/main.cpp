@@ -19,6 +19,8 @@ using mosaic_gen::Mosaic;
 
 int main() { 
 
+    auto start = std::chrono::high_resolution_clock::now();
+
 
     // cout << "Hello From Mosaic" << endl << endl;
     cout << R"(
@@ -34,11 +36,11 @@ int main() {
     // Load Object
 
     mosaic_gen::HyperParameters params;
-    params.image_path = "../Images/flower.jpg";
+    // params.image_path = "../Images/flower.jpg";
     // params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
-    // params.image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/dunes.jpg";
+    params.image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/sound.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 2;
+    params.resize_factor = 0.25;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -54,35 +56,44 @@ int main() {
     params.flood_fill_neighbor_points = 16;
     params.distance_from_center = params.tile_size * 1.5;
     params.random_background_points = 50000;
+    params.tiles_per_frame = 20;
     params.jitterFunc = [](int frontier) -> int {
         if (frontier < 4) return 0;
-        if (frontier < 8) return 2;
+        if (frontier < 8) return 1;
         return 10;
     };
+    
 
     Mosaic my_mosaic(params);
     
 
 
 
-    // // RUN TESTS
-    // MosaicTest::Test my_test(my_mosaic);
-    // my_test.runAllTests();
+    // RUN TESTS
+    MosaicTest::Test my_test(my_mosaic);
+    my_test.runAllTests();
+    my_test.runTimedProcess();
 
 
+    // RUN PREVIEW
+    my_mosaic.resetData();
+    string window_name = "Mosaic Preview";
+    cv::namedWindow(window_name, cv::WINDOW_NORMAL);
+    cv::moveWindow(window_name, 100, 100);
 
-
-    // // RUN PROCESS
-    // my_test.runTimedProcess();
-
-    // TODO obj takes window name, only render if name is set
-    cv::namedWindow("Mosaic Preview", cv::WINDOW_NORMAL);
-    cv::moveWindow("Mosaic Preview", 100, 100);
-
+    my_mosaic.setWindow(window_name);
     my_mosaic.runAll();
 
-    cv::destroyWindow("Mosaic Preview");
-   
+    auto end = std::chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = end - start;
+    cout << "Main.cpp execution time: " << elapsed.count() << " s" << endl;
+
+
+
+    cv::imshow(window_name, my_mosaic.getCanvas());
+    cv::waitKey(0);
+    cv::destroyWindow(window_name);
+
 
     return 0;
 }

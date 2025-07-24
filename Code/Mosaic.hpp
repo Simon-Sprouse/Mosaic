@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <string>
 #include <vector>
 #include <functional>
@@ -34,7 +33,7 @@ struct HyperParameters {
     int flood_fill_neighbor_points;
     double distance_from_center;
     int random_background_points;
-
+    int tiles_per_frame;
     std::function<int(int)> jitterFunc;
     int getJitter(int frontier) const {
         if (jitterFunc) {
@@ -43,14 +42,18 @@ struct HyperParameters {
         return 0; // Default jitter
     }
 
+    
+
 };
 
 struct TileInfo { 
+
     cv::Point center;
     double size;
     double theta_deg;
     int order;
     int frontier;
+
 };
 
 
@@ -62,10 +65,31 @@ class Mosaic {
 
     public: 
 
-        // param constructor
         Mosaic(const HyperParameters& hp);
+        void setWindow(std::string name);
         void resetData();
+        
+        void runAll();
+        cv::Mat getCanvas();
 
+        void saveImage(const cv::Mat& image, const std::string& suffix);
+        void saveGif(int tilesPerFrame, const std::string& suffix);
+        void saveTileInfo(const std::string& suffix);
+        
+
+        string image_name;
+        
+
+    private: 
+
+
+        /*
+        --------------------------------------
+                        METHODS
+        --------------------------------------
+        */
+
+        // CONTOUR DETECTION PIPELINE
         void loadImage();
         void resizeOriginal();
         void grayImage();
@@ -73,54 +97,58 @@ class Mosaic {
         void cannyFilter();
         int detectContours();
         void rankSegments();
+
+        // PLACE TILES OVER CONTOURS
+        void placeTileAllSegments();
+        void placeTileSegment(int k);
         void selectSegment(int k);
         cv::Point getRandomPointOnSegment(int k);
-        bool tileInBounds(const cv::Point& center, double tileSize);
-        bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
-        bool isValidTile(cv::Point center, double tileSize, double theta_deg);
         double findBestTheta(cv::Point center, double size);
+        bool isValidTile(cv::Point center, double tileSize, double theta_deg);
+        bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
+        bool tileInBounds(const cv::Point& center, double tileSize);
         TileInfo placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
-        void placeTileSegment(int k);
-        void placeTileAllSegments();
+        void renderTiles();
         std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
-        cv::Vec3b sampleTileColor(const TileInfo& tile);
-        void reconstructPlacedTiles();
-      
-
-
-        void computeDistanceField();
-        std::tuple<cv::Vec2d, float> sampleTangentPoint(const cv::Point& pt);
-        double findBestThetaTangentField(cv::Point center);
         
-        std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
+        // PLACE TILES FLOOD FILL
         void showFloodFillPoints();
+        std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
+        double findBestThetaTangentField(cv::Point center);
+        std::tuple<cv::Vec2d, float> sampleTangentPoint(const cv::Point& pt);
+        void computeDistanceField();
+        
+        // PLACE TILES GAPS
         void fillGapsRandom();
-        
-      
-        void saveImage(const cv::Mat& image, const std::string& suffix);
-        void saveGif(int tilesPerFrame, const std::string& suffix);
-        void saveTileInfo(const std::string& suffix);
 
-        string image_name;
-        
 
-        void renderTiles();
-        void runAll();
+        // RECREATE IMAGE FROM DISCRETE STATE
+        void reconstructPlacedTiles();
+        cv::Vec3b sampleTileColor(const TileInfo& tile);
 
-        
 
-    private: 
+        /*
+        --------------------------------------
+                        DATA
+        --------------------------------------
+        */
 
+        // settings for logic - should be user defined
         HyperParameters params;
         
+        // store contours and their lengths
         std::vector<std::vector<cv::Point>> segments;
         std::vector<double> segment_lengths;
 
+        // discrete state representation for tiles
         std::vector<TileInfo> tiles_placed;
         std::vector<TileInfo> tiles_to_render; // to store tiles not yet rendered on canvas (will be cleared after render)
-        int tiles_per_frame = 20;
 
+        // for the imshow operation
+        std::string window_name;
+
+        // image data various purposes
         cv::Mat original;
         cv::Mat resized;
         cv::Mat grayscale;
@@ -134,10 +162,8 @@ class Mosaic {
         cv::Mat canvas;
         cv::Mat mask;
 
-
-
+        // in case pca function fails
         const double ERROR_CODE_NO_VALID_THETA = -420.69;
-
 
 
 };
