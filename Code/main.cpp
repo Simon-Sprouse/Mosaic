@@ -38,7 +38,7 @@ int main() {
     // params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
     // params.image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/dunes.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 1.5;
+    params.resize_factor = 2;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -65,15 +65,23 @@ int main() {
 
 
 
-    // RUN TESTS
-    MosaicTest::Test my_test(my_mosaic);
-    my_test.runAllTests();
+    // // RUN TESTS
+    // MosaicTest::Test my_test(my_mosaic);
+    // my_test.runAllTests();
 
 
 
 
-    // RUN PROCESS
-    my_test.runTimedProcess();
+    // // RUN PROCESS
+    // my_test.runTimedProcess();
+
+    // TODO obj takes window name, only render if name is set
+    cv::namedWindow("Mosaic Preview", cv::WINDOW_NORMAL);
+    cv::moveWindow("Mosaic Preview", 100, 100);
+
+    my_mosaic.runAll();
+
+    cv::destroyWindow("Mosaic Preview");
    
 
     return 0;
@@ -86,7 +94,7 @@ int main() {
 TODO LIST
 
 - replace drawSquare scalar function in all instances with vec3b ✅
-- finish visualizations
+- finish visualizations ✅
     - intersections ✅
     - fix vector field ✅
     - color frontiers ✅
@@ -96,7 +104,7 @@ TODO LIST
 - color sampling options
 - rename functions and variables
 - standardize const and reference in function params
-- use friend classes to move data back into mosiac private
+- use friend classes to move data back into mosiac private ✅
 - vector of mats for saveGif/output
 
 stretch goals

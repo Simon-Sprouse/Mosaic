@@ -105,6 +105,9 @@ class Mosaic {
         string image_name;
         
 
+        void renderTiles();
+        void runAll();
+
         
 
     private: 
@@ -115,6 +118,8 @@ class Mosaic {
         std::vector<double> segment_lengths;
 
         std::vector<TileInfo> tiles_placed;
+        std::vector<TileInfo> tiles_to_render; // to store tiles not yet rendered on canvas (will be cleared after render)
+        int tiles_per_frame = 20;
 
         cv::Mat original;
         cv::Mat resized;

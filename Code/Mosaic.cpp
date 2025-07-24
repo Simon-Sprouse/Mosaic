@@ -30,6 +30,10 @@ Mosaic::Mosaic(const HyperParameters& hp) {
     cout << "Original dimensions: " << original.size() << endl;
     cout << "Resized image to size: " << resized.size() << endl;
     cout << endl;
+
+
+    // TODO initialize mats
+    canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
 }
 
 void Mosaic::resetData() {
@@ -127,7 +131,7 @@ void Mosaic::cannyFilter() {
     cv::Canny(blurred, edges, params.canny_threshold_1, params.canny_threshold_2);
 }
 
-
+// TODO move image processing pipeline to new class
 int Mosaic::detectContours() { 
     if (edges.empty()) {
         cerr << "DetectContours called but no edges" << endl;
@@ -541,11 +545,6 @@ TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int 
 
 
 
-
-
-    // Draw aligned square
-    // cv::Vec3b color = cv::Vec3b(255, 255, 0);
-    // Graphics::drawSquareText(canvas, center, size, theta_deg, color, 2.0, text);
     Graphics::drawSquare(mask, center, size, theta_deg, cv::Vec3b(255), size);
 
     // TODO add tile metadata to the 
@@ -558,9 +557,38 @@ TileInfo Mosaic::placeTile(cv::Point center, double size, double theta_deg, int 
         frontier
     };
     tiles_placed.push_back(current_tile);
+    tiles_to_render.push_back(current_tile);
+
+    if (tiles_to_render.size() >= tiles_per_frame) { 
+        renderTiles();
+        tiles_to_render.clear();
+    }
 
     return current_tile;
 
+}
+
+void Mosaic::renderTiles() { 
+
+    for (TileInfo tile : tiles_to_render) { 
+        cv::Vec3b color = sampleTileColor(tile);
+        Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
+    }
+    cv::imshow("Mosaic Preview", canvas);
+    cv::waitKey(1); // Needed for OpenCV to update GUI
+}
+
+void Mosaic::runAll() {
+    loadImage();
+    resizeOriginal();
+    grayImage();
+    blurImage();
+    cannyFilter();
+    detectContours();
+    rankSegments();
+    placeTileAllSegments();
+    showFloodFillPoints();
+    fillGapsRandom();
 }
 
 
@@ -573,7 +601,7 @@ void Mosaic::placeTileSegment(int k) {
     }
 
     selectSegment(k);
-    canvas = selected_segment.clone();
+
 
     cv::Point center = getRandomPointOnSegment(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
 
@@ -610,7 +638,7 @@ void Mosaic::placeTileSegment(int k) {
         double initial_size = size;
         std::vector<cv::Point> allIntersections;
 
-        // vvv OLD WORKING CODE vvv
+
         for (int i = 0; i < params.number_of_rings; ++i) {
             double currentSize = initial_size + i * params.step_size;
         
@@ -1082,11 +1110,6 @@ void Mosaic::saveTileInfo(const std::string& suffix) {
 
 
 }
-
-
-
-
-
 
 
 
