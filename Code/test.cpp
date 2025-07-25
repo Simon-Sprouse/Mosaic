@@ -30,7 +30,7 @@ void Test::showDistanceVectorField() {
     // distance field
     mosaic.computeDistanceField();
     cv::Mat distance_visual;
-    mosaic.distance.convertTo(distance_visual, CV_8U, 255.0 / cv::norm(mosaic.distance, cv::NORM_INF));
+    mosaic.distance_map.convertTo(distance_visual, CV_8U, 255.0 / cv::norm(mosaic.distance_map, cv::NORM_INF));
     mosaic.saveImage(distance_visual, "distance_field");
 
     // tangent field
@@ -38,25 +38,25 @@ void Test::showDistanceVectorField() {
 
     int grid_size = static_cast<int>(mosaic.params.tile_size * 1.5);
     int max_step = static_cast<int>(mosaic.params.tile_size * 0.5);
-    std::vector<cv::Point> grid_points = Random::samplePointsGrid(mosaic.segmented, grid_size);
-    std::vector<cv::Point> samplePoints = Random::jitterPoints(grid_points, max_step, mosaic.segmented.size());
+    std::vector<cv::Point> grid_points = Random::samplePointsGrid(mosaic.contours, grid_size);
+    std::vector<cv::Point> samplePoints = Random::jitterPoints(grid_points, max_step, mosaic.contours.size());
 
 
     std::vector<std::tuple<cv::Point, cv::Vec2f, float>> results;
 
-    if (mosaic.segmented.empty() || samplePoints.empty()) {
+    if (mosaic.contours.empty() || samplePoints.empty()) {
         return;
     }
 
     
     // Step 5: Evaluate tangent and distance at each point
     for (const cv::Point& pt : samplePoints) {
-        auto [tangent, dist] = mosaic.sampleTangentPoint(pt);
+        auto [tangent, dist] = mosaic.getTangentAtPoint(pt);
         results.emplace_back(pt, tangent, dist);
     }
 
     // Visualization
-    cv::Mat vector_field = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
+    cv::Mat vector_field = cv::Mat::zeros(mosaic.contours.size(), CV_8UC3);
     const int length = mosaic.params.tile_size;
     float gamma = 0.6; // to strecth color map; 
 
@@ -133,7 +133,7 @@ void Test::testFloodFillPoints() {
     Graphics::drawSquare(mosaic.canvas, pt, tile_size, theta_deg, color, 5);
 
     int num_points = 16;
-    std::vector<cv::Point> next_points = mosaic.getFloodFillPoints2(pt, theta_deg, tile_size * 1.5, num_points);
+    std::vector<cv::Point> next_points = mosaic.nextFrontierFromTile(pt, theta_deg, tile_size * 1.5, num_points);
     cv::Vec3b point_color(255, 255, 0);
     for (cv::Point pt : next_points) { 
         Graphics::drawSquare(mosaic.canvas, pt, 5, theta_deg, point_color, 5);
@@ -155,13 +155,13 @@ void Test::testFloodFillFrontier() {
     mosaic.blurImage();
     mosaic.cannyFilter();
     mosaic.detectContours();
-    mosaic.rankSegments();
-    mosaic.placeTileAllSegments();
+    mosaic.rankContours();
+    mosaic.placeTileAllContours();
     
 
 
 
-    cv::Mat flood_fill_canvas = mosaic.segmented.clone();
+    cv::Mat flood_fill_canvas = mosaic.contours.clone();
 
     
 
@@ -174,7 +174,7 @@ void Test::testFloodFillFrontier() {
     for (const mosaic_gen::TileInfo& tile : mosaic.tiles_placed) {
         int num_points = mosaic.params.flood_fill_neighbor_points;
         int max_step = mosaic.params.getJitter(frontier);
-        std::vector<cv::Point> points = mosaic.getFloodFillPoints2(tile.center, tile.theta_deg, mosaic.params.distance_from_center, num_points);
+        std::vector<cv::Point> points = mosaic.nextFrontierFromTile(tile.center, tile.theta_deg, mosaic.params.distance_from_center, num_points);
         std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mosaic.mask.size());
         
 
@@ -212,7 +212,7 @@ void Test::testContours() {
     mosaic.blurImage();
     mosaic.cannyFilter();
     mosaic.detectContours();
-    mosaic.rankSegments();
+    mosaic.rankContours();
 
     cv::Mat segment_canvas = cv::Mat::zeros(mosaic.edges.size(), CV_8UC3);
     std::vector<cv::Vec3b> colors_used;
@@ -221,7 +221,7 @@ void Test::testContours() {
     std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<int> color_dist(64, 255);
 
-    for (std::vector<cv::Point> segment : mosaic.segments) { 
+    for (std::vector<cv::Point> segment : mosaic.segment_points) { 
         cv::Vec3b color;
         do {
             color = cv::Vec3b(color_dist(rng), color_dist(rng), color_dist(rng));
@@ -252,18 +252,18 @@ void Test::testSegmentSelection() {
     mosaic.blurImage();
     mosaic.cannyFilter();
     mosaic.detectContours();
-    mosaic.rankSegments();
+    mosaic.rankContours();
 
     
 
     int k = 2;
-    mosaic.selectSegment(k);
+    mosaic.selectContour(k);
 
-    const cv::Mat img = mosaic.selected_segment;
+    const cv::Mat img = mosaic.selected_contour;
 
 
 
-    mosaic.saveImage(mosaic.selected_segment, "selected_segment");
+    mosaic.saveImage(mosaic.selected_contour, "selected_segment");
 
 
 }
@@ -278,16 +278,16 @@ void Test::testSegmentOrder() {
     mosaic.blurImage();
     mosaic.cannyFilter();
     mosaic.detectContours();
-    mosaic.rankSegments();
+    mosaic.rankContours();
 
     
 
     int k = 0;
-    mosaic.selectSegment(k);
+    mosaic.selectContour(k);
 
-    cv::Mat segment_canvas = mosaic.selected_segment.clone();
+    cv::Mat segment_canvas = mosaic.selected_contour.clone();
 
-    mosaic.placeTileSegment(k);
+    mosaic.placeTileContour(k);
 
     cv::Vec3b tile_color(255, 255, 0);
 
@@ -316,11 +316,11 @@ void Test::testIntersections() {
     mosaic.blurImage();
     mosaic.cannyFilter();
     mosaic.detectContours();
-    mosaic.rankSegments();
+    mosaic.rankContours();
     int k = 0;
-    mosaic.selectSegment(k);
+    mosaic.selectContour(k);
 
-    cv::Mat intersection_canvas = mosaic.selected_segment.clone();
+    cv::Mat intersection_canvas = mosaic.selected_contour.clone();
     double point_size = 4;
     cv::Vec3b center_color(0, 0, 255);
     cv::Vec3b point_color(255, 255, 0);
@@ -330,7 +330,7 @@ void Test::testIntersections() {
 
 
 
-    cv::Point point = mosaic.getRandomPointOnSegment(k);
+    cv::Point point = mosaic.getRandomPointOnContour(k);
     
 
 
@@ -348,8 +348,8 @@ void Test::testIntersections() {
 
         double currentSize = initial_size + i * mosaic.params.step_size;
 
-        std::vector<cv::Point> ringIntersections = mosaic.findTileEdgeIntersections(
-            mosaic.selected_segment, point, currentSize, theta_deg
+        std::vector<cv::Point> ringIntersections = mosaic.findRingIntersections(
+            mosaic.selected_contour, point, currentSize, theta_deg
         );
 
         // draw ring
@@ -393,10 +393,10 @@ void Test::visualizePlacementMethod() {
         mosaic.blurImage();
         mosaic.cannyFilter();
         mosaic.detectContours();
-        mosaic.rankSegments();
-        mosaic.placeTileAllSegments();
-        mosaic.showFloodFillPoints();
-        mosaic.fillGapsRandom();
+        mosaic.rankContours();
+        mosaic.placeTileAllContours();
+        mosaic.floodFill();
+        mosaic.gapFill();
     }
 
 
@@ -438,15 +438,15 @@ void Test::visualizePlacementOrder() {
         mosaic.blurImage();
         mosaic.cannyFilter();
         mosaic.detectContours();
-        mosaic.rankSegments();
-        mosaic.placeTileAllSegments();
-        mosaic.showFloodFillPoints();
-        mosaic.fillGapsRandom();
+        mosaic.rankContours();
+        mosaic.placeTileAllContours();
+        mosaic.floodFill();
+        mosaic.gapFill();
     }
     
 
     // Visualization
-    cv::Mat ordering_canvas = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
+    cv::Mat ordering_canvas = cv::Mat::zeros(mosaic.contours.size(), CV_8UC3);
     const int length = mosaic.tiles_placed.size();
     float gamma = 0.6; // to strecth color map; 
 
@@ -495,15 +495,15 @@ void Test::visualizeFrontierOrder() {
         mosaic.blurImage();
         mosaic.cannyFilter();
         mosaic.detectContours();
-        mosaic.rankSegments();
-        mosaic.placeTileAllSegments();
-        mosaic.showFloodFillPoints();
-        mosaic.fillGapsRandom();
+        mosaic.rankContours();
+        mosaic.placeTileAllContours();
+        mosaic.floodFill();
+        mosaic.gapFill();
     }
     
 
     // Visualization
-    cv::Mat ordering_canvas = cv::Mat::zeros(mosaic.segmented.size(), CV_8UC3);
+    cv::Mat ordering_canvas = cv::Mat::zeros(mosaic.contours.size(), CV_8UC3);
     const int length = mosaic.tiles_placed.size();
     float gamma = 0.6; // to strecth color map; 
 
@@ -653,15 +653,15 @@ void Test::runTimedProcess() {
     mosaic.saveImage(mosaic.edges, "canny_edges");
 
     total_time += timeFunction("detecting contours", [&]() {mosaic.detectContours();});
-    total_time += timeFunction("ranking contours", [&]() {mosaic.rankSegments();});
-    total_time += timeFunction("place tiles along contours", [&]() {mosaic.placeTileAllSegments();});
+    total_time += timeFunction("ranking contours", [&]() {mosaic.rankContours();});
+    total_time += timeFunction("place tiles along contours", [&]() {mosaic.placeTileAllContours();});
     mosaic.saveImage(mosaic.mask, "mask_contours");
 
-    total_time += timeFunction("place tiles with flood fill", [&]() {mosaic.showFloodFillPoints();});
-    total_time += timeFunction("place tiles with gap fill", [&]() {mosaic.fillGapsRandom();});
+    total_time += timeFunction("place tiles with flood fill", [&]() {mosaic.floodFill();});
+    total_time += timeFunction("place tiles with gap fill", [&]() {mosaic.gapFill();});
     mosaic.saveImage(mosaic.mask, "mask_random_fill");
 
-    total_time += timeFunction("recontruct image", [&]() {mosaic.reconstructPlacedTiles();});
+    total_time += timeFunction("recontruct image", [&]() {mosaic.reconstructImage();});
     mosaic.saveImage(mosaic.canvas,  "reconstruction");
 
     total_time += timeFunction("create gif from tile info", [&]() {mosaic.saveGif(20, "animation");});

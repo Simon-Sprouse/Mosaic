@@ -21,7 +21,7 @@ namespace fs = std::__fs::filesystem;
 namespace mosaic_gen {
 
 // param constructor
-Mosaic::Mosaic(const HyperParameters& hp) { 
+Mosaic::Mosaic(const Parameters& hp) { 
     params = hp;
 
     loadImage();
@@ -48,16 +48,16 @@ void Mosaic::resetData() {
     grayscale.release();
     blurred.release();
     edges.release();
-    segmented.release();
-    distance.release();
+    contours.release();
+    distance_map.release();
     gradX.release();
     gradY.release();
 
-    selected_segment.release();
+    selected_contour.release();
     canvas.release();
     mask.release();
 
-    segments.clear();
+    segment_points.clear();
     segment_lengths.clear();
 
     tiles_placed.clear();
@@ -71,10 +71,10 @@ void Mosaic::runAll() {
     blurImage();
     cannyFilter();
     detectContours();
-    rankSegments();
-    placeTileAllSegments();
-    showFloodFillPoints();
-    fillGapsRandom();
+    rankContours();
+    placeTileAllContours();
+    floodFill();
+    gapFill();
     renderTiles();
 }
 
@@ -264,16 +264,16 @@ int Mosaic::detectContours() {
     }
 
     // Find contours
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(edges.clone(), contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
+    std::vector<std::vector<cv::Point>> cv_contours;
+    cv::findContours(edges.clone(), cv_contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
     // Create an output color image
-    segmented = cv::Mat::zeros(edges.size(), CV_8UC3);
+    contours = cv::Mat::zeros(edges.size(), CV_8UC3);
     int contour_id = 0;
 
  
 
-    for (const std::vector<cv::Point>& contour : contours) {
+    for (const std::vector<cv::Point>& contour : cv_contours) {
         if (contour.size() < 3)
             continue;
 
@@ -312,12 +312,12 @@ int Mosaic::detectContours() {
 
 
 
-            segments.push_back(std::vector<cv::Point>());
+            segment_points.push_back(std::vector<cv::Point>());
             for (int j = a; j < b; ++j) {
                 const cv::Point& point = contour[j];
-                if (point.y >= 0 && point.y < segmented.rows && point.x >= 0 && point.x < segmented.cols) {
-                    segmented.at<cv::Vec3b>(point.y, point.x) = cv::Vec3b(255, 255, 255);
-                    segments.at(segments.size() - 1).push_back(point);
+                if (point.y >= 0 && point.y < contours.rows && point.x >= 0 && point.x < contours.cols) {
+                    contours.at<cv::Vec3b>(point.y, point.x) = cv::Vec3b(255, 255, 255);
+                    segment_points.at(segment_points.size() - 1).push_back(point);
                 }
                 
                
@@ -362,20 +362,20 @@ void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments, std::ve
     }
 }
 
-void Mosaic::rankSegments() { 
-    if (segments.empty()) {
-        std::cerr << "rankSegments called but segmented image is empty" << std::endl;
+void Mosaic::rankContours() { 
+    if (segment_points.empty()) {
+        std::cerr << "rankSegments called but contours image is empty" << std::endl;
         return;
     }
 
     segment_lengths.clear(); // Before computing
 
-    for (const auto& segment_pixels : segments) {
+    for (const auto& segment_pixels : segment_points) {
         double length = Geometry::pcaLength(segment_pixels);
         segment_lengths.push_back(length);
     }
 
-    sortSegmentsByLength(segments, segment_lengths);
+    sortSegmentsByLength(segment_points, segment_lengths);
 
 
 }
@@ -411,13 +411,13 @@ void Mosaic::rankSegments() {
 
 
 
-void Mosaic::placeTileAllSegments() { 
+void Mosaic::placeTileAllContours() { 
 
     // TODO - find the number of segments
     int number_of_segments = static_cast<int>(segment_lengths.size());
 
     for (int i = 0; i < number_of_segments; i++) {
-        placeTileSegment(i);
+        placeTileContour(i);
     }
 
     // cout << "Placed tiles along: " << number_of_segments << " segments" << endl;
@@ -427,16 +427,16 @@ void Mosaic::placeTileAllSegments() {
 
 
 
-void Mosaic::placeTileSegment(int k) { 
+void Mosaic::placeTileContour(int k) { 
 
     if (mask.empty()) { 
         mask = cv::Mat::zeros(resized.size(), CV_8UC1);
     }
 
-    selectSegment(k);
+    selectContour(k);
 
 
-    cv::Point center = getRandomPointOnSegment(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
+    cv::Point center = getRandomPointOnContour(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
 
     double size = params.tile_size;
 
@@ -473,8 +473,8 @@ void Mosaic::placeTileSegment(int k) {
         for (int i = 0; i < params.number_of_rings; ++i) {
             double currentSize = initial_size + i * params.step_size;
         
-            std::vector<cv::Point> ringIntersections = findTileEdgeIntersections(
-                selected_segment, current_center, currentSize, theta_deg
+            std::vector<cv::Point> ringIntersections = findRingIntersections(
+                selected_contour, current_center, currentSize, theta_deg
             );
         
             allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
@@ -501,7 +501,7 @@ void Mosaic::placeTileSegment(int k) {
 
 
 
-void Mosaic::selectSegment(int k) {
+void Mosaic::selectContour(int k) {
     
 
 
@@ -517,12 +517,12 @@ void Mosaic::selectSegment(int k) {
     }
 
     // Create a blank image
-    selected_segment = cv::Mat::zeros(resized.size(), CV_8UC3);
+    selected_contour = cv::Mat::zeros(resized.size(), CV_8UC3);
 
 
-    for (cv::Point point : segments.at(k)) {
+    for (cv::Point point : segment_points.at(k)) {
         // cout << "point.x: " << point.x << " point.y: " << point.y << endl;
-        selected_segment.at<cv::Vec3b>(point.y, point.x) = cv::Vec3b(255, 255, 255);
+        selected_contour.at<cv::Vec3b>(point.y, point.x) = cv::Vec3b(255, 255, 255);
     }
 
 
@@ -531,13 +531,13 @@ void Mosaic::selectSegment(int k) {
 
 
 
-cv::Point Mosaic::getRandomPointOnSegment(int k) {
+cv::Point Mosaic::getRandomPointOnContour(int k) {
     // Safety check: make sure k is in bounds
     if (k < 0 || k >= static_cast<int>(segment_lengths.size())) {
         throw std::out_of_range("Segment index k is out of range");
     }
 
-    const std::vector<cv::Point>& points = segments.at(k);
+    const std::vector<cv::Point>& points = segment_points.at(k);
 
     if (points.empty()) {
         throw std::runtime_error("No points in the selected segment");
@@ -554,10 +554,10 @@ double Mosaic::findBestTheta(cv::Point center, double size) {
     // Convert to grayscale if needed
     // TODO move into geometry and reuse gray_segment
     cv::Mat gray;
-    if (selected_segment.channels() > 1) {
-        cv::cvtColor(selected_segment, gray, cv::COLOR_BGR2GRAY);
+    if (selected_contour.channels() > 1) {
+        cv::cvtColor(selected_contour, gray, cv::COLOR_BGR2GRAY);
     } else {
-        gray = selected_segment;
+        gray = selected_contour;
     }
 
     // Find non-zero stroke pixels
@@ -726,7 +726,7 @@ double pointLineSegmentDistance(const cv::Point2f& p, const cv::Point2f& A, cons
     return cv::norm(p - projection);
 }
 
-std::vector<cv::Point> Mosaic::findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees) {
+std::vector<cv::Point> Mosaic::findRingIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees) {
     std::vector<cv::Point> intersections;
 
     // Convert to grayscale if needed
@@ -841,7 +841,7 @@ std::vector<cv::Point> Mosaic::filterUniqueIntersections(const std::vector<cv::P
 
 
 
-void Mosaic::showFloodFillPoints() {
+void Mosaic::floodFill() {
 
     double distance_from_center = params.distance_from_center;
     const int max_frontiers = params.max_frontiers;
@@ -855,7 +855,7 @@ void Mosaic::showFloodFillPoints() {
         for (const TileInfo& tile : frontier_tiles) {
             int num_points = params.flood_fill_neighbor_points;
             int max_step = params.getJitter(frontier);
-            std::vector<cv::Point> points = getFloodFillPoints2(tile.center, tile.theta_deg, distance_from_center, num_points);
+            std::vector<cv::Point> points = nextFrontierFromTile(tile.center, tile.theta_deg, distance_from_center, num_points);
             std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
             all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
         }
@@ -880,7 +880,7 @@ void Mosaic::showFloodFillPoints() {
 
 
 
-std::vector<cv::Point> Mosaic::getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points) {
+std::vector<cv::Point> Mosaic::nextFrontierFromTile(cv::Point center, double theta_deg, double distance_from_center, int num_points) {
     std::vector<cv::Point> flood_points;
 
     if (num_points <= 0) return flood_points;
@@ -940,7 +940,7 @@ std::vector<cv::Point> Mosaic::getFloodFillPoints2(cv::Point center, double thet
 
 
 double Mosaic::findBestThetaTangentField(cv::Point center) { 
-    auto [tangent, dist] = sampleTangentPoint(center);
+    auto [tangent, dist] = getTangentAtPoint(center);
     double theta_rad = std::atan2(tangent[1], tangent[0]);
     double theta_deg = theta_rad * 180.0 / CV_PI;
 
@@ -950,16 +950,16 @@ double Mosaic::findBestThetaTangentField(cv::Point center) {
 
 
 
-std::tuple<cv::Vec2d, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
+std::tuple<cv::Vec2d, float> Mosaic::getTangentAtPoint(const cv::Point& pt) {
 
-    if (distance.empty() || gradX.empty() || gradY.empty()) { 
+    if (distance_map.empty() || gradX.empty() || gradY.empty()) { 
         computeDistanceField();
     }
 
     int x = pt.x;
     int y = pt.y;
 
-    if (x < 0 || x >= distance.cols || y < 0 || y >= distance.rows) {
+    if (x < 0 || x >= distance_map.cols || y < 0 || y >= distance_map.rows) {
     return {cv::Vec2d(0.0f, 0.0f), 0.0f};
     }
 
@@ -976,7 +976,7 @@ std::tuple<cv::Vec2d, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
     tangent = cv::Vec2d(tx / magnitude, ty / magnitude);
     }
 
-    float dist = distance.at<float>(y, x);
+    float dist = distance_map.at<float>(y, x);
     return {tangent, dist};
 }
 
@@ -984,25 +984,25 @@ std::tuple<cv::Vec2d, float> Mosaic::sampleTangentPoint(const cv::Point& pt) {
 
 void Mosaic::computeDistanceField() { 
 
-    distance = cv::Mat::zeros(segmented.size(), CV_8UC3);
-    gradX = cv::Mat::zeros(segmented.size(), CV_8UC3);
-    gradY = cv::Mat::zeros(segmented.size(), CV_8UC3);
+    distance_map = cv::Mat::zeros(contours.size(), CV_8UC3);
+    gradX = cv::Mat::zeros(contours.size(), CV_8UC3);
+    gradY = cv::Mat::zeros(contours.size(), CV_8UC3);
 
 
     // Step 1: Convert to grayscale and binary edge map
     cv::Mat gray, binary;
-    cv::cvtColor(segmented, gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(contours, gray, cv::COLOR_BGR2GRAY);
     cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
 
     // Step 2: Invert binary
     cv::Mat inverted = 255 - binary;
 
     // Step 3: Compute distance transform
-    cv::distanceTransform(inverted, distance, cv::DIST_L2, 3);
+    cv::distanceTransform(inverted, distance_map, cv::DIST_L2, 3);
 
     // Step 4: Compute gradients
-    cv::Sobel(distance, gradX, CV_32F, 1, 0, 3);
-    cv::Sobel(distance, gradY, CV_32F, 0, 1, 3);
+    cv::Sobel(distance_map, gradX, CV_32F, 1, 0, 3);
+    cv::Sobel(distance_map, gradY, CV_32F, 0, 1, 3);
 
 
 }
@@ -1024,8 +1024,8 @@ void Mosaic::computeDistanceField() {
 
 
 
-void Mosaic::fillGapsRandom() { 
-    if (distance.empty() || gradX.empty() || gradY.empty()) { 
+void Mosaic::gapFill() { 
+    if (distance_map.empty() || gradX.empty() || gradY.empty()) { 
         computeDistanceField();
     }
 
@@ -1033,9 +1033,9 @@ void Mosaic::fillGapsRandom() {
     int max_tiles_to_place = params.random_background_points;
 
     std::vector<cv::Point> points;
-    for (int y = 0; y < distance.rows; ++y) {
-        for (int x = 0; x < distance.cols; ++x) {
-            float dist = distance.at<float>(y, x);
+    for (int y = 0; y < distance_map.rows; ++y) {
+        for (int x = 0; x < distance_map.cols; ++x) {
+            float dist = distance_map.at<float>(y, x);
             if (dist >= tile_size * 0.5) { // threshold: skip very narrow gaps
                 points.push_back(cv::Point(x, y));
             }
@@ -1053,7 +1053,7 @@ void Mosaic::fillGapsRandom() {
 
 
         // Sample guidance field
-        auto [vec, contour_dist] = sampleTangentPoint(point);
+        auto [vec, contour_dist] = getTangentAtPoint(point);
         double theta_deg = Geometry::vectorToAngleDegrees(vec);
 
         if (isValidTile(point, tile_size, theta_deg)) {
@@ -1086,7 +1086,7 @@ void Mosaic::fillGapsRandom() {
 
 
 
-void Mosaic::reconstructPlacedTiles() { 
+void Mosaic::reconstructImage() { 
 
     // reset canvas
     canvas = cv::Mat::zeros(edges.size(), CV_8UC3);

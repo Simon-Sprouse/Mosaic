@@ -9,7 +9,7 @@
 #include "test.hpp"
 
 using namespace std;
-namespace fs = std::__fs::filesystem;
+
 
 
 using mosaic_gen::Mosaic;
@@ -35,7 +35,7 @@ int main() {
 
     // Load Object
 
-    mosaic_gen::HyperParameters params;
+    mosaic_gen::Parameters params;
     // params.image_path = "../Images/flower.jpg";
     // params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
     params.image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/sound.jpg";

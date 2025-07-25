@@ -13,7 +13,7 @@ namespace MosaicTest {
 
 namespace mosaic_gen {
 
-struct HyperParameters { 
+struct Parameters { 
 
     string image_path;
     string results_dir;
@@ -65,7 +65,7 @@ class Mosaic {
 
     public: 
 
-        Mosaic(const HyperParameters& hp);
+        Mosaic(const Parameters& p);
         void setWindow(std::string name);
         void resetData();
         
@@ -73,7 +73,7 @@ class Mosaic {
         cv::Mat getCanvas();
 
         void saveImage(const cv::Mat& image, const std::string& suffix);
-        void saveGif(int tilesPerFrame, const std::string& suffix);
+        void saveGif(int tiles_per_frame, const std::string& suffix);
         void saveTileInfo(const std::string& suffix);
         
 
@@ -96,35 +96,35 @@ class Mosaic {
         void blurImage();
         void cannyFilter();
         int detectContours();
-        void rankSegments();
+        void rankContours();
 
         // PLACE TILES OVER CONTOURS
-        void placeTileAllSegments();
-        void placeTileSegment(int k);
-        void selectSegment(int k);
-        cv::Point getRandomPointOnSegment(int k);
+        void placeTileAllContours();
+        void placeTileContour(int contour_id);
+        void selectContour(int contour_id);
+        cv::Point getRandomPointOnContour(int contour_id);
         double findBestTheta(cv::Point center, double size);
-        bool isValidTile(cv::Point center, double tileSize, double theta_deg);
-        bool tileOverlapsMask(const cv::Point& center, double tileSize, double rotationDegrees);
-        bool tileInBounds(const cv::Point& center, double tileSize);
+        bool isValidTile(cv::Point center, double size, double theta_deg);
+        bool tileOverlapsMask(const cv::Point& center, double size, double theta_deg);
+        bool tileInBounds(const cv::Point& center, double size);
         TileInfo placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
         void renderTiles();
-        std::vector<cv::Point> findTileEdgeIntersections(const cv::Mat& segment_image, const cv::Point2f& center, double tileSize, double rotationDegrees);
-        std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& inputPoints);
+        std::vector<cv::Point> findRingIntersections(const cv::Mat& contour_image, const cv::Point2f& center, double size, double theta_deg);
+        std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& intersection_points);
         
         // PLACE TILES FLOOD FILL
-        void showFloodFillPoints();
-        std::vector<cv::Point> getFloodFillPoints2(cv::Point center, double theta_deg, double distance_from_center, int num_points);
+        void floodFill();
+        std::vector<cv::Point> nextFrontierFromTile(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         double findBestThetaTangentField(cv::Point center);
-        std::tuple<cv::Vec2d, float> sampleTangentPoint(const cv::Point& pt);
+        std::tuple<cv::Vec2d, float> getTangentAtPoint(const cv::Point& point);
         void computeDistanceField();
         
         // PLACE TILES GAPS
-        void fillGapsRandom();
+        void gapFill();
 
 
         // RECREATE IMAGE FROM DISCRETE STATE
-        void reconstructPlacedTiles();
+        void reconstructImage();
         cv::Vec3b sampleTileColor(const TileInfo& tile);
 
 
@@ -135,10 +135,10 @@ class Mosaic {
         */
 
         // settings for logic - should be user defined
-        HyperParameters params;
+        Parameters params;
         
         // store contours and their lengths
-        std::vector<std::vector<cv::Point>> segments;
+        std::vector<std::vector<cv::Point>> segment_points;
         std::vector<double> segment_lengths;
 
         // discrete state representation for tiles
@@ -154,11 +154,11 @@ class Mosaic {
         cv::Mat grayscale;
         cv::Mat blurred;
         cv::Mat edges;
-        cv::Mat segmented;
-        cv::Mat distance;
+        cv::Mat contours;
+        cv::Mat selected_contour;
+        cv::Mat distance_map;
         cv::Mat gradX;
         cv::Mat gradY;
-        cv::Mat selected_segment;
         cv::Mat canvas;
         cv::Mat mask;
 

@@ -30,9 +30,11 @@ namespace MosaicTest {
             void runAllTests();
             void runTimedProcess();
 
-            
+
 
         private: 
+
+
 
             mosaic_gen::Mosaic& mosaic;
 
