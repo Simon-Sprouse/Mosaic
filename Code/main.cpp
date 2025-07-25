@@ -36,11 +36,9 @@ int main() {
     // Load Object
 
     mosaic_gen::Parameters params;
-    // params.image_path = "../Images/flower.jpg";
-    // params.image_path = "/Users/simonsprouse/Desktop/prayer.png";
-    params.image_path = "/Users/simonsprouse/Desktop/CSCE_448/final/sound.jpg";
+    params.image_path = "../Images/flower.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 0.25;
+    params.resize_factor = 0.5;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -57,12 +55,10 @@ int main() {
     params.distance_from_center = params.tile_size * 1.5;
     params.random_background_points = 50000;
     params.tiles_per_frame = 20;
-    params.jitterFunc = [](int frontier) -> int {
-        if (frontier < 4) return 0;
-        if (frontier < 8) return 1;
-        return 10;
-    };
-    
+    params.jitter_map.insert({4, 0});
+    params.jitter_map.insert({8, 20});
+    params.jitter_map.insert({12, 10});
+
 
     Mosaic my_mosaic(params);
     
@@ -75,11 +71,10 @@ int main() {
     my_test.runTimedProcess();
 
 
-    // RUN PREVIEW
+    // RUN PREVIEW IN WINDOW
     my_mosaic.resetData();
     string window_name = "Mosaic Preview";
     cv::namedWindow(window_name, cv::WINDOW_NORMAL);
-    cv::moveWindow(window_name, 100, 100);
 
     my_mosaic.setWindow(window_name);
     my_mosaic.runAll();
@@ -88,11 +83,15 @@ int main() {
     chrono::duration<double> elapsed = end - start;
     cout << "Main.cpp execution time: " << elapsed.count() << " s" << endl;
 
-
-
     cv::imshow(window_name, my_mosaic.getCanvas());
     cv::waitKey(0);
-    cv::destroyWindow(window_name);
+
+
+
+
+
+    
+
 
 
     return 0;

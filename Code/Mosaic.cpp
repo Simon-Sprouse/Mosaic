@@ -32,7 +32,7 @@ Mosaic::Mosaic(const Parameters& hp) {
     cout << endl;
 
 
-    // TODO initialize mats
+
     
 }
 
@@ -81,6 +81,17 @@ void Mosaic::runAll() {
 cv::Mat Mosaic::getCanvas() { 
     return canvas.clone();
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -191,6 +202,40 @@ void Mosaic::saveTileInfo(const std::string& suffix) {
 
 
 }
+
+
+
+
+
+
+
+int Mosaic::getJitter(int frontier) {
+    if (params.jitter_map.empty()) { 
+        return 0;
+    }
+    for (const auto& [threshold, jitter] : params.jitter_map) {
+        if (frontier < threshold) {
+            return jitter;
+        }
+    }
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -699,6 +744,7 @@ void Mosaic::renderTiles() {
         canvas = cv::Mat::zeros(resized.size(), CV_8UC3);
     }
 
+
     if (window_name.empty()) { 
         return;
     }
@@ -707,6 +753,8 @@ void Mosaic::renderTiles() {
         cv::Vec3b color = sampleTileColor(tile);
         Graphics::drawSquare(canvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
     }
+
+
     cv::imshow(window_name, canvas);
     cv::waitKey(1); // Needed for OpenCV to update GUI
 }
@@ -854,7 +902,7 @@ void Mosaic::floodFill() {
         std::vector<cv::Point> all_flood_points;
         for (const TileInfo& tile : frontier_tiles) {
             int num_points = params.flood_fill_neighbor_points;
-            int max_step = params.getJitter(frontier);
+            int max_step = getJitter(frontier);
             std::vector<cv::Point> points = nextFrontierFromTile(tile.center, tile.theta_deg, distance_from_center, num_points);
             std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
             all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());

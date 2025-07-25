@@ -173,7 +173,7 @@ void Test::testFloodFillFrontier() {
 
     for (const mosaic_gen::TileInfo& tile : mosaic.tiles_placed) {
         int num_points = mosaic.params.flood_fill_neighbor_points;
-        int max_step = mosaic.params.getJitter(frontier);
+        int max_step = mosaic.getJitter(frontier);
         std::vector<cv::Point> points = mosaic.nextFrontierFromTile(tile.center, tile.theta_deg, mosaic.params.distance_from_center, num_points);
         std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mosaic.mask.size());
         

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <functional>
 #include <opencv2/core.hpp>
 
@@ -34,14 +35,8 @@ struct Parameters {
     double distance_from_center;
     int random_background_points;
     int tiles_per_frame;
-    std::function<int(int)> jitterFunc;
-    int getJitter(int frontier) const {
-        if (jitterFunc) {
-            return jitterFunc(frontier);
-        }
-        return 0; // Default jitter
-    }
-
+    std::map<int, int> jitter_map;
+    
     
 
 };
@@ -72,6 +67,7 @@ class Mosaic {
         void runAll();
         cv::Mat getCanvas();
 
+
         void saveImage(const cv::Mat& image, const std::string& suffix);
         void saveGif(int tiles_per_frame, const std::string& suffix);
         void saveTileInfo(const std::string& suffix);
@@ -81,6 +77,8 @@ class Mosaic {
         
 
     private: 
+
+        int getJitter(int frontier);
 
 
         /*
@@ -159,8 +157,10 @@ class Mosaic {
         cv::Mat distance_map;
         cv::Mat gradX;
         cv::Mat gradY;
-        cv::Mat canvas;
+        
         cv::Mat mask;
+        cv::Mat canvas;
+
 
         // in case pca function fails
         const double ERROR_CODE_NO_VALID_THETA = -420.69;
