@@ -8,6 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(OpenCV REQUIRED)
 
 add_executable(mosaic_tiler 
+    Image.cpp
+    ImageTest.cpp
     main.cpp 
     Mosaic.cpp
     graphics.cpp 
