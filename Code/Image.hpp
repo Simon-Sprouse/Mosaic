@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <ostream>
+#include <vector>
 
 namespace image { 
 
@@ -10,32 +11,47 @@ struct Color {
     uint8_t r;
     uint8_t g;
     uint8_t b;
+    uint8_t a;
 
-    Color() : r(0), g(0), b(0) {}
+    Color() : r(0), g(0), b(0), a(255) {}
 
-    Color(uint8_t value) 
-        : r(value), g(value), b(value) {}
+    explicit Color(uint8_t value) 
+        : r(value), g(value), b(value), a(255) {}
     Color(uint8_t red, uint8_t green, uint8_t blue) 
-        : r(red), g(green), b(blue) {}
+        : r(red), g(green), b(blue), a(255) {}
+    Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) 
+        : r(red), g(green), b(blue), a(alpha) {}
 
-    Color(int value) 
-        : r(clampToByte(value)), g(clampToByte(value)), b(clampToByte(value)) {}
+    explicit Color(int value) 
+        : r(clampToByte(value)), g(clampToByte(value)), b(clampToByte(value)), a(255) {}
     Color(int red, int green, int blue) 
-        : r(clampToByte(red)), g(clampToByte(green)), b(clampToByte(blue)) {}
+        : r(clampToByte(red)), g(clampToByte(green)), b(clampToByte(blue)), a(255) {}
+    Color(int red, int green, int blue, int alpha) 
+        : r(clampToByte(red)), g(clampToByte(green)), b(clampToByte(blue)), a(clampToByte(alpha)) {}
 
-    Color(float value) 
-        : r(clampToByte(static_cast<int>(value))), g(clampToByte(static_cast<int>(value))), b(clampToByte(static_cast<int>(value))) {}
+    explicit Color(float value) 
+        : r(clampToByte(static_cast<int>(value))), g(clampToByte(static_cast<int>(value))), 
+          b(clampToByte(static_cast<int>(value))), a(255) {}
     Color(float red, float green, float blue) 
-        : r(clampToByte(static_cast<int>(red))), g(clampToByte(static_cast<int>(green))), b(clampToByte(static_cast<int>(blue))) {}
+        : r(clampToByte(static_cast<int>(red))), g(clampToByte(static_cast<int>(green))), 
+          b(clampToByte(static_cast<int>(blue))), a(255) {}
+    Color(float red, float green, float blue, float alpha) 
+        : r(clampToByte(static_cast<int>(red))), g(clampToByte(static_cast<int>(green))), 
+          b(clampToByte(static_cast<int>(blue))), a(clampToByte(static_cast<int>(alpha))) {}
 
-    Color(double value) 
-        : r(clampToByte(static_cast<int>(value))), g(clampToByte(static_cast<int>(value))), b(clampToByte(static_cast<int>(value))) {}
+    explicit Color(double value) 
+        : r(clampToByte(static_cast<int>(value))), g(clampToByte(static_cast<int>(value))), 
+          b(clampToByte(static_cast<int>(value))), a(255) {}
     Color(double red, double green, double blue) 
-        : r(clampToByte(static_cast<int>(red))), g(clampToByte(static_cast<int>(green))), b(clampToByte(static_cast<int>(blue))) {}
+        : r(clampToByte(static_cast<int>(red))), g(clampToByte(static_cast<int>(green))), 
+          b(clampToByte(static_cast<int>(blue))), a(255) {}
+    Color(double red, double green, double blue, double alpha) 
+        : r(clampToByte(static_cast<int>(red))), g(clampToByte(static_cast<int>(green))), 
+          b(clampToByte(static_cast<int>(blue))), a(clampToByte(static_cast<int>(alpha))) {}
  
 
     bool operator==(const Color& other) const {
-        return r == other.r && g == other.g && b == other.b;
+        return r == other.r && g == other.g && b == other.b && a == other.a;
     }
 
     bool operator!=(const Color& other) const {
@@ -45,7 +61,7 @@ struct Color {
 
     private:
 
-        static uint8_t clampToByte(int value) { 
+        static constexpr uint8_t clampToByte(int value) { 
             if (value < 0) return 0;
             else if (value > 255) return 255;
             return static_cast<uint8_t>(value);
@@ -79,21 +95,112 @@ struct Point {
 
 };
 
+struct Size { 
+
+    int width;
+    int height;
+
+
+    Size() : width(0), height(0) {}
+    Size(int w, int h) : width(w), height(h) {}
+
+    bool operator==(const Size& other) const {
+        return width == other.width && height == other.height;
+    }
+
+    bool operator!=(const Size& other) const {
+        return !(*this == other);
+    }
+
+};
+
+
+// Stream operator for Size
+inline std::ostream& operator<<(std::ostream& os, const Size& s) {
+    return os << "[" << s.width << " x " << s.height << "]";
+}
+
 
 // Stream operator for Color
 inline std::ostream& operator<<(std::ostream& os, const Color& color) {
-    os << "(" << static_cast<int>(color.r) << ", "
-                   << static_cast<int>(color.g) << ", "
-                   << static_cast<int>(color.b);
-    os << ")";
+    if (color.a == 255) {
+        os << "(" << static_cast<int>(color.r) << ", "
+                    << static_cast<int>(color.g) << ", "
+                    << static_cast<int>(color.b);
+        os << ")";
+    }
+    else { 
+        os << "(" << static_cast<int>(color.r) << ", "
+                    << static_cast<int>(color.g) << ", "
+                    << static_cast<int>(color.b) << ", "
+                    << static_cast<int>(color.a);
+        os << ")";
+    }
+    
     return os;
 }
 
 // Stream operator for Point
 inline std::ostream& operator<<(std::ostream& os, const Point& point) {
-    os << "[" << point.x << ", " << point.y << "]";
+    os << "{" << point.x << ", " << point.y << "}";
     return os;
 }
+
+
+
+
+
+
+
+
+class Image {
+
+
+    public: 
+
+
+    // Default constructor
+    Image();
+
+    // Param constructors
+    Image(int width, int height, const Color&fill=Color());
+
+    // Copy constructor
+    Image(const Image& other);
+
+    // Move constructor
+    Image(Image&& other) noexcept;
+
+    // Copy assignment
+    Image& operator=(const Image& other);
+
+    // Move assignment
+    Image& operator=(Image&& other) noexcept;
+
+    // Destructor
+    ~Image();
+
+    Color& at(int x, int y);
+    const Color& at(int x, int y) const;
+    Size size() const;
+
+    private:
+
+        int width_;
+        int height_;
+        std::vector<Color> data_;
+
+
+
+};
+
+
+
+
+
+
+
+
 
 
 
