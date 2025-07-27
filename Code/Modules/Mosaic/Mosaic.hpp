@@ -8,8 +8,8 @@
 
 using namespace std;
 
-namespace MosaicTest {
-    class Test;
+namespace mosaic_gen::test {
+    class MosaicTest;
 }
 
 namespace mosaic_gen {
@@ -56,7 +56,7 @@ struct TileInfo {
 
 class Mosaic { 
 
-    friend class MosaicTest::Test;
+    friend class test::MosaicTest;
 
     public: 
 

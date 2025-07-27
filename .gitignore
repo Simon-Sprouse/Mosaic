@@ -1,10 +1,13 @@
 # CMake build folders
-/build/
+/Build/
 /CMakeFiles/
 /CMakeCache.txt
 cmake_install.cmake
 Makefile
 .cache/
+
+# Notes files
+prompt.txt
 
 # Compiled binary/executables
 *.o

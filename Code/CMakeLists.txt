@@ -7,15 +7,30 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(OpenCV REQUIRED)
 
-add_executable(mosaic_tiler 
-    Image.cpp
-    ImageTest.cpp
-    main.cpp 
-    Mosaic.cpp
-    graphics.cpp 
-    geometry.cpp
-    random.cpp
-    test.cpp
+# Collect all source files
+add_executable(mosaic_tiler
+    
+    Modules/Mosaic/Mosaic.cpp
+    Modules/Mosaic/test.cpp
+
+    Utils/Geometry/geometry.cpp
+    Utils/Graphics/graphics.cpp
+    Utils/Image/Image.cpp
+    Utils/Image/ImageTest.cpp
+    Utils/Random/random.cpp
+
+    main.cpp
 )
-target_include_directories(mosaic_tiler PRIVATE ${OpenCv_INCLUDE_DIRS})
+
+# Add includes
+target_include_directories(mosaic_tiler PRIVATE
+    Modules/Mosaic
+    Utils/Geometry
+    Utils/Graphics
+    Utils/Image
+    Utils/Random
+    Utils/IO
+)
+
+# Link OpenCV
 target_link_libraries(mosaic_tiler ${OpenCV_LIBS})

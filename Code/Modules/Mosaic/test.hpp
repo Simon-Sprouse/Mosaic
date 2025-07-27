@@ -6,13 +6,13 @@
 #include <string>
 
 
-namespace MosaicTest { 
+namespace mosaic_gen::test { 
 
-    class Test {
+    class MosaicTest {
 
         public: 
 
-            explicit Test(mosaic_gen::Mosaic& mosaic);
+            explicit MosaicTest(mosaic_gen::Mosaic& mosaic);
 
             void showDistanceVectorField();
             void squeebTest();

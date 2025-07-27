@@ -10,12 +10,12 @@
 
 
 
-namespace MosaicTest { 
+namespace mosaic_gen::test { 
 
-Test::Test(mosaic_gen::Mosaic& mosaic) : mosaic(mosaic) {}
+MosaicTest::MosaicTest(mosaic_gen::Mosaic& mosaic) : mosaic(mosaic) {}
 
 
-void Test::showDistanceVectorField() { 
+void MosaicTest::showDistanceVectorField() { 
 
     // necessary progress
     mosaic.loadImage();
@@ -105,7 +105,7 @@ void Test::showDistanceVectorField() {
 }
 
 
-void Test::squeebTest() { 
+void MosaicTest::squeebTest() { 
     int n = 10000;
     for (int i = 0; i < n; i++) { 
         for (int j = 0; j < n; j++) { 
@@ -115,7 +115,7 @@ void Test::squeebTest() {
 }
 
 
-void Test::testFloodFillPoints() { 
+void MosaicTest::testFloodFillPoints() { 
 
     // necessary progress
     mosaic.loadImage();
@@ -145,7 +145,7 @@ void Test::testFloodFillPoints() {
 }
 
 
-void Test::testFloodFillFrontier() { 
+void MosaicTest::testFloodFillFrontier() { 
 
 
     // necessary progress
@@ -203,7 +203,7 @@ void Test::testFloodFillFrontier() {
 
 
 
-void Test::testContours() { 
+void MosaicTest::testContours() { 
 
     // necessary progress
     mosaic.loadImage();
@@ -243,7 +243,7 @@ void Test::testContours() {
 }
 
 
-void Test::testSegmentSelection() { 
+void MosaicTest::testSegmentSelection() { 
 
     // necessary progress
     mosaic.loadImage();
@@ -269,7 +269,7 @@ void Test::testSegmentSelection() {
 }
 
 
-void Test::testSegmentOrder() { 
+void MosaicTest::testSegmentOrder() { 
 
     // necessary progress
     mosaic.loadImage();
@@ -305,7 +305,7 @@ void Test::testSegmentOrder() {
 
 
 
-void Test::testIntersections() { 
+void MosaicTest::testIntersections() { 
 
 
 
@@ -383,7 +383,7 @@ void Test::testIntersections() {
 
 
 
-void Test::visualizePlacementMethod() { 
+void MosaicTest::visualizePlacementMethod() { 
 
     // necessary progress
     if (mosaic.mask.empty()) { 
@@ -428,7 +428,7 @@ void Test::visualizePlacementMethod() {
 
 
 
-void Test::visualizePlacementOrder() { 
+void MosaicTest::visualizePlacementOrder() { 
 
     // necessary progress
     if (mosaic.mask.empty()) { 
@@ -485,7 +485,7 @@ void Test::visualizePlacementOrder() {
 
 
 
-void Test::visualizeFrontierOrder() { 
+void MosaicTest::visualizeFrontierOrder() { 
 
     // necessary progress
     if (mosaic.mask.empty()) { 
@@ -570,23 +570,23 @@ void Test::visualizeFrontierOrder() {
 
 
 
-void Test::printTestHeader(const std::string& test_name) {
+void MosaicTest::printTestHeader(const std::string& test_name) {
     std::cout << std::left << std::setw(40) << ("[Running] " + test_name)
                 << " | ";
     std::cout.flush(); // flush in case timing starts immediately after
 }
 
-void Test::printTestFooter(std::chrono::duration<double> elapsed) {
+void MosaicTest::printTestFooter(std::chrono::duration<double> elapsed) {
     std::cout << std::right << std::setw(12)
                 << std::fixed << std::setprecision(4)
                 << elapsed.count() << " s" << std::endl;
 }
 
-void Test::printHorizontalBar() { 
+void MosaicTest::printHorizontalBar() { 
     cout << std::string(41, '~') << " " << std::string(15, '~') << endl;
 }
 
-void Test::printTotalTime(std::chrono::duration<double> total_time) { 
+void MosaicTest::printTotalTime(std::chrono::duration<double> total_time) { 
 
     cout << std::left << std::setw(40) << "[Total Time]"
     << std::right << std::setw(15) << std::fixed << std::setprecision(4)
@@ -597,7 +597,7 @@ void Test::printTotalTime(std::chrono::duration<double> total_time) {
 
 
 
-void Test::runAllTests() { 
+void MosaicTest::runAllTests() { 
 
     cout << "RUNNING TESTS... " << endl;
     printHorizontalBar();
@@ -629,7 +629,7 @@ void Test::runAllTests() {
 
 }
 
-void Test::runTimedProcess() { 
+void MosaicTest::runTimedProcess() { 
 
     // clean start
     mosaic.resetData();
