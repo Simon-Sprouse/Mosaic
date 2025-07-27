@@ -3,7 +3,6 @@
 /CMakeFiles/
 /CMakeCache.txt
 cmake_install.cmake
-Makefile
 .cache/
 
 # Notes files
@@ -47,6 +46,11 @@ Results/
 /web/.env.development.local
 /web/.env.test.local
 /web/.env.production.local
+# Web build artifacts
+/web/build/
+/web/dist/
+/web/public/wasm/*.wasm
+/web/public/wasm/*.js
 
 # Python virtual environments (if you cross-use)
 venv/

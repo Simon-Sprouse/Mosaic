@@ -5,7 +5,20 @@
 extern "C" {
 
     const char* helloWorld() {
-        return "hello world";
+        return "Hello world";
+    }
+
+    image::Image* defaultConstructImage() {
+        return new image::Image(1, 1);
+    }
+
+    const char* getSize(image::Image* img) { 
+        static std::string result = img->size().toString();
+        return result.c_str();
+    }
+
+    void deleteImage(image::Image* img) { 
+        delete img;
     }
 
     // image::Image* create_image(int width, int height) {

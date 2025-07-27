@@ -1,20 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
-function App() {
-  const canvasRef = useRef(null);
-  const [cppText, setCppText] = useState('');
+import WasmImage from './WasmImage';
 
+function App() {
+
+  const [cppText, setCppText] = useState('');
+  const [wasmImage, setWasmImage] = useState(null);
+
+  // LOAD WASM + SAVE MODULE IN CLASS
   useEffect(() => {
     const script = document.createElement('script');
     script.src = process.env.PUBLIC_URL + '/wasm/image_module.js';
 
     script.onload = () => {
-      // Now Module is a function, not a global object
       window.Module().then((instance) => {
-        const ptr = instance._helloWorld();
-        const message = instance.UTF8ToString(ptr);
-        setCppText(message);
+        const img = new WasmImage(instance);
+        setWasmImage(img);
       }).catch((err) => {
         console.error('Failed to instantiate WASM module:', err);
       });
@@ -30,11 +32,23 @@ function App() {
     };
   }, []);
 
+
+
+  const handleClick = () => {
+    if (!wasmImage) {
+      setCppText('WASM not loaded yet');
+      return;
+    }
+
+    const message = wasmImage.getSizeStr();
+    setCppText(message);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <canvas ref={canvasRef} />
-        <p>{cppText || "Loading..."}</p>
+        <p>{cppText || "Click the button to run C++ code"}</p>
+        <button onClick={handleClick}>Call C++</button>
       </header>
     </div>
   );

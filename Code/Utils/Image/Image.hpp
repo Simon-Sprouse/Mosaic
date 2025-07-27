@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <ostream>
+#include <sstream>
 #include <vector>
 
 namespace image { 
@@ -112,6 +113,9 @@ struct Size {
         return !(*this == other);
     }
 
+    std::string toString() const;
+    
+
 };
 
 
@@ -178,6 +182,11 @@ inline std::ostream& operator<<(std::ostream& os, const Size& s) {
     return os << "size[" << s.width << " x " << s.height << "]";
 }
 
+inline std::string Size::toString() const {
+    std::ostringstream oss;
+    oss << *this;  // uses your already defined operator<<
+    return oss.str();
+}
 
 // Stream operator for Color
 inline std::ostream& operator<<(std::ostream& os, const Color& color) {
