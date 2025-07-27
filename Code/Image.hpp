@@ -115,43 +115,6 @@ struct Size {
 };
 
 
-// Stream operator for Size
-inline std::ostream& operator<<(std::ostream& os, const Size& s) {
-    return os << "[" << s.width << " x " << s.height << "]";
-}
-
-
-// Stream operator for Color
-inline std::ostream& operator<<(std::ostream& os, const Color& color) {
-    if (color.a == 255) {
-        os << "(" << static_cast<int>(color.r) << ", "
-                    << static_cast<int>(color.g) << ", "
-                    << static_cast<int>(color.b);
-        os << ")";
-    }
-    else { 
-        os << "(" << static_cast<int>(color.r) << ", "
-                    << static_cast<int>(color.g) << ", "
-                    << static_cast<int>(color.b) << ", "
-                    << static_cast<int>(color.a);
-        os << ")";
-    }
-    
-    return os;
-}
-
-// Stream operator for Point
-inline std::ostream& operator<<(std::ostream& os, const Point& point) {
-    os << "{" << point.x << ", " << point.y << "}";
-    return os;
-}
-
-
-
-
-
-
-
 
 class Image {
 
@@ -163,7 +126,10 @@ class Image {
     Image();
 
     // Param constructors
-    Image(int width, int height, const Color&fill=Color());
+    Image(int width, int height);
+    Image(int width, int height, const Color& fill);
+    Image(Size size);
+    Image(Size size, const Color& fill);
 
     // Copy constructor
     Image(const Image& other);
@@ -183,6 +149,12 @@ class Image {
     Color& at(int x, int y);
     const Color& at(int x, int y) const;
     Size size() const;
+    int height() const;
+    int width() const;
+
+    bool operator==(const Image& other) const;
+    bool operator!=(const Image& other) const;
+
 
     private:
 
@@ -196,6 +168,39 @@ class Image {
 
 
 
+
+
+
+// Stream operator for Size
+inline std::ostream& operator<<(std::ostream& os, const Size& s) {
+    return os << "size[" << s.width << " x " << s.height << "]";
+}
+
+
+// Stream operator for Color
+inline std::ostream& operator<<(std::ostream& os, const Color& color) {
+
+    os << "rgba[" << static_cast<int>(color.r) << ", "
+                << static_cast<int>(color.g) << ", "
+                << static_cast<int>(color.b) << ", "
+                << static_cast<int>(color.a) << "]";
+
+
+    return os;
+}
+
+// Stream operator for Point
+inline std::ostream& operator<<(std::ostream& os, const Point& point) {
+    os << "point[" << point.x << ", " << point.y << "]";
+    return os;
+}
+
+
+// Stream operator for Image
+inline std::ostream& operator<<(std::ostream& os, const Image& image) {
+    os << "Image[" << image.width() << " x " << image.height() << "]";
+    return os;
+}
 
 
 

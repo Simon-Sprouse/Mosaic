@@ -22,9 +22,10 @@ int main() {
 
     cout << "Hello From Image" << endl;
 
+    bool verbose = false;
+    image_test::Test my_test(verbose);
+    my_test.runAllTests();
 
-    image_test::testColor();
-    image_test::testPoint();
 
 
 
