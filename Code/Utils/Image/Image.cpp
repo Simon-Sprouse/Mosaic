@@ -97,4 +97,22 @@ bool Image::operator!=(const Image& other) const {
 
 
 
+uint8_t* Image::rawData() {
+    return reinterpret_cast<uint8_t*>(data_.data());
+}
+
+const uint8_t* Image::rawData() const {
+    return reinterpret_cast<const uint8_t*>(data_.data());
+}
+
+
+
+
+
+
+
+
+
+
+
 }

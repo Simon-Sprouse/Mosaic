@@ -151,6 +151,8 @@ class Image {
     Size size() const;
     int height() const;
     int width() const;
+    uint8_t* rawData();
+    const uint8_t* rawData() const;
 
     bool operator==(const Image& other) const;
     bool operator!=(const Image& other) const;

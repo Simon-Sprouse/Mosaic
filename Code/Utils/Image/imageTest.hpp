@@ -9,14 +9,14 @@
 
 using namespace std;
 
-namespace image_test { 
+namespace image::test { 
 
-class Test {
+class ImageTest {
 
     public:
 
-        Test() : verbose_(true) {};
-        explicit Test(bool verbose) : verbose_(verbose) {}; 
+        ImageTest() : verbose_(true) {};
+        explicit ImageTest(bool verbose) : verbose_(verbose) {}; 
 
         bool testStructPrint();
         bool testImageRuleOf5();

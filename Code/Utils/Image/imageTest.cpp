@@ -9,11 +9,11 @@ using std::ostringstream;
 using image::Image, image::Color, image::Size, image::Point;
 
 
-namespace image_test { 
+namespace image::test { 
 
 
 
-bool Test::testStructPrint() {
+bool ImageTest::testStructPrint() {
 
     bool all_passed = true;
 
@@ -38,7 +38,7 @@ bool Test::testStructPrint() {
 
 
 
-bool Test::testImageRuleOf5() {
+bool ImageTest::testImageRuleOf5() {
 
     bool all_passed = true;
 
@@ -100,7 +100,7 @@ bool Test::testImageRuleOf5() {
 
 
 
-bool Test::testImagePrint() {
+bool ImageTest::testImagePrint() {
    
     bool all_passed = true;
 
@@ -114,7 +114,7 @@ bool Test::testImagePrint() {
 
 
 
-void Test::runAllTests() { 
+void ImageTest::runAllTests() { 
     runFunction("Structs Print", [&]() {return testStructPrint();});
     runFunction("Image Rule of 5", [&]() {return testImageRuleOf5();});
     runFunction("Image Print", [&]() {return testImagePrint();});

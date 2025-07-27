@@ -40,6 +40,14 @@ Results/
 *.jpg
 *.jpeg
 
+# Node and React stuff
+/web/node_modules/
+/web/build/
+/web/.env.local
+/web/.env.development.local
+/web/.env.test.local
+/web/.env.production.local
+
 # Python virtual environments (if you cross-use)
 venv/
 .env/
