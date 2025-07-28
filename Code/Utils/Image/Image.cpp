@@ -59,22 +59,30 @@ Image& Image::operator=(Image&& other) noexcept {
 Image::~Image() {}
 
 
+
+
+
+int Image::getLinearIndex_(int x, int y) const { 
+    return y * width_ + x;
+}
+
+
 Color& Image::at(int x, int y) {
-    return data_[y * width_ + x];
+    return data_[getLinearIndex_(x, y)];
 }
 const Color& Image::at(int x, int y) const {
-    return data_[y * width_ + x];
+    return data_[getLinearIndex_(x, y)];
 }
 
 Size Image::size() const { 
     return Size(width_, height_);
 }
 
-int Image::height() const {
+int Image::getHeight() const {
     return height_;
 }
 
-int Image::width() const {
+int Image::getWidth() const {
     return width_;
 }
 
@@ -82,8 +90,8 @@ int Image::width() const {
 bool Image::operator==(const Image& other) const {
     if (this->size() != other.size()) return false;
 
-    for (int y = 0; y < height(); ++y) {
-        for (int x = 0; x < width(); ++x) {
+    for (int y = 0; y < getHeight(); ++y) {
+        for (int x = 0; x < getWidth(); ++x) {
             if (this->at(x, y) != other.at(x, y))
                 return false;
         }
@@ -106,7 +114,9 @@ const uint8_t* Image::rawData() const {
 }
 
 
-
+void Image::setPixel(int x, int y, Color& color) {
+    data_.at(getLinearIndex_(x, y)) = color;
+}
 
 
 

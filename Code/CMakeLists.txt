@@ -10,13 +10,15 @@ find_package(OpenCV REQUIRED)
 # Collect all source files
 add_executable(mosaic_tiler
     
-    Modules/Mosaic/Mosaic.cpp
-    Modules/Mosaic/test.cpp
+
 
     Utils/Geometry/geometry.cpp
     Utils/Graphics/graphics.cpp
     Utils/Image/Image.cpp
     Utils/Image/ImageTest.cpp
+    Utils/ImageProcess/ImageProcess.cpp
+    Utils/ImageProcess/ImageProcessTest.cpp
+    Utils/Io/io.cpp
     Utils/Random/random.cpp
 
     main.cpp
@@ -24,12 +26,14 @@ add_executable(mosaic_tiler
 
 # Add includes
 target_include_directories(mosaic_tiler PRIVATE
-    Modules/Mosaic
+
     Utils/Geometry
     Utils/Graphics
     Utils/Image
-    Utils/Random
+    Utils/ImageProcess
     Utils/IO
+    Utils/Random
+    
 )
 
 # Link OpenCV

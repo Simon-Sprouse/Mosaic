@@ -22,11 +22,11 @@ namespace Random {
 
 
         
-    // double randomDouble(double min_val, double max_val) {
-    //     static std::mt19937 rng(std::random_device{}());
-    //     std::uniform_real_distribution<double> dist(min_val, max_val);
-    //     return dist(rng);
-    // }
+    double randomDouble(double min_val, double max_val) {
+        static std::mt19937 rng(std::random_device{}());
+        std::uniform_real_distribution<double> dist(min_val, max_val);
+        return dist(rng);
+    }
 
 
 

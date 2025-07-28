@@ -46,6 +46,7 @@ function App() {
         }
 
 
+        // very clumsy way to manage memory
         wasmImage.destroy();
         wasmImage.constructImage(width, height);
 

@@ -153,16 +153,20 @@ class Image {
     Color& at(int x, int y);
     const Color& at(int x, int y) const;
     Size size() const;
-    int height() const;
-    int width() const;
+    int getHeight() const;
+    int getWidth() const;
     uint8_t* rawData();
     const uint8_t* rawData() const;
+    void setPixel(int x, int y, Color& color);
 
     bool operator==(const Image& other) const;
     bool operator!=(const Image& other) const;
 
 
     private:
+
+        int getLinearIndex_(int x, int y) const;
+
 
         int width_;
         int height_;
@@ -209,7 +213,7 @@ inline std::ostream& operator<<(std::ostream& os, const Point& point) {
 
 // Stream operator for Image
 inline std::ostream& operator<<(std::ostream& os, const Image& image) {
-    os << "Image[" << image.width() << " x " << image.height() << "]";
+    os << "Image[" << image.getWidth() << " x " << image.getHeight() << "]";
     return os;
 }
 
