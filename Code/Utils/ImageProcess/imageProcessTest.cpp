@@ -128,6 +128,33 @@ void ProcessTest::testSobel() {
 
 
 
+void ProcessTest::testCanny() { 
+
+    // necessary progress
+    Image src_img = io::loadImage(image_path_);
+
+    Image gray_img;
+    image::process::grayscale(src_img, gray_img);
+
+    Image blur_img;
+    Size kernel_size = Size(3, 3);
+    double blur_sigma = 1.4;
+    image::process::gaussianBlur(gray_img, blur_img, kernel_size, blur_sigma);
+
+    Image canny_img;
+    int canny_threshold_1 = 50;
+    int canny_threshold_2 = 100;
+    image::process::cannyFilter(blur_img, canny_img, canny_threshold_1, canny_threshold_2);
+    io::saveImage(canny_img, "../Results/canny_filter.jpg");
+
+
+
+
+
+}
+
+
+
 
 
 
@@ -165,6 +192,7 @@ void ProcessTest::runAllTests() {
     total_time += timeFunction("Convert To Gray", [&]() {testGrayscale();});
     total_time += timeFunction("Blur Image", [&]() {testBlur();});
     total_time += timeFunction("Sobel Filter", [&]() {testSobel();});
+    total_time += timeFunction("Canny Filter", [&]() {testCanny();});
 
 
 

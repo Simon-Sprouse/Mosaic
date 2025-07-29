@@ -16,5 +16,8 @@ namespace image::process {
     void sobelFilter(const Image& src, Image& dest_grad_x, Image& dest_grad_y);
     void visualizeSobel(const Image& src_grad_x, const Image& src_grad_y, Image& dest);
 
+    void cannyFilter(Image& src, Image& dest, int canny_threshold_1, int canny_threshold_2);
+    void linkEdge(int x, int y, int width, int height, std::vector<uint8_t>& edgeMap);
+
 
 }

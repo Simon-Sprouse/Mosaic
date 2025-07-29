@@ -21,6 +21,7 @@ namespace image::process::test {
             void testGrayscale();
             void testBlur();
             void testSobel();
+            void testCanny();
 
         
             

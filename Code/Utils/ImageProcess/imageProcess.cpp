@@ -244,8 +244,113 @@ namespace image::process {
 
 
 
+    
+
+    void cannyFilter(Image& src_blurred, Image& dest, int canny_threshold_1, int canny_threshold_2) {
+        int width = src_blurred.getWidth();
+        int height = src_blurred.getHeight();
 
 
+        // Step 3: Apply Sobel filter
+        Image gradX, gradY;
+        sobelFilter(src_blurred, gradX, gradY);
+
+        // Step 4: Compute gradient magnitude and angle
+        std::vector<double> gradMag(width * height);
+        std::vector<double> gradDir(width * height);
+
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                double gx = static_cast<double>(gradX.at(x, y).r);
+                double gy = static_cast<double>(gradY.at(x, y).r);
+                int i = y * width + x;
+                gradMag[i] = std::sqrt(gx * gx + gy * gy);
+                gradDir[i] = std::atan2(gy, gx);
+            }
+        }
+
+        // Step 5: Non-maximum suppression
+        std::vector<uint8_t> nms(width * height, 0);
+        for (int y = 1; y < height - 1; ++y) {
+            for (int x = 1; x < width - 1; ++x) {
+                int i = y * width + x;
+                double angle = gradDir[i] * 180.0 / M_PI;
+                angle = std::fmod(angle + 180.0, 180.0); // normalize to [0,180)
+
+                double mag = gradMag[i];
+                double mag1 = 0.0, mag2 = 0.0;
+
+                if ((angle >= 0 && angle < 22.5) || (angle >= 157.5 && angle < 180)) {
+                    mag1 = gradMag[y * width + (x - 1)];
+                    mag2 = gradMag[y * width + (x + 1)];
+                } else if (angle >= 22.5 && angle < 67.5) {
+                    mag1 = gradMag[(y - 1) * width + (x + 1)];
+                    mag2 = gradMag[(y + 1) * width + (x - 1)];
+                } else if (angle >= 67.5 && angle < 112.5) {
+                    mag1 = gradMag[(y - 1) * width + x];
+                    mag2 = gradMag[(y + 1) * width + x];
+                } else if (angle >= 112.5 && angle < 157.5) {
+                    mag1 = gradMag[(y - 1) * width + (x - 1)];
+                    mag2 = gradMag[(y + 1) * width + (x + 1)];
+                }
+
+                if (mag >= mag1 && mag >= mag2) {
+                    nms[i] = static_cast<uint8_t>(mag);
+                } else {
+                    nms[i] = 0;
+                }
+            }
+        }
+
+        // Step 6: Double threshold
+        std::vector<uint8_t> edgeMap(width * height, 0);
+        for (int i = 0; i < width * height; ++i) {
+            if (nms[i] >= canny_threshold_2) {
+                edgeMap[i] = 255; // strong edge
+            } else if (nms[i] >= canny_threshold_1) {
+                edgeMap[i] = 128; // weak edge
+            } else {
+                edgeMap[i] = 0;   // non-edge
+            }
+        }
+
+        // Step 7: Edge tracking by hysteresis
+        for (int y = 1; y < height - 1; ++y) {
+            for (int x = 1; x < width - 1; ++x) {
+                int i = y * width + x;
+                if (edgeMap[i] == 255) {
+                    linkEdge(x, y, width, height, edgeMap);
+                }
+            }
+        }
+
+        // Step 8: Write to output image
+        dest = Image(width, height);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                uint8_t val = (edgeMap[y * width + x] == 255) ? 255 : 0;
+                dest.setPixel(x, y, Color(val, val, val));
+            }
+        }
+    }
+        
+    // -- Link connected weak edges to strong ones
+    void linkEdge(int x, int y, int width, int height, std::vector<uint8_t>& edgeMap) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -1; dx <= 1; ++dx) {
+                if (dx == 0 && dy == 0) continue;
+                int nx = x + dx;
+                int ny = y + dy;
+                if (nx >= 0 && ny >= 0 && nx < width && ny < height) {
+                    int ni = ny * width + nx;
+                    if (edgeMap[ni] == 128) {
+                        edgeMap[ni] = 255;
+                        linkEdge(nx, ny, width, height, edgeMap);
+                    }
+                }
+            }
+        }
+    }
 
 
 
