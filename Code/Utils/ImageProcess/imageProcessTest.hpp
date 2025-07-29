@@ -17,6 +17,7 @@ namespace image::process::test {
 
             void loadImage();
             void squeebTest();
+            void testResize();
 
         
             

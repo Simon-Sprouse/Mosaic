@@ -21,7 +21,7 @@ namespace io {
         if (!cv::imwrite(path, mat)) {
             throw std::runtime_error("Failed to save image to: " + path);
         }
-        cout << "Saved Image To: " << path << endl;
+    
     }
     
 
