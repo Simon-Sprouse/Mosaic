@@ -18,6 +18,9 @@ namespace image::process::test {
             void loadImage();
             void squeebTest();
             void testResize();
+            void testGrayscale();
+            void testBlur();
+            void testSobel();
 
         
             

@@ -114,7 +114,7 @@ const uint8_t* Image::rawData() const {
 }
 
 
-void Image::setPixel(int x, int y, Color& color) {
+void Image::setPixel(int x, int y, const Color& color) {
     data_.at(getLinearIndex_(x, y)) = color;
 }
 

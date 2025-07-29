@@ -157,7 +157,7 @@ class Image {
     int getWidth() const;
     uint8_t* rawData();
     const uint8_t* rawData() const;
-    void setPixel(int x, int y, Color& color);
+    void setPixel(int x, int y, const Color& color);
 
     bool operator==(const Image& other) const;
     bool operator!=(const Image& other) const;
