@@ -1,5 +1,7 @@
 #include "imageProcess.hpp"
 
+#include <queue>
+
 namespace image::process { 
 
 
@@ -244,87 +246,162 @@ namespace image::process {
 
 
 
+
+
+
+
+
+
+    void sobelFilterRaw(const Image& src, std::vector<int>& gradX, std::vector<int>& gradY) {
+        int w = src.getWidth();
+        int h = src.getHeight();
+        gradX.resize(w * h);
+        gradY.resize(w * h);
+    
+        int kernelX[3][3] = {
+            { -1, 0, 1 },
+            { -2, 0, 2 },
+            { -1, 0, 1 }
+        };
+    
+        int kernelY[3][3] = {
+            { -1, -2, -1 },
+            {  0,  0,  0 },
+            {  1,  2,  1 }
+        };
+    
+        for (int y = 1; y < h - 1; ++y) {
+            for (int x = 1; x < w - 1; ++x) {
+                int gx = 0, gy = 0;
+    
+                for (int ky = -1; ky <= 1; ++ky) {
+                    for (int kx = -1; kx <= 1; ++kx) {
+                        int pixel = src.at(x + kx, y + ky).r;
+                        gx += pixel * kernelX[ky + 1][kx + 1];
+                        gy += pixel * kernelY[ky + 1][kx + 1];
+                    }
+                }
+    
+                int idx = y * w + x;
+                gradX[idx] = gx;
+                gradY[idx] = gy;
+            }
+        }
+    }
+    
+    
+
     
 
     void cannyFilter(Image& src_blurred, Image& dest, int canny_threshold_1, int canny_threshold_2) {
         int width = src_blurred.getWidth();
         int height = src_blurred.getHeight();
-
-
-        // Step 3: Apply Sobel filter
-        Image gradX, gradY;
-        sobelFilter(src_blurred, gradX, gradY);
-
-        // Step 4: Compute gradient magnitude and angle
+    
+        std::vector<int> gradX, gradY;
+        sobelFilterRaw(src_blurred, gradX, gradY);
+    
         std::vector<double> gradMag(width * height);
         std::vector<double> gradDir(width * height);
-
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                double gx = static_cast<double>(gradX.at(x, y).r);
-                double gy = static_cast<double>(gradY.at(x, y).r);
-                int i = y * width + x;
-                gradMag[i] = std::sqrt(gx * gx + gy * gy);
-                gradDir[i] = std::atan2(gy, gx);
-            }
+    
+        for (int i = 0; i < width * height; ++i) {
+            gradMag[i] = std::sqrt(gradX[i] * gradX[i] + gradY[i] * gradY[i]);
+            gradDir[i] = std::atan2(gradY[i], gradX[i]);
         }
-
-        // Step 5: Non-maximum suppression
+    
+        // -- Non-Max Suppression (same as before but now uses better gradients)
         std::vector<uint8_t> nms(width * height, 0);
         for (int y = 1; y < height - 1; ++y) {
             for (int x = 1; x < width - 1; ++x) {
                 int i = y * width + x;
-                double angle = gradDir[i] * 180.0 / M_PI;
-                angle = std::fmod(angle + 180.0, 180.0); // normalize to [0,180)
-
+                double angle = gradDir[i];
                 double mag = gradMag[i];
-                double mag1 = 0.0, mag2 = 0.0;
-
-                if ((angle >= 0 && angle < 22.5) || (angle >= 157.5 && angle < 180)) {
-                    mag1 = gradMag[y * width + (x - 1)];
-                    mag2 = gradMag[y * width + (x + 1)];
-                } else if (angle >= 22.5 && angle < 67.5) {
-                    mag1 = gradMag[(y - 1) * width + (x + 1)];
-                    mag2 = gradMag[(y + 1) * width + (x - 1)];
-                } else if (angle >= 67.5 && angle < 112.5) {
-                    mag1 = gradMag[(y - 1) * width + x];
-                    mag2 = gradMag[(y + 1) * width + x];
-                } else if (angle >= 112.5 && angle < 157.5) {
-                    mag1 = gradMag[(y - 1) * width + (x - 1)];
-                    mag2 = gradMag[(y + 1) * width + (x + 1)];
-                }
-
+        
+                // Gradient direction components
+                double dx = std::cos(angle);
+                double dy = std::sin(angle);
+        
+                // Interpolate two magnitudes along gradient direction
+                double mag1, mag2;
+        
+                // Point in positive gradient direction
+                double x1 = x + dx;
+                double y1 = y + dy;
+        
+                // Point in negative gradient direction
+                double x2 = x - dx;
+                double y2 = y - dy;
+        
+                auto getInterpolated = [&](double x, double y) -> double {
+                    int x0 = int(x);
+                    int y0 = int(y);
+                    int x1 = x0 + 1;
+                    int y1 = y0 + 1;
+        
+                    double dx = x - x0;
+                    double dy = y - y0;
+        
+                    // Bilinear interpolation
+                    double m00 = gradMag[y0 * width + x0];
+                    double m10 = gradMag[y0 * width + x1];
+                    double m01 = gradMag[y1 * width + x0];
+                    double m11 = gradMag[y1 * width + x1];
+        
+                    return (1 - dx) * (1 - dy) * m00 +
+                           dx * (1 - dy) * m10 +
+                           (1 - dx) * dy * m01 +
+                           dx * dy * m11;
+                };
+        
+                mag1 = getInterpolated(x1, y1);
+                mag2 = getInterpolated(x2, y2);
+        
                 if (mag >= mag1 && mag >= mag2) {
-                    nms[i] = static_cast<uint8_t>(mag);
+                    nms[i] = static_cast<uint8_t>(std::clamp(mag, 0.0, 255.0));
                 } else {
                     nms[i] = 0;
                 }
             }
         }
-
-        // Step 6: Double threshold
+        
+    
+        // -- Double Thresholding
         std::vector<uint8_t> edgeMap(width * height, 0);
         for (int i = 0; i < width * height; ++i) {
-            if (nms[i] >= canny_threshold_2) {
-                edgeMap[i] = 255; // strong edge
-            } else if (nms[i] >= canny_threshold_1) {
-                edgeMap[i] = 128; // weak edge
-            } else {
-                edgeMap[i] = 0;   // non-edge
-            }
+            if (nms[i] >= canny_threshold_2) edgeMap[i] = 255;
+            else if (nms[i] >= canny_threshold_1) edgeMap[i] = 128;
         }
-
-        // Step 7: Edge tracking by hysteresis
+    
+        // -- Edge tracking (non-recursive version)
+        std::queue<std::pair<int, int>> q;
         for (int y = 1; y < height - 1; ++y) {
             for (int x = 1; x < width - 1; ++x) {
                 int i = y * width + x;
                 if (edgeMap[i] == 255) {
-                    linkEdge(x, y, width, height, edgeMap);
+                    q.push({x, y});
                 }
             }
         }
-
-        // Step 8: Write to output image
+    
+        while (!q.empty()) {
+            auto [x, y] = q.front();
+            q.pop();
+    
+            for (int dy = -1; dy <= 1; ++dy) {
+                for (int dx = -1; dx <= 1; ++dx) {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = x + dx;
+                    int ny = y + dy;
+                    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+                    int ni = ny * width + nx;
+                    if (edgeMap[ni] == 128) {
+                        edgeMap[ni] = 255;
+                        q.push({nx, ny});
+                    }
+                }
+            }
+        }
+    
+        // -- Final output
         dest = Image(width, height);
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -333,6 +410,7 @@ namespace image::process {
             }
         }
     }
+    
         
     // -- Link connected weak edges to strong ones
     void linkEdge(int x, int y, int width, int height, std::vector<uint8_t>& edgeMap) {
