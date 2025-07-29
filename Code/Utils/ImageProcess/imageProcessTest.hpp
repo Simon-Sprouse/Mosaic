@@ -22,6 +22,7 @@ namespace image::process::test {
             void testBlur();
             void testSobel();
             void testCanny();
+            void testContours();
 
         
             

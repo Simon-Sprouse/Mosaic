@@ -18,7 +18,7 @@ namespace image::process {
 
     void cannyFilter(Image& src, Image& dest, int canny_threshold_1, int canny_threshold_2);
     void sobelFilterRaw(const Image& src, std::vector<int>& gradX, std::vector<int>& gradY);
-    void linkEdge(int x, int y, int width, int height, std::vector<uint8_t>& edgeMap);
-
+    
+    void findContours(const Image& src_binary, std::vector<std::vector<Point>>& contours);
 
 }

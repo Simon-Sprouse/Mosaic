@@ -2,6 +2,8 @@
 #include "../Io/io.hpp"
 #include "imageProcess.hpp"
 
+#include <random>
+
 namespace image::process::test { 
 
 
@@ -132,10 +134,8 @@ void ProcessTest::testCanny() {
 
     // necessary progress
     Image src_img = io::loadImage(image_path_);
-
     Image gray_img;
     image::process::grayscale(src_img, gray_img);
-
     Image blur_img;
     Size kernel_size = Size(3, 3);
     double blur_sigma = 1.4;
@@ -153,6 +153,53 @@ void ProcessTest::testCanny() {
 
 }
 
+
+
+void ProcessTest::testContours() { 
+
+    // necessary progress
+    Image src_img = io::loadImage(image_path_);
+    Image gray_img;
+    image::process::grayscale(src_img, gray_img);
+    Image blur_img;
+    Size kernel_size = Size(3, 3);
+    double blur_sigma = 1.4;
+    image::process::gaussianBlur(gray_img, blur_img, kernel_size, blur_sigma);
+    Image canny_img;
+    int canny_threshold_1 = 50;
+    int canny_threshold_2 = 100;
+    image::process::cannyFilter(blur_img, canny_img, canny_threshold_1, canny_threshold_2);
+
+    std::vector<std::vector<image::Point>> contours;
+    image::process::findContours(canny_img, contours);
+
+
+    Image contour_img(canny_img.size());
+    std::vector<image::Color> colors_used;
+
+
+
+
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> color_dist(64, 255);
+
+    for (std::vector<image::Point> segment : contours) { 
+        image::Color color;
+        do {
+            color = image::Color(color_dist(rng), color_dist(rng), color_dist(rng));
+        } while (std::find(colors_used.begin(), colors_used.end(), color) != colors_used.end());
+        
+        colors_used.push_back(color);
+        
+        for (const auto& pt : segment) {
+            if (pt.y >= 0 && pt.y < contour_img.getHeight() && pt.x >= 0 && pt.x < contour_img.getWidth()) {
+                contour_img.setPixel(pt.x, pt.y, color);
+            }
+        }
+    }
+
+    io::saveImage(contour_img, "../Results/raw_contours.jpg");
+}
 
 
 
@@ -193,6 +240,7 @@ void ProcessTest::runAllTests() {
     total_time += timeFunction("Blur Image", [&]() {testBlur();});
     total_time += timeFunction("Sobel Filter", [&]() {testSobel();});
     total_time += timeFunction("Canny Filter", [&]() {testCanny();});
+    total_time += timeFunction("Detect Contours", [&]() {testContours();});
 
 
 

@@ -252,42 +252,7 @@ namespace image::process {
 
 
 
-    void sobelFilterRaw(const Image& src, std::vector<int>& gradX, std::vector<int>& gradY) {
-        int w = src.getWidth();
-        int h = src.getHeight();
-        gradX.resize(w * h);
-        gradY.resize(w * h);
     
-        int kernelX[3][3] = {
-            { -1, 0, 1 },
-            { -2, 0, 2 },
-            { -1, 0, 1 }
-        };
-    
-        int kernelY[3][3] = {
-            { -1, -2, -1 },
-            {  0,  0,  0 },
-            {  1,  2,  1 }
-        };
-    
-        for (int y = 1; y < h - 1; ++y) {
-            for (int x = 1; x < w - 1; ++x) {
-                int gx = 0, gy = 0;
-    
-                for (int ky = -1; ky <= 1; ++ky) {
-                    for (int kx = -1; kx <= 1; ++kx) {
-                        int pixel = src.at(x + kx, y + ky).r;
-                        gx += pixel * kernelX[ky + 1][kx + 1];
-                        gy += pixel * kernelY[ky + 1][kx + 1];
-                    }
-                }
-    
-                int idx = y * w + x;
-                gradX[idx] = gx;
-                gradY[idx] = gy;
-            }
-        }
-    }
     
     
 
@@ -410,25 +375,116 @@ namespace image::process {
             }
         }
     }
+
+    // TODO unify sobel filter functions
+    void sobelFilterRaw(const Image& src, std::vector<int>& gradX, std::vector<int>& gradY) {
+        int w = src.getWidth();
+        int h = src.getHeight();
+        gradX.resize(w * h);
+        gradY.resize(w * h);
     
-        
-    // -- Link connected weak edges to strong ones
-    void linkEdge(int x, int y, int width, int height, std::vector<uint8_t>& edgeMap) {
-        for (int dy = -1; dy <= 1; ++dy) {
-            for (int dx = -1; dx <= 1; ++dx) {
-                if (dx == 0 && dy == 0) continue;
-                int nx = x + dx;
-                int ny = y + dy;
-                if (nx >= 0 && ny >= 0 && nx < width && ny < height) {
-                    int ni = ny * width + nx;
-                    if (edgeMap[ni] == 128) {
-                        edgeMap[ni] = 255;
-                        linkEdge(nx, ny, width, height, edgeMap);
+        int kernelX[3][3] = {
+            { -1, 0, 1 },
+            { -2, 0, 2 },
+            { -1, 0, 1 }
+        };
+    
+        int kernelY[3][3] = {
+            { -1, -2, -1 },
+            {  0,  0,  0 },
+            {  1,  2,  1 }
+        };
+    
+        for (int y = 1; y < h - 1; ++y) {
+            for (int x = 1; x < w - 1; ++x) {
+                int gx = 0, gy = 0;
+    
+                for (int ky = -1; ky <= 1; ++ky) {
+                    for (int kx = -1; kx <= 1; ++kx) {
+                        int pixel = src.at(x + kx, y + ky).r;
+                        gx += pixel * kernelX[ky + 1][kx + 1];
+                        gy += pixel * kernelY[ky + 1][kx + 1];
                     }
+                }
+    
+                int idx = y * w + x;
+                gradX[idx] = gx;
+                gradY[idx] = gy;
+            }
+        }
+    }
+    
+     
+
+
+
+
+
+
+
+
+    void findContours(const Image& src_binary, std::vector<std::vector<Point>>& contours) {
+        int width = src_binary.getWidth();
+        int height = src_binary.getHeight();
+    
+        std::vector<std::vector<bool>> visited(height, std::vector<bool>(width, false));
+        contours.clear();
+    
+        auto isValid = [&](int x, int y) {
+            return x >= 0 && y >= 0 && x < width && y < height;
+        };
+    
+        std::vector<Point> directions = {
+            {-1, -1}, {0, -1}, {1, -1},
+            {-1,  0},          {1,  0},
+            {-1,  1}, {0,  1}, {1,  1}
+        };
+    
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (visited[y][x]) continue;
+    
+                uint8_t val = src_binary.at(x, y).r;  // assume grayscale (R=G=B)
+                if (val == 0) continue;
+    
+                // Start new contour
+                std::vector<Point> contour;
+                std::vector<Point> stack = { Point(x, y) };
+    
+                visited[y][x] = true;
+    
+                while (!stack.empty()) {
+                    Point p = stack.back();
+                    stack.pop_back();
+    
+                    contour.push_back(p);
+    
+                    for (const auto& d : directions) {
+                        int nx = p.x + d.x;
+                        int ny = p.y + d.y;
+    
+                        if (!isValid(nx, ny)) continue;
+                        if (visited[ny][nx]) continue;
+                        if (src_binary.at(nx, ny).r == 0) continue;
+    
+                        stack.emplace_back(nx, ny);
+                        visited[ny][nx] = true;
+                    }
+                }
+    
+                if (!contour.empty()) {
+                    contours.push_back(std::move(contour));
                 }
             }
         }
     }
+    
+
+
+
+
+
+
 
 
 
