@@ -16,8 +16,12 @@ namespace Geometry::test {
         public: 
 
             explicit GeometryTest(const string& image_path): image_path_(image_path) {};
+            // TODO dynamically set verbosity
+            // GeometryTest(const string& image_path, bool verbose) : image_path_(image_path), verbose_(verbose) {};
 
-
+            bool testComputeMean();
+            bool testCovarianceMatrix();
+            bool testFirstEigenVector();
             bool testPCALength();
 
         
@@ -30,7 +34,7 @@ namespace Geometry::test {
         private: 
 
 
-
+            bool verbose_;
             string image_path_; 
 
 

@@ -92,9 +92,19 @@ struct Point {
         return !(*this == other);
     }
 
+};
+
+struct Vec2d {
+    double x;
+    double y;
+
+    Vec2d() : x(0), y(0) {}
+    Vec2d(double x_, double y_) : x(x_), y(y_) {}
 
 
 };
+
+
 
 struct Size { 
 
@@ -211,10 +221,16 @@ inline std::ostream& operator<<(std::ostream& os, const Point& point) {
     return os;
 }
 
+// Stream operator for Point
+inline std::ostream& operator<<(std::ostream& os, const Vec2d& vec) {
+    os << "vec2d[" << vec.x << ", " << vec.y << "]";
+    return os;
+}
+
 
 // Stream operator for Image
 inline std::ostream& operator<<(std::ostream& os, const Image& image) {
-    os << "Image[" << image.getWidth() << " x " << image.getHeight() << "]";
+    os << "image[" << image.getWidth() << " x " << image.getHeight() << "]";
     return os;
 }
 

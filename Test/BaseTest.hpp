@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 using namespace std;
 
@@ -30,7 +31,7 @@ class BaseTest {
         static constexpr const char* BOLD_GREEN    = "\033[1;32m";
         static constexpr const char* BOLD_YELLOW   = "\033[1;33m";
 
-        bool verbose_;
+        bool verbose_ = false;
 
 
         /*
@@ -105,8 +106,8 @@ class BaseTest {
 
 
         template<typename T>
-        bool checkEqual(const std::string& label, const T& actual, const T& expected) {
-            if (actual == expected) {
+        bool checkEqual(const std::string& label, const T& guess, const T& gt) {
+            if (guess == gt) {
                 // only print success when verbose_
                 if (verbose_) {
                     std::cout << label << BOLD_GREEN << ": [PASSED]\n" << RESET;
@@ -115,11 +116,54 @@ class BaseTest {
             }
             else {
                 std::cout << label << BOLD_RED << ": [FAILED]\n" << RESET << RED
-                        << "  Actual  : " << actual << "\n"
-                        << "  Expected: " << expected << "\n" << RESET;
+                        << "  Failed Attempt  : " << guess << "\n"
+                        << "  Correct Answer  : " << gt << "\n" << RESET;
                 return false;
             }
         }
+
+
+        template<typename T>
+        bool checkWithTolerance(const std::string& label, const T& guess, const T& gt, double ratio_tol = 0.05) {
+            if (gt == 0) {
+                // Avoid division by zero; fall back to absolute check
+                bool passed = std::abs(guess) <= ratio_tol;
+                if (passed && verbose_) {
+                    std::cout << label << BOLD_GREEN << ": [PASSED]\n" << RESET;
+                } else if (!passed) {
+                    std::cout << label << BOLD_RED << ": [FAILED]\n" << RESET << RED
+                            << "  Failed Attempt  : " << guess << "\n"
+                            << "  Correct Answer  : " << gt << "\n"
+                            << "  Ratio tolerance : " << ratio_tol << "\n"
+                            << RESET;
+                }
+                return passed;
+            }
+
+            double ratio_error = std::abs((guess / gt) - 1.0);
+            bool passed = ratio_error <= ratio_tol;
+
+            if (passed) {
+                if (verbose_) {
+                    std::cout << label << BOLD_GREEN << ": [PASSED]\n" << RESET;
+                }
+            } else {
+                std::cout << label << BOLD_RED << ": [FAILED]\n" << RESET << RED
+                        << "  Failed Attempt  : " << guess << "\n"
+                        << "  Correct Answer  : " << gt << "\n"
+                        << "  Ratio Error     : " << ratio_error << "\n"
+                        << "  Allowed Tol     : " << ratio_tol << "\n"
+                        << RESET;
+            }
+
+            return passed;
+        }
+
+
+
+
+
+
 
         template<typename T>
         bool checkPrint(const std::string& label, const T& obj, const std::string& expected) {
