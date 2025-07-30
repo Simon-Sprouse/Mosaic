@@ -13,7 +13,7 @@ namespace Geometry {
         return std::atan2(vec[1], vec[0]) * 180.0 / CV_PI;
     }
 
-    double pcaLength (const std::vector<cv::Point>& points) {
+    double pcaLength (const std::vector<image::Point>& points) {
         if (points.size() < 2)
             return 0.0;
     

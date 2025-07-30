@@ -7,8 +7,12 @@
 // #include "graphics.hpp"
 // #include "Mosaic.hpp"
 // #include "test.hpp"
-#include "imageTest.hpp"
-#include "imageProcessTest.hpp"
+// #include "imageTest.hpp"
+// #include "imageProcessTest.hpp"
+// #include "geometryTest.hpp"
+
+#include "../Test/Utils/Geometry/geometryTest.hpp"
+
 
 using namespace std;
 
@@ -21,23 +25,26 @@ int main() {
 
 
 
-    cout << "Hello From ImageProcess" << endl;
+    cout << "Hello From Geometry Test" << endl;
 
-    // // Basic Image Obj
+    // // Image class tests
     // bool verbose = false;
     // image::test::ImageTest my_image_test(verbose);
     // my_image_test.runAllTests();
 
 
 
-
-    image::process::test::ProcessTest my_process_test("../Images/flower.jpg");
-
-    my_process_test.runAllTests();
-
+    // // Image process tests
+    // image::process::test::ProcessTest my_process_test("../Images/flower.jpg");
+    // my_process_test.runAllTests();
 
 
+    // Geometry tests
+    Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
+    my_geometry_test.runAllTests();
 
+
+    // Graphics tests
 
 
 

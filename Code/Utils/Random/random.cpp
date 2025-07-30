@@ -28,6 +28,29 @@ namespace Random {
         return dist(rng);
     }
 
+    std::vector<image::Point> samplePointsRandom(const image::Image& image, int num_points) { 
+        std::vector<image::Point> random_points;
+
+        if (image.empty() || num_points <= 0) {
+            return random_points;
+        }
+
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        static std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<int> dist_x(0, width - 1);
+        std::uniform_int_distribution<int> dist_y(0, height - 1);
+
+        for (int i = 0; i < num_points; ++i) {
+            int x = dist_x(rng);
+            int y = dist_y(rng);
+            random_points.emplace_back(x, y);
+        }
+
+        return random_points;
+    }
+
 
 
     // std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size) { 
@@ -44,29 +67,6 @@ namespace Random {
     //     }
 
     //     return grid_points;
-    // }
-
-    // std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points) {
-    //     std::vector<cv::Point> random_points;
-
-    //     if (image.empty() || num_points <= 0) {
-    //         return random_points;
-    //     }
-
-    //     int width = image.cols;
-    //     int height = image.rows;
-
-    //     static std::mt19937 rng(std::random_device{}());
-    //     std::uniform_int_distribution<int> dist_x(0, width - 1);
-    //     std::uniform_int_distribution<int> dist_y(0, height - 1);
-
-    //     for (int i = 0; i < num_points; ++i) {
-    //         int x = dist_x(rng);
-    //         int y = dist_y(rng);
-    //         random_points.emplace_back(x, y);
-    //     }
-
-    //     return random_points;
     // }
 
 

@@ -36,6 +36,12 @@ namespace Random {
     }
 
     double randomDouble(double min_val, double max_val); 
+
+    std::vector<image::Point> samplePointsRandom(const image::Image& image, int num_points);
+
+
+
+
     // std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
     // std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
     // std::vector<cv::Point> jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size);

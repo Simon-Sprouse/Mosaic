@@ -15,11 +15,12 @@ add_executable(mosaic_tiler
     Utils/Geometry/geometry.cpp
     Utils/Graphics/graphics.cpp
     Utils/Image/Image.cpp
-    Utils/Image/ImageTest.cpp
     Utils/ImageProcess/ImageProcess.cpp
-    Utils/ImageProcess/ImageProcessTest.cpp
     Utils/Io/io.cpp
     Utils/Random/random.cpp
+
+    ../Test/Utils/Geometry/geometryTest.cpp
+
 
     main.cpp
 )
@@ -33,6 +34,10 @@ target_include_directories(mosaic_tiler PRIVATE
     Utils/ImageProcess
     Utils/IO
     Utils/Random
+
+    ../Test
+
+
     
 )
 

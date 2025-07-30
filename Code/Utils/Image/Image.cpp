@@ -119,6 +119,10 @@ void Image::setPixel(int x, int y, const Color& color) {
 }
 
 
+bool Image::empty() const { 
+    return data_.empty();
+}
+
 
 
 
