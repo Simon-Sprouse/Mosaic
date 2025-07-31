@@ -22,9 +22,9 @@ namespace Geometry {
 
 
 
-    double euclideanDistance(const cv::Point& a, const cv::Point& b);
-    double vectorToAngleDegrees(const cv::Vec2d& vec);
-    cv::Vec2d pcaDirection(const std::vector<cv::Point2d>& points);
-    std::vector<cv::Point> filterUniquePoints(const std::vector<cv::Point>& points, double min_distance);
+    double euclideanDistance(const Point& a, const Point& b);
+    double vectorToAngleDegrees(const Vec2d& vec);
+    Vec2d pcaDirection(const std::vector<Point>& points);
+    std::vector<Point> filterUniquePoints(const std::vector<Point>& points, double min_distance);
 
 }

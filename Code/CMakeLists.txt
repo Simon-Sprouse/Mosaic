@@ -20,6 +20,7 @@ add_executable(mosaic_tiler
     Utils/Random/random.cpp
 
     ../Test/Utils/Geometry/geometryTest.cpp
+    ../Test/Utils/Graphics/graphicsTest.cpp
 
 
     main.cpp

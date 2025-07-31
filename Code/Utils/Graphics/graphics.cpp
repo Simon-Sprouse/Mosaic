@@ -7,6 +7,65 @@ using namespace std;
 
 namespace Graphics { 
 
+
+
+
+    void drawFilledPolygon(Image& image, const std::vector<Point>& polygon, const Color& color) {
+        if (polygon.size() < 3) return;
+    
+        // Find vertical bounds of the polygon
+        int minY = polygon[0].y, maxY = polygon[0].y;
+        for (const auto& p : polygon) {
+            minY = std::min(minY, p.y);
+            maxY = std::max(maxY, p.y);
+        }
+    
+        // Clip to image height
+        minY = std::max(minY, 0);
+        maxY = std::min(maxY, image.getHeight() - 1);
+    
+        // Scanline fill
+        for (int y = minY; y <= maxY; ++y) {
+            std::vector<int> intersections;
+    
+            for (size_t i = 0; i < polygon.size(); ++i) {
+                const Point& p1 = polygon[i];
+                const Point& p2 = polygon[(i + 1) % polygon.size()];
+    
+                // Check if scanline intersects the edge
+                if ((p1.y <= y && p2.y > y) || (p2.y <= y && p1.y > y)) {
+                    // Compute intersection x coordinate
+                    float x = p1.x + (float)(y - p1.y) * (p2.x - p1.x) / (float)(p2.y - p1.y);
+                    intersections.push_back(static_cast<int>(std::round(x)));
+                }
+            }
+    
+            // Sort x intersections
+            std::sort(intersections.begin(), intersections.end());
+    
+            // Fill between pairs
+            for (size_t i = 0; i + 1 < intersections.size(); i += 2) {
+                int x0 = intersections[i];
+                int x1 = intersections[i + 1];
+                if (x1 < x0) std::swap(x0, x1);
+    
+                x0 = std::max(x0, 0);
+                x1 = std::min(x1, image.getWidth() - 1);
+    
+                for (int x = x0; x <= x1; ++x) {
+                    image.setPixel(x, y, color);
+                }
+            }
+        }
+    }
+
+
+
+
+    /*
+    vvv OLD CODE BELOW vvv
+    */
+
     void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width) {
         if (image.empty()) {
             std::cerr << "drawSquare: Input image is empty." << std::endl;

@@ -1,10 +1,24 @@
 #pragma once
 
+#include "../Image/Image.hpp"
+
 #include <opencv2/opencv.hpp>
 #include <string>
 
 
 namespace Graphics { 
+
+    using image::Image;
+    using image::Point;
+    using image::Color;
+
+
+    void drawFilledPolygon(Image& image, const std::vector<Point>& polygon, const Color& color);
+
+
+
+
+    // vvv Old Code vvv
 
     void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width);
     void drawSquareText(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width, const std::string& text);

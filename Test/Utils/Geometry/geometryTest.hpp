@@ -22,7 +22,8 @@ namespace Geometry::test {
             bool testComputeMean();
             bool testCovarianceMatrix();
             bool testFirstEigenVector();
-            bool testPCALength();
+            bool testPcaLength();
+            bool testPcaDirection();
 
         
             

@@ -12,6 +12,7 @@
 // #include "geometryTest.hpp"
 
 #include "../Test/Utils/Geometry/geometryTest.hpp"
+#include "../Test/Utils/Graphics/graphicsTest.hpp"
 
 
 using namespace std;
@@ -26,6 +27,7 @@ int main() {
 
 
     cout << "Hello From Geometry Test" << endl;
+    string image_path = "../Images/flower.jpg";
 
     // // Image class tests
     // bool verbose = false;
@@ -39,13 +41,14 @@ int main() {
     // my_process_test.runAllTests();
 
 
-    // Geometry tests
-    Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
-    my_geometry_test.runAllTests();
+    // // Geometry tests
+    // Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
+    // my_geometry_test.runAllTests();
 
 
     // Graphics tests
-
+    Graphics::test::GraphicsTest my_graphics_test(image_path);
+    my_graphics_test.runAllTests();
 
 
 

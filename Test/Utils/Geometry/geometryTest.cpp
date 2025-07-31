@@ -149,7 +149,7 @@ bool GeometryTest::testFirstEigenVector() {
 
 
 
-bool GeometryTest::testPCALength() { 
+bool GeometryTest::testPcaLength() { 
 
     bool all_passed = true;
 
@@ -157,7 +157,7 @@ bool GeometryTest::testPCALength() {
     int num_points = 15;
 
     std::vector<Point> points = Random::samplePointsRandom(img, num_points);
-
+    double attempt = Geometry::pcaLength(points);
 
     // TEST CV RESULTS
     cv::Mat data(points.size(), 2, CV_64F);
@@ -172,8 +172,7 @@ bool GeometryTest::testPCALength() {
     cv::minMaxLoc(projected.col(0), &minVal, &maxVal);
     double answer = maxVal - minVal;
 
-    // TEST OUR FUNCTION
-    double attempt = Geometry::pcaLength(points);
+    
 
     double ratio_tolerance = 0.01;
     all_passed &= checkWithTolerance<double>("Pca length", attempt, answer, ratio_tolerance);
@@ -182,6 +181,44 @@ bool GeometryTest::testPCALength() {
 
     return all_passed;
 }
+
+
+bool GeometryTest::testPcaDirection() { 
+
+    bool all_passed = true;
+
+    Image img = io::loadImage(image_path_);
+    int num_points = 15;
+
+    std::vector<Point> points = Random::samplePointsRandom(img, num_points);
+    Vec2d attempt = Geometry::pcaDirection(points);
+
+
+    // Use library for GT
+    // Build matrix for PCA
+    cv::Mat data(points.size(), 2, CV_64F);
+    for (size_t i = 0; i < points.size(); ++i) {
+        data.at<double>(i, 0) = points[i].x;
+        data.at<double>(i, 1) = points[i].y;
+    }
+
+    // Run PCA to get dominant direction
+    cv::PCA pca(data, cv::Mat(), cv::PCA::DATA_AS_ROW, 1);
+    cv::Vec2d direction = pca.eigenvectors.row(0);
+    Vec2d answer(direction[0], direction[1]);
+
+
+    double ratio_tolerance = 0.01;
+    all_passed &= checkWithTolerance<double>("Eigen Vector x", attempt.x, answer.x, ratio_tolerance);
+    all_passed &= checkWithTolerance<double>("Eigen Vector y", attempt.y, answer.y, ratio_tolerance);
+
+    return all_passed;
+}
+
+
+
+
+
 
 
 
@@ -194,7 +231,8 @@ void GeometryTest::runAllTests() {
     runTruthTest("Compute Mean", [&]() {return testComputeMean();});
     runTruthTest("Covariance Matrix", [&]() {return testCovarianceMatrix();});
     runTruthTest("First Eigenvector", [&]() {return testFirstEigenVector();});
-    runTruthTest("Pca Length", [&]() {return testPCALength();});
+    runTruthTest("Pca Length", [&]() {return testPcaLength();});
+    runTruthTest("Pca Direction", [&]() {return testPcaDirection();});
 
     
 
