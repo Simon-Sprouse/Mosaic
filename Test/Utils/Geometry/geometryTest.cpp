@@ -21,7 +21,7 @@ bool GeometryTest::testComputeMean() {
 
     Image img = io::loadImage(image_path_);
     int num_points = 15;
-    std::vector<Point> points = Random::samplePointsRandom(img, num_points);
+    std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
 
     // Convert to a matrix of 2D vectors
     cv::Mat data(points.size(), 1, CV_64FC2);
@@ -49,7 +49,7 @@ bool GeometryTest::testCovarianceMatrix() {
 
     Image img = io::loadImage(image_path_);
     int num_points = 15;
-    std::vector<Point> points = Random::samplePointsRandom(img, num_points);
+    std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
 
     // use gt library to build answer
 
@@ -100,7 +100,7 @@ bool GeometryTest::testFirstEigenVector() {
 
     Image img = io::loadImage(image_path_);
     int num_points = 15;
-    std::vector<Point> points = Random::samplePointsRandom(img, num_points);
+    std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
     Point mean = Geometry::computeMean(points);
     auto centered_points = Geometry::centerData(points, mean); // function expects centered points
     auto cov = Geometry::computeCovarianceMatrix(centered_points);
@@ -156,7 +156,7 @@ bool GeometryTest::testPcaLength() {
     Image img = io::loadImage(image_path_);
     int num_points = 15;
 
-    std::vector<Point> points = Random::samplePointsRandom(img, num_points);
+    std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
     double attempt = Geometry::pcaLength(points);
 
     // TEST CV RESULTS
@@ -190,7 +190,7 @@ bool GeometryTest::testPcaDirection() {
     Image img = io::loadImage(image_path_);
     int num_points = 15;
 
-    std::vector<Point> points = Random::samplePointsRandom(img, num_points);
+    std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
     Vec2d attempt = Geometry::pcaDirection(points);
 
 

@@ -61,177 +61,260 @@ namespace Graphics {
 
 
 
-
-    /*
-    vvv OLD CODE BELOW vvv
-    */
-
-    void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width) {
-        if (image.empty()) {
-            std::cerr << "drawSquare: Input image is empty." << std::endl;
-            return;
-        }
-    
-        if (border_width < 0) {
-            std::cerr << "drawSquare: Invalid border_width: " << border_width << std::endl;
+    void drawSquare(Image& image, const Point& center, double size, double angle_deg, const Color& color, int border_width) {
+        if (size <= 0 || border_width < 0) {
+            std::cerr << "drawSquare: Invalid size or border width.\n";
             return;
         }
     
         double half_size = size / 2.0;
     
-        // If border is too big, just draw the whole filled square
-        if (border_width * 2 >= static_cast<int>(size)) {
-            double theta = angle_deg * CV_PI / 180.0;
-            std::vector<cv::Point2d> outerCorners = {
+        // If the border width consumes the entire square, draw it filled
+        if (2 * border_width >= size) {
+            // Build outer square corners in local space
+            std::vector<Point> outer = {
                 {-half_size, -half_size},
                 { half_size, -half_size},
                 { half_size,  half_size},
                 {-half_size,  half_size}
             };
-            std::vector<cv::Point> rotatedCorners;
-            for (const auto& pt : outerCorners) {
-                float x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
-                float y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
-                rotatedCorners.emplace_back(cvRound(center.x + x), cvRound(center.y + y));
+    
+            double angle_rad = angle_deg * M_PI / 180.0;
+            double cos_theta = std::cos(angle_rad);
+            double sin_theta = std::sin(angle_rad);
+    
+            std::vector<Point> rotated;
+            for (const auto& pt : outer) {
+                double x = pt.x * cos_theta - pt.y * sin_theta;
+                double y = pt.x * sin_theta + pt.y * cos_theta;
+                rotated.emplace_back(center.x + static_cast<int>(std::round(x)),
+                                     center.y + static_cast<int>(std::round(y)));
             }
-            std::vector<std::vector<cv::Point>> contour{ rotatedCorners };
-            cv::fillPoly(image, contour, color);
+    
+            drawFilledPolygon(image, rotated, color);
             return;
         }
     
-        // Compute rotation matrix
-        double theta = angle_deg * CV_PI / 180.0;
-        auto rotate = [theta](cv::Point2d pt) -> cv::Point2d {
-            return {
-                pt.x * std::cos(theta) - pt.y * std::sin(theta),
-                pt.x * std::sin(theta) + pt.y * std::cos(theta)
-            };
-        };
-    
+        // Otherwise, construct the outer and inner rotated squares
         double inner_half = half_size - border_width;
     
-        // Local-space corners
-        std::vector<cv::Point2d> outer = {
+        std::vector<Point> outer = {
             {-half_size, -half_size},
             { half_size, -half_size},
             { half_size,  half_size},
             {-half_size,  half_size}
         };
-        std::vector<cv::Point2d> inner = {
+    
+        std::vector<Point> inner = {
             {-inner_half, -inner_half},
             { inner_half, -inner_half},
             { inner_half,  inner_half},
             {-inner_half,  inner_half}
         };
     
-        // Rotate and shift to world coordinates
-        std::vector<cv::Point> outerPts, innerPts;
+        double angle_rad = angle_deg * M_PI / 180.0;
+        double cos_theta = std::cos(angle_rad);
+        double sin_theta = std::sin(angle_rad);
+    
+        std::vector<Point> outer_rotated, inner_rotated;
         for (int i = 0; i < 4; ++i) {
-            auto o = rotate(outer[i]);
-            auto io = rotate(inner[i]);
-            outerPts.emplace_back(cvRound(center.x + o.x), cvRound(center.y + o.y));
-            innerPts.emplace_back(cvRound(center.x + io.x), cvRound(center.y + io.y));
+            double ox = outer[i].x * cos_theta - outer[i].y * sin_theta;
+            double oy = outer[i].x * sin_theta + outer[i].y * cos_theta;
+            outer_rotated.emplace_back(center.x + static_cast<int>(std::round(ox)),
+                                       center.y + static_cast<int>(std::round(oy)));
+    
+            double ix = inner[i].x * cos_theta - inner[i].y * sin_theta;
+            double iy = inner[i].x * sin_theta + inner[i].y * cos_theta;
+            inner_rotated.emplace_back(center.x + static_cast<int>(std::round(ix)),
+                                       center.y + static_cast<int>(std::round(iy)));
         }
     
-        // Draw 4 trapezoids (border strips)
+        // Draw 4 border trapezoids between outer and inner square
         for (int i = 0; i < 4; ++i) {
             int next = (i + 1) % 4;
-            std::vector<cv::Point> quad = {
-                outerPts[i],
-                outerPts[next],
-                innerPts[next],
-                innerPts[i]
+            std::vector<Point> trapezoid = {
+                outer_rotated[i],
+                outer_rotated[next],
+                inner_rotated[next],
+                inner_rotated[i]
             };
-            std::vector<std::vector<cv::Point>> contour{ quad };
-            cv::fillPoly(image, contour, color);
+            drawFilledPolygon(image, trapezoid, color);
         }
     }
     
 
 
-    void drawSquareText(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width, const std::string& text) {
-        // Draw the square
-        drawSquare(image, center, size, angle_deg, color, border_width);
 
-        if (text == "") { 
-            return;
-        }
+    /*
+    vvv OLD CODE BELOW vvv
+    */
+
+    // void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width) {
+    //     if (image.empty()) {
+    //         std::cerr << "drawSquare: Input image is empty." << std::endl;
+    //         return;
+    //     }
     
-        // Set font parameters
-        int fontFace = cv::FONT_HERSHEY_SIMPLEX;
-        double fontScale = 0.5;
-        int thickness = 1;
+    //     if (border_width < 0) {
+    //         std::cerr << "drawSquare: Invalid border_width: " << border_width << std::endl;
+    //         return;
+    //     }
     
-        // Get text size
-        int baseline = 0;
-        cv::Size textSize = cv::getTextSize(text, fontFace, fontScale, thickness, &baseline);
+    //     double half_size = size / 2.0;
     
-        // Compute top-left corner to center the text
-        cv::Point textOrg(center.x - textSize.width / 2, center.y + textSize.height / 2);
+    //     // If border is too big, just draw the whole filled square
+    //     if (border_width * 2 >= static_cast<int>(size)) {
+    //         double theta = angle_deg * CV_PI / 180.0;
+    //         std::vector<cv::Point2d> outerCorners = {
+    //             {-half_size, -half_size},
+    //             { half_size, -half_size},
+    //             { half_size,  half_size},
+    //             {-half_size,  half_size}
+    //         };
+    //         std::vector<cv::Point> rotatedCorners;
+    //         for (const auto& pt : outerCorners) {
+    //             float x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
+    //             float y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
+    //             rotatedCorners.emplace_back(cvRound(center.x + x), cvRound(center.y + y));
+    //         }
+    //         std::vector<std::vector<cv::Point>> contour{ rotatedCorners };
+    //         cv::fillPoly(image, contour, color);
+    //         return;
+    //     }
     
-        // Draw black rectangle behind text for legibility
-        cv::Point rectTopLeft(textOrg.x, textOrg.y - textSize.height);
-        cv::Point rectBottomRight(textOrg.x + textSize.width, textOrg.y + baseline);
-        cv::rectangle(image, rectTopLeft, rectBottomRight, cv::Scalar(0, 0, 0), cv::FILLED);
+    //     // Compute rotation matrix
+    //     double theta = angle_deg * CV_PI / 180.0;
+    //     auto rotate = [theta](cv::Point2d pt) -> cv::Point2d {
+    //         return {
+    //             pt.x * std::cos(theta) - pt.y * std::sin(theta),
+    //             pt.x * std::sin(theta) + pt.y * std::cos(theta)
+    //         };
+    //     };
     
-        // Draw white text
-        cv::putText(image, text, textOrg, fontFace, fontScale, cv::Scalar(255, 255, 255), thickness, cv::LINE_AA);
-    }
+    //     double inner_half = half_size - border_width;
+    
+    //     // Local-space corners
+    //     std::vector<cv::Point2d> outer = {
+    //         {-half_size, -half_size},
+    //         { half_size, -half_size},
+    //         { half_size,  half_size},
+    //         {-half_size,  half_size}
+    //     };
+    //     std::vector<cv::Point2d> inner = {
+    //         {-inner_half, -inner_half},
+    //         { inner_half, -inner_half},
+    //         { inner_half,  inner_half},
+    //         {-inner_half,  inner_half}
+    //     };
+    
+    //     // Rotate and shift to world coordinates
+    //     std::vector<cv::Point> outerPts, innerPts;
+    //     for (int i = 0; i < 4; ++i) {
+    //         auto o = rotate(outer[i]);
+    //         auto io = rotate(inner[i]);
+    //         outerPts.emplace_back(cvRound(center.x + o.x), cvRound(center.y + o.y));
+    //         innerPts.emplace_back(cvRound(center.x + io.x), cvRound(center.y + io.y));
+    //     }
+    
+    //     // Draw 4 trapezoids (border strips)
+    //     for (int i = 0; i < 4; ++i) {
+    //         int next = (i + 1) % 4;
+    //         std::vector<cv::Point> quad = {
+    //             outerPts[i],
+    //             outerPts[next],
+    //             innerPts[next],
+    //             innerPts[i]
+    //         };
+    //         std::vector<std::vector<cv::Point>> contour{ quad };
+    //         cv::fillPoly(image, contour, color);
+    //     }
+    // }
     
 
 
-    void drawLine(cv::Mat& image, const cv::Point& point_a, const cv::Point& point_b, int thickness, const cv::Vec3b& color) {
-        if (image.empty()) {
-            std::cerr << "drawLine: Input image is empty." << std::endl;
-            return;
-        }
+    // void drawSquareText(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width, const std::string& text) {
+    //     // Draw the square
+    //     drawSquare(image, center, size, angle_deg, color, border_width);
+
+    //     if (text == "") { 
+    //         return;
+    //     }
     
-        cv::line(image, point_a, point_b, color, thickness, cv::LINE_AA);
-    }
+    //     // Set font parameters
+    //     int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+    //     double fontScale = 0.5;
+    //     int thickness = 1;
+    
+    //     // Get text size
+    //     int baseline = 0;
+    //     cv::Size textSize = cv::getTextSize(text, fontFace, fontScale, thickness, &baseline);
+    
+    //     // Compute top-left corner to center the text
+    //     cv::Point textOrg(center.x - textSize.width / 2, center.y + textSize.height / 2);
+    
+    //     // Draw black rectangle behind text for legibility
+    //     cv::Point rectTopLeft(textOrg.x, textOrg.y - textSize.height);
+    //     cv::Point rectBottomRight(textOrg.x + textSize.width, textOrg.y + baseline);
+    //     cv::rectangle(image, rectTopLeft, rectBottomRight, cv::Scalar(0, 0, 0), cv::FILLED);
+    
+    //     // Draw white text
+    //     cv::putText(image, text, textOrg, fontFace, fontScale, cv::Scalar(255, 255, 255), thickness, cv::LINE_AA);
+    // }
+    
 
 
-    void drawArrow(cv::Mat& image, const cv::Point& center, int length, int thickness, double angle_deg, const cv::Vec3b& color) {
-        if (image.empty()) {
-            std::cerr << "drawArrow: Input image is empty." << std::endl;
-            return;
-        }
+    // void drawLine(cv::Mat& image, const cv::Point& point_a, const cv::Point& point_b, int thickness, const cv::Vec3b& color) {
+    //     if (image.empty()) {
+    //         std::cerr << "drawLine: Input image is empty." << std::endl;
+    //         return;
+    //     }
     
-        // Parameters for arrow size (in pixels)
+    //     cv::line(image, point_a, point_b, color, thickness, cv::LINE_AA);
+    // }
 
-        const int headLength = static_cast<int>(length / 3);        // length of each arrowhead wing
-        const double headAngleDeg = 30;  // angle between shaft and arrowhead wing
+
+    // void drawArrow(cv::Mat& image, const cv::Point& center, int length, int thickness, double angle_deg, const cv::Vec3b& color) {
+    //     if (image.empty()) {
+    //         std::cerr << "drawArrow: Input image is empty." << std::endl;
+    //         return;
+    //     }
+    
+    //     // Parameters for arrow size (in pixels)
+
+    //     const int headLength = static_cast<int>(length / 3);        // length of each arrowhead wing
+    //     const double headAngleDeg = 30;  // angle between shaft and arrowhead wing
 
     
-        // Convert angle to radians
-        double theta = angle_deg * CV_PI / 180.0;
+    //     // Convert angle to radians
+    //     double theta = angle_deg * CV_PI / 180.0;
     
-        // Compute arrow tip point
-        cv::Point tip(
-            cvRound(center.x + length * cos(theta)),
-            cvRound(center.y + length * sin(theta))
-        );
+    //     // Compute arrow tip point
+    //     cv::Point tip(
+    //         cvRound(center.x + length * cos(theta)),
+    //         cvRound(center.y + length * sin(theta))
+    //     );
     
-        // Draw shaft line
-        cv::line(image, center, tip, color, thickness, cv::LINE_AA);
+    //     // Draw shaft line
+    //     cv::line(image, center, tip, color, thickness, cv::LINE_AA);
     
-        // Calculate left wing point
-        double leftTheta = theta + (CV_PI * headAngleDeg / 180.0);
-        cv::Point leftWing(
-            cvRound(tip.x - headLength * cos(leftTheta)),
-            cvRound(tip.y - headLength * sin(leftTheta))
-        );
+    //     // Calculate left wing point
+    //     double leftTheta = theta + (CV_PI * headAngleDeg / 180.0);
+    //     cv::Point leftWing(
+    //         cvRound(tip.x - headLength * cos(leftTheta)),
+    //         cvRound(tip.y - headLength * sin(leftTheta))
+    //     );
     
-        // Calculate right wing point
-        double rightTheta = theta - (CV_PI * headAngleDeg / 180.0);
-        cv::Point rightWing(
-            cvRound(tip.x - headLength * cos(rightTheta)),
-            cvRound(tip.y - headLength * sin(rightTheta))
-        );
+    //     // Calculate right wing point
+    //     double rightTheta = theta - (CV_PI * headAngleDeg / 180.0);
+    //     cv::Point rightWing(
+    //         cvRound(tip.x - headLength * cos(rightTheta)),
+    //         cvRound(tip.y - headLength * sin(rightTheta))
+    //     );
     
-        // Draw arrowhead wings
-        cv::line(image, tip, leftWing, color, thickness, cv::LINE_AA);
-        cv::line(image, tip, rightWing, color, thickness, cv::LINE_AA);
-    }
+    //     // Draw arrowhead wings
+    //     cv::line(image, tip, leftWing, color, thickness, cv::LINE_AA);
+    //     cv::line(image, tip, rightWing, color, thickness, cv::LINE_AA);
+    // }
     
     
 

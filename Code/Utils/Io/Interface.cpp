@@ -10,7 +10,7 @@ extern "C" {
     }
 
     image::Image* constructImage(int w, int h) {
-        image::Color color = Random::getRandomColor();
+        image::Color color = Random::randomColor();
         return new image::Image(w, h, color);
     }
 

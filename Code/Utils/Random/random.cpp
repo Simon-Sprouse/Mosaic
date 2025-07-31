@@ -8,7 +8,17 @@ namespace Random {
 
 
 
-    image::Color getRandomColor() {
+    
+
+
+        
+    double randomDouble(double min_val, double max_val) {
+        static std::mt19937 rng(std::random_device{}());
+        std::uniform_real_distribution<double> dist(min_val, max_val);
+        return dist(rng);
+    }
+
+    image::Color randomColor() {
         static std::random_device rd;
         static std::mt19937 gen(rd());
         static std::uniform_int_distribution<int> dist(0, 255);
@@ -20,27 +30,29 @@ namespace Random {
         };
     }
 
+    
 
-        
-    double randomDouble(double min_val, double max_val) {
+
+
+    image::Point randomPoint(int w, int h) { 
         static std::mt19937 rng(std::random_device{}());
-        std::uniform_real_distribution<double> dist(min_val, max_val);
-        return dist(rng);
+        std::uniform_int_distribution<int> dist_x(0, w - 1);
+        std::uniform_int_distribution<int> dist_y(0, h - 1);
+        int x = dist_x(rng);
+        int y = dist_y(rng);
+        return image::Point(x, y);
+    }
+    image::Point randomPoint(image::Size size) {
+        return randomPoint(size.width, size.height);
     }
 
-    std::vector<image::Point> samplePointsRandom(const image::Image& image, int num_points) { 
+    std::vector<image::Point> randomPointsVector(int w, int h, int num_points) { 
+
         std::vector<image::Point> random_points;
 
-        if (image.empty() || num_points <= 0) {
-            return random_points;
-        }
-
-        int width = image.getWidth();
-        int height = image.getHeight();
-
         static std::mt19937 rng(std::random_device{}());
-        std::uniform_int_distribution<int> dist_x(0, width - 1);
-        std::uniform_int_distribution<int> dist_y(0, height - 1);
+        std::uniform_int_distribution<int> dist_x(0, w - 1);
+        std::uniform_int_distribution<int> dist_y(0, h - 1);
 
         for (int i = 0; i < num_points; ++i) {
             int x = dist_x(rng);
@@ -50,6 +62,20 @@ namespace Random {
 
         return random_points;
     }
+    std::vector<image::Point> randomPointsVector(image::Size size, int num_points) { 
+        return randomPointsVector(size.width, size.height, num_points);
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

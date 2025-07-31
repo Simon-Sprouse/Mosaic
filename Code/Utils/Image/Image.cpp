@@ -123,6 +123,9 @@ bool Image::empty() const {
     return data_.empty();
 }
 
+void Image::fill(const Color& color) {
+    std::fill(data_.begin(), data_.end(), color);
+}
 
 
 

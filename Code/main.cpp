@@ -42,8 +42,8 @@ int main() {
 
 
     // // Geometry tests
-    // Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
-    // my_geometry_test.runAllTests();
+    Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
+    my_geometry_test.runAllTests();
 
 
     // Graphics tests
