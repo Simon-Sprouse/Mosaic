@@ -13,16 +13,18 @@ namespace Graphics {
     using image::Color;
 
 
+
+    void drawLine(Image& image, const Point& point_a, const Point& point_b, int thickness, const Color& color);
+    void drawArrow(Image& image, const Point& center, int length, int thickness, double angle_deg, const Color& color);
+
     void drawFilledPolygon(Image& image, const std::vector<Point>& polygon, const Color& color);
     void drawSquare(Image& image, const Point& center, double size, double angle_deg, const Color& color, int border_width);
 
 
+    // TODO this will take some time
+    // void drawText(Image& image, const Point& center, double size, double angle_deg, const Color& color);
 
-    // vvv Old Code vvv
 
-    // void drawSquare(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width);
-    // void drawSquareText(cv::Mat& image, const cv::Point& center, double size, double angle_deg, const cv::Vec3b& color, int border_width, const std::string& text);
-    // void drawLine(cv::Mat& image, const cv::Point& point_a, const cv::Point& point_b, int thickness, const cv::Vec3b& color);
-    // void drawArrow(cv::Mat& image, const cv::Point& center, int length, int thickness, double angle_deg, const cv::Vec3b& color);
+
 }
 

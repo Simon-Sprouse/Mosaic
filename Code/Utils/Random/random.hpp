@@ -8,18 +8,24 @@
 
 namespace Random { 
 
+    using image::Point;
+    using image::Size;
+    using image::Color;
+
 
 
     double randomDouble(double min_val, double max_val); // TODO template this
-    image::Color randomColor();
+    Color randomColor();
 
-    image::Point randomPoint(int w, int h);
-    image::Point randomPoint(image::Size size);
-    std::vector<image::Point> randomPointsVector(int w, int h, int num_points);
-    std::vector<image::Point> randomPointsVector(image::Size size, int num_points);
+    Point randomPoint(int w, int h);
+    Point randomPoint(Size size);
+    std::vector<Point> randomPointsVector(int w, int h, int num_points);
+    std::vector<Point> randomPointsVector(Size size, int num_points);
 
 
-
+    std::vector<Point> gridPointsVector(int w, int h, int grid_size);
+    std::vector<Point> gridPointsVector(Size size, int grid_size);
+    std::vector<Point> jitterPoints(const std::vector<Point>& input_points, int max_step, const Size& image_size);
 
 
 
@@ -41,10 +47,5 @@ namespace Random {
     }
 
    
-
-    // std::vector<cv::Point> samplePointsGrid(const cv::Mat& image, int grid_size);
-    // std::vector<cv::Point> samplePointsRandom(const cv::Mat& image, int num_points);
-    // std::vector<cv::Point> jitterPoints(const std::vector<cv::Point>& input_points, int max_step, const cv::Size& image_size);
-
 
 }
