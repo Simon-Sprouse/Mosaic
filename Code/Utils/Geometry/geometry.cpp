@@ -168,4 +168,35 @@ namespace Geometry {
         return unique_points;
     }
 
+    void sortStrokesPCALength(std::vector<std::vector<Point>>& strokes) { 
+
+        std::vector<double> segment_lengths;
+        
+    
+        for (const std::vector<Point>& segment_pixels : strokes) {
+            double length = Geometry::pcaLength(segment_pixels);
+            segment_lengths.push_back(length);
+        }
+    
+        // Pair lengths with their corresponding segment
+        std::vector<std::pair<double, std::vector<Point>>> paired;
+    
+        for (size_t i = 0; i < segment_lengths.size(); ++i) {
+            paired.emplace_back(segment_lengths[i], strokes[i]);
+        }
+    
+        // Sort by length (ascending)
+        std::sort(paired.begin(), paired.end(),
+            [](const auto& a, const auto& b) {
+            return a.first > b.first;
+        });
+    
+        // Unpack back into segments and lengths
+        for (size_t i = 0; i < paired.size(); ++i) {
+            strokes[i] = std::move(paired[i].second);
+        }
+    
+    
+    }
+
 }

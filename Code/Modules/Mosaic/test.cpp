@@ -10,7 +10,7 @@
 
 
 
-namespace mosaic_gen::test { 
+namespace mosaic_gen::Test { 
 
 MosaicTest::MosaicTest(mosaic_gen::Mosaic& mosaic) : mosaic(mosaic) {}
 

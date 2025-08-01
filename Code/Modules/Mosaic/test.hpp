@@ -6,7 +6,7 @@
 #include <string>
 
 
-namespace mosaic_gen::test { 
+namespace mosaic_gen::Test { 
 
     class MosaicTest {
 

@@ -2,6 +2,8 @@
 #include "graphics.hpp"
 #include "geometry.hpp"
 #include "random.hpp"
+#include "../../Utils/Io/io.hpp"
+#include "../../Utils/ImageProcess/imageProcess.hpp"
 
 #include "gif.h"
 
@@ -10,83 +12,82 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <random>
 #include <stack>
 #include <sstream>
 #include <fstream>
 #include <queue>
 
 using namespace std;
-namespace fs = std::__fs::filesystem;
+// namespace fs = std::__fs::filesystem;
 
 namespace mosaic_gen {
 
-// param constructor
-Mosaic::Mosaic(const Parameters& hp) { 
-    params = hp;
+// // param constructor
+// Mosaic::Mosaic(const Parameters& hp) { 
+//     params = hp;
 
-    loadImage();
-    resizeOriginal();
-    cout << "Loaded image: " << image_name << endl;
-    cout << "Original dimensions: " << original.size() << endl;
-    cout << "Resized image to size: " << resized.size() << endl;
-    cout << endl;
+//     loadImage();
+//     resizeOriginal();
+//     // cout << "Loaded image: " << image_name << endl;
+//     // cout << "Original dimensions: " << original.size() << endl;
+//     // cout << "Resized image to size: " << resized.size() << endl;
+//     // cout << endl;
 
 
 
     
-}
-
-void Mosaic::setWindow(std::string name) { 
-    window_name = name;
-}
-
-void Mosaic::resetData() {
-
-
-    original.release();
-    resized.release();
-    grayscale.release();
-    blurred.release();
-    edges.release();
-    contours.release();
-    distance_map.release();
-    gradX.release();
-    gradY.release();
-
-    selected_contour.release();
-    canvas.release();
-    mask.release();
-
-    segment_points.clear();
-    segment_lengths.clear();
-
-    tiles_placed.clear();
-}
-
-
-void Mosaic::runAll() {
-    loadImage();
-    resizeOriginal();
-    grayImage();
-    blurImage();
-    cannyFilter();
-    detectContours();
-    rankContours();
-    placeTileAllContours();
-    floodFill();
-    gapFill();
-    renderTiles();
-}
-
-cv::Mat Mosaic::getCanvas() { 
-    return canvas.clone();
-}
+// }
 
 
 
+// void Mosaic::setWindow(std::string name) { 
+//     window_name = name;
+// }
 
 
+// TODO implement clear function on Image
+// void Mosaic::resetData() {
 
+
+//     original.release();
+//     resized.release();
+//     grayscale.release();
+//     blurred.release();
+//     edges.release();
+//     contours.release();
+//     distance_map.release();
+//     gradX.release();
+//     gradY.release();
+
+//     selected_contour.release();
+//     canvas.release();
+//     mask.release();
+
+//     segment_points.clear();
+//     segment_lengths.clear();
+
+//     tiles_placed.clear();
+// }
+
+
+// void Mosaic::runAll() {
+//     loadImage();
+//     resizeOriginal();
+//     grayImage();
+//     blurImage();
+//     cannyFilter();
+//     detectContours();
+//     rankContours();
+//     placeTileAllContours();
+//     floodFill();
+//     gapFill();
+//     renderTiles();
+// }
+
+// cv::Mat Mosaic::getCanvas() { 
+//     return canvas.clone();
+// }
 
 
 
@@ -97,111 +98,240 @@ cv::Mat Mosaic::getCanvas() {
 
 
 
-void Mosaic::saveImage(const cv::Mat& image,  const std::string& suffix) { 
 
-    string output_dir = params.results_dir;
+void Mosaic::contourPipeline() {
 
+    // helper side effects
+    Image gray;
+    Image blurred;
+    Image canny;
+    std::vector<std::vector<Point>> contours;
 
-    if (image.empty()) { 
-        return;
-    }
+    original = io::loadImage(params.image_path);
+    image::process::resize(original, resized, params.resize_factor);
 
-    if (!fs::exists(output_dir)) { 
-        fs::create_directory(output_dir);
-    }
-
-    std::string output_path = output_dir + "/" + image_name + "_" + suffix + ".jpg";
-    if (cv::imwrite(output_path, image)) { 
-        // cout << "Saved: " << output_path << endl;
-    }
-    else { 
-        cerr << "Failed to save: " << output_path << endl;
-    }
+    
+    image::process::grayscale(resized, gray);
+    image::process::gaussianBlur(gray, blurred, params.blur_kernel_size, params.blur_sigma);
+    image::process::cannyFilter(blurred, canny, params.canny_threshold_1, params.canny_threshold_2);
+    image::process::findContours(canny, contours);
+    image::process::divideIntoStrokes(contours, strokes, canny.size(), params.segment_angle_window, params.max_segment_angle_rad, params.min_segment_length);
+    Geometry::sortStrokesPCALength(strokes);
 
 
 }
 
 
-void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
 
-    string output_dir = params.results_dir;
+// // TODO move this
+// void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments, std::vector<double>& lengths) {
+
+//     // Pair lengths with their corresponding segment
+//     std::vector<std::pair<double, std::vector<cv::Point>>> paired;
+
+//     for (size_t i = 0; i < lengths.size(); ++i) {
+//     paired.emplace_back(lengths[i], segments[i]);
+//     }
+
+//     // Sort by length (ascending)
+//     std::sort(paired.begin(), paired.end(),
+//     [](const auto& a, const auto& b) {
+//     return a.first > b.first;
+//     });
+
+//     // Unpack back into segments and lengths
+//     for (size_t i = 0; i < paired.size(); ++i) {
+//     lengths[i] = paired[i].first;
+//     segments[i] = std::move(paired[i].second);
+//     }
+// }
+
+// void Mosaic::sortStrokesPCALength(std::vector<std::vector<Point>>& strokes) { 
+
+//     std::vector<Point> segment_Lengths;
+    
+
+//     for (const std::vector<Point>& segment_pixels : strokes) {
+//         double length = Geometry::pcaLength(segment_pixels);
+//         segment_lengths.push_back(length);
+//     }
+
+//     // Pair lengths with their corresponding segment
+//     std::vector<std::pair<double, std::vector<Point>>> paired;
+
+//     for (size_t i = 0; i < segment_lengths.size(); ++i) {
+//         paired.emplace_back(segment_lengths[i], strokes[i]);
+//     }
+
+//     // Sort by length (ascending)
+//     std::sort(paired.begin(), paired.end(),
+//         [](const auto& a, const auto& b) {
+//         return a.first > b.first;
+//     });
+
+//     // Unpack back into segments and lengths
+//     for (size_t i = 0; i < paired.size(); ++i) {
+//         strokes[i] = std::move(paired[i].second);
+//     }
 
 
-    int width = canvas.cols;
-    int height = canvas.rows;
-
-    std::string gifFilename = output_dir + "/" + image_name + "_" + suffix + ".gif";
-
-    GifWriter writer;
-
-    GifBegin(&writer, gifFilename.c_str(), width, height, 10); // delay in 1/100s
-
-    cv::Mat gifCanvas = cv::Mat::zeros(canvas.size(), CV_8UC3);
-    for (size_t i = 0; i < tiles_placed.size(); i += tilesPerFrame) {
-        for (size_t j = i; j < std::min(i + tilesPerFrame, tiles_placed.size()); ++j) {
-            const TileInfo& tile = tiles_placed[j];
-            cv::Vec3b color = sampleTileColor(tile);
-            Graphics::drawSquare(gifCanvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
-        }
-
-        // Convert to RGBA
-        cv::Mat rgba;
-        cv::cvtColor(gifCanvas, rgba, cv::COLOR_BGR2RGBA);
-
-        GifWriteFrame(&writer, rgba.data, width, height, 10);
-    }
-
-
-    // Hold on final frame by repeating it
-
-    int final_hold_frames = 10;
-
-    cv::Mat rgbaFinal;
-    cv::cvtColor(gifCanvas, rgbaFinal, cv::COLOR_BGR2RGBA);
-    for (int k = 0; k < final_hold_frames; ++k) {
-        GifWriteFrame(&writer, rgbaFinal.data, width, height, 10);
-    }
-
-    GifEnd(&writer);
-    // std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
-}
-
-
-
-
-void Mosaic::saveTileInfo(const std::string& suffix) { 
-
-    string output_dir = params.results_dir;
-
-
-    std::ostringstream oss;
-
-    // Write the CSV header
-    oss << "center_x,center_y,size,theta_deg,order,frontier\n";
-
-    // Iterate through each TileInfo struct in the vector
-    for (const auto& tile : tiles_placed) {
-        oss << tile.center.x << ","
-            << tile.center.y << ","
-            << tile.size << ","
-            << tile.theta_deg << ","
-            << tile.order << ","
-            << tile.frontier << "\n";
-    }
-
-    std::string fileName = output_dir + "/" + image_name + "_" + suffix + ".csv";
-    std::ofstream outFile(fileName); // Open the file for writing
-    if (outFile.is_open()) {
-        outFile << oss.str(); // Write the CSV content to the file
-        outFile.close();      // Close the file
-        // std::cout << "CSV data successfully written to " << fileName << std::endl;
-    } else {
-        std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
-    }
+// }
 
 
 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+--------------------------
+    vvv OLD CODE vvv
+--------------------------
+
+
+
+
+// void Mosaic::saveImage(const cv::Mat& image,  const std::string& suffix) { 
+
+//     string output_dir = params.results_dir;
+
+
+//     if (image.empty()) { 
+//         return;
+//     }
+
+//     if (!fs::exists(output_dir)) { 
+//         fs::create_directory(output_dir);
+//     }
+
+//     std::string output_path = output_dir + "/" + image_name + "_" + suffix + ".jpg";
+//     if (cv::imwrite(output_path, image)) { 
+//         // cout << "Saved: " << output_path << endl;
+//     }
+//     else { 
+//         cerr << "Failed to save: " << output_path << endl;
+//     }
+
+
+// }
+
+
+// void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
+
+//     string output_dir = params.results_dir;
+
+
+//     int width = canvas.cols;
+//     int height = canvas.rows;
+
+//     std::string gifFilename = output_dir + "/" + image_name + "_" + suffix + ".gif";
+
+//     GifWriter writer;
+
+//     GifBegin(&writer, gifFilename.c_str(), width, height, 10); // delay in 1/100s
+
+//     cv::Mat gifCanvas = cv::Mat::zeros(canvas.size(), CV_8UC3);
+//     for (size_t i = 0; i < tiles_placed.size(); i += tilesPerFrame) {
+//         for (size_t j = i; j < std::min(i + tilesPerFrame, tiles_placed.size()); ++j) {
+//             const TileInfo& tile = tiles_placed[j];
+//             cv::Vec3b color = sampleTileColor(tile);
+//             Graphics::drawSquare(gifCanvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
+//         }
+
+//         // Convert to RGBA
+//         cv::Mat rgba;
+//         cv::cvtColor(gifCanvas, rgba, cv::COLOR_BGR2RGBA);
+
+//         GifWriteFrame(&writer, rgba.data, width, height, 10);
+//     }
+
+
+//     // Hold on final frame by repeating it
+
+//     int final_hold_frames = 10;
+
+//     cv::Mat rgbaFinal;
+//     cv::cvtColor(gifCanvas, rgbaFinal, cv::COLOR_BGR2RGBA);
+//     for (int k = 0; k < final_hold_frames; ++k) {
+//         GifWriteFrame(&writer, rgbaFinal.data, width, height, 10);
+//     }
+
+//     GifEnd(&writer);
+//     // std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
+// }
+
+
+
+
+// void Mosaic::saveTileInfo(const std::string& suffix) { 
+
+//     string output_dir = params.results_dir;
+
+
+//     std::ostringstream oss;
+
+//     // Write the CSV header
+//     oss << "center_x,center_y,size,theta_deg,order,frontier\n";
+
+//     // Iterate through each TileInfo struct in the vector
+//     for (const auto& tile : tiles_placed) {
+//         oss << tile.center.x << ","
+//             << tile.center.y << ","
+//             << tile.size << ","
+//             << tile.theta_deg << ","
+//             << tile.order << ","
+//             << tile.frontier << "\n";
+//     }
+
+//     std::string fileName = output_dir + "/" + image_name + "_" + suffix + ".csv";
+//     std::ofstream outFile(fileName); // Open the file for writing
+//     if (outFile.is_open()) {
+//         outFile << oss.str(); // Write the CSV content to the file
+//         outFile.close();      // Close the file
+//         // std::cout << "CSV data successfully written to " << fileName << std::endl;
+//     } else {
+//         std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
+//     }
+
+
+
+// }
 
 
 
@@ -385,45 +515,45 @@ int Mosaic::detectContours() {
 
 
 // TODO move this
-void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments, std::vector<double>& lengths) {
+// void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments, std::vector<double>& lengths) {
 
-    // Pair lengths with their corresponding segment
-    std::vector<std::pair<double, std::vector<cv::Point>>> paired;
+//     // Pair lengths with their corresponding segment
+//     std::vector<std::pair<double, std::vector<cv::Point>>> paired;
 
-    for (size_t i = 0; i < lengths.size(); ++i) {
-    paired.emplace_back(lengths[i], segments[i]);
-    }
+//     for (size_t i = 0; i < lengths.size(); ++i) {
+//     paired.emplace_back(lengths[i], segments[i]);
+//     }
 
-    // Sort by length (ascending)
-    std::sort(paired.begin(), paired.end(),
-    [](const auto& a, const auto& b) {
-    return a.first > b.first;
-    });
+//     // Sort by length (ascending)
+//     std::sort(paired.begin(), paired.end(),
+//     [](const auto& a, const auto& b) {
+//     return a.first > b.first;
+//     });
 
-    // Unpack back into segments and lengths
-    for (size_t i = 0; i < paired.size(); ++i) {
-    lengths[i] = paired[i].first;
-    segments[i] = std::move(paired[i].second);
-    }
-}
+//     // Unpack back into segments and lengths
+//     for (size_t i = 0; i < paired.size(); ++i) {
+//     lengths[i] = paired[i].first;
+//     segments[i] = std::move(paired[i].second);
+//     }
+// }
 
-void Mosaic::rankContours() { 
-    if (segment_points.empty()) {
-        std::cerr << "rankSegments called but contours image is empty" << std::endl;
-        return;
-    }
+// void Mosaic::rankContours() { 
+//     if (segment_points.empty()) {
+//         std::cerr << "rankSegments called but contours image is empty" << std::endl;
+//         return;
+//     }
 
-    segment_lengths.clear(); // Before computing
+//     segment_lengths.clear(); // Before computing
 
-    for (const auto& segment_pixels : segment_points) {
-        double length = Geometry::pcaLength(segment_pixels);
-        segment_lengths.push_back(length);
-    }
+//     for (const auto& segment_pixels : segment_points) {
+//         double length = Geometry::pcaLength(segment_pixels);
+//         segment_lengths.push_back(length);
+//     }
 
-    sortSegmentsByLength(segment_points, segment_lengths);
+//     sortSegmentsByLength(segment_points, segment_lengths);
 
 
-}
+// }
 
 
 
@@ -1190,6 +1320,7 @@ cv::Vec3b Mosaic::sampleTileColor(const TileInfo& tile) {
 
 
 
+*/
 
 
 }

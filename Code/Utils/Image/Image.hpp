@@ -94,6 +94,11 @@ struct Point {
 
 };
 
+// Subtraction operator
+inline Point operator-(const Point& a, const Point& b) {
+    return Point(a.x - b.x, a.y - b.y);
+}
+
 struct Vec2d {
     double x;
     double y;
@@ -101,8 +106,26 @@ struct Vec2d {
     Vec2d() : x(0), y(0) {}
     Vec2d(double x_, double y_) : x(x_), y(y_) {}
 
+    // Constructor from Point
+    Vec2d(const Point& p) : x(static_cast<double>(p.x)), y(static_cast<double>(p.y)) {}
+
+    double dot(const Vec2d& other) const {
+        return x * other.x + y * other.y;
+    };
+
 
 };
+
+// Subtraction operator
+inline Vec2d operator-(const Vec2d& a, const Vec2d& b) {
+    return Vec2d(a.x - b.x, a.y - b.y);
+}
+
+// TODO finish all arithmetic
+inline Vec2d operator/(const Vec2d& v, double scalar) {
+    return Vec2d(v.x / scalar, v.y / scalar);
+}
+
 
 
 

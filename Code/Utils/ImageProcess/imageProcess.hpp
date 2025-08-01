@@ -11,6 +11,7 @@ namespace image::process {
     void grayscale(Image& src, Image& dest);
 
     void gaussianBlur(Image& src, Image& dest, Size kernel_size, double blur_sigma);
+    void gaussianBlur(Image& src, Image& dest, int kernel_size, double blur_sigma);
     std::vector<double> generateGaussianKernel1D(int radius, double sigma);
 
     void sobelFilter(const Image& src, Image& dest_grad_x, Image& dest_grad_y);
@@ -20,5 +21,11 @@ namespace image::process {
     void sobelFilterRaw(const Image& src, std::vector<int>& gradX, std::vector<int>& gradY);
     
     void findContours(const Image& src_binary, std::vector<std::vector<Point>>& contours);
+    int  divideIntoStrokes(const std::vector<std::vector<Point>>& cv_contours, 
+        std::vector<std::vector<Point>>& segment_points, 
+        Size image_size, 
+        int segment_angle_window, 
+        double max_segment_angle_rad, 
+        int min_segment_length);
 
 }

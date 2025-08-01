@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Code/Utils/Image/Image.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
@@ -13,6 +15,13 @@ namespace mosaic_gen::test {
 }
 
 namespace mosaic_gen {
+
+
+using image::Image;
+using image::Size;
+using image::Point;
+using image::Color;
+using image::Vec2d;
 
 struct Parameters { 
 
@@ -60,7 +69,7 @@ class Mosaic {
 
     public: 
 
-        Mosaic(const Parameters& p);
+        Mosaic(const Parameters& p) : params(p) {};
         void setWindow(std::string name);
         void resetData();
         
@@ -86,6 +95,30 @@ class Mosaic {
                         METHODS
         --------------------------------------
         */
+
+
+
+
+        void contourPipeline();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // CONTOUR DETECTION PIPELINE
         void loadImage();
@@ -136,7 +169,7 @@ class Mosaic {
         Parameters params;
         
         // store contours and their lengths
-        std::vector<std::vector<cv::Point>> segment_points;
+        std::vector<std::vector<Point>> segments;
         std::vector<double> segment_lengths;
 
         // discrete state representation for tiles
@@ -147,19 +180,33 @@ class Mosaic {
         std::string window_name;
 
         // image data various purposes
-        cv::Mat original;
-        cv::Mat resized;
-        cv::Mat grayscale;
-        cv::Mat blurred;
-        cv::Mat edges;
-        cv::Mat contours;
-        cv::Mat selected_contour;
-        cv::Mat distance_map;
-        cv::Mat gradX;
-        cv::Mat gradY;
+        Image original;
+        Image resized;
+        std::vector<std::vector<Point>> strokes;
+
+
+
+
+
+        // Image contours; // I question if we need this
+        Image selected_contour;
+
+        Image mask;
+        Image canvas;
+
+        // cv::Mat original;
+        // cv::Mat resized;
+        // cv::Mat grayscale;
+        // cv::Mat blurred;
+        // cv::Mat edges;
+        // cv::Mat contours;
+        // cv::Mat selected_contour;
+        // cv::Mat distance_map;
+        // cv::Mat gradX;
+        // cv::Mat gradY;
         
-        cv::Mat mask;
-        cv::Mat canvas;
+        // cv::Mat mask;
+        // cv::Mat canvas;
 
 
         // in case pca function fails

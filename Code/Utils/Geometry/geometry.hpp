@@ -27,4 +27,6 @@ namespace Geometry {
     Vec2d pcaDirection(const std::vector<Point>& points);
     std::vector<Point> filterUniquePoints(const std::vector<Point>& points, double min_distance);
 
+    void sortStrokesPCALength(std::vector<std::vector<Point>>& strokes);
+
 }

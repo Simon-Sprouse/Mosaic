@@ -3,6 +3,8 @@
 #include <cmath>
 #include <vector>
 
+#include "../Random/random.hpp"
+
 using namespace std;
 
 namespace Graphics { 
@@ -221,6 +223,34 @@ namespace Graphics {
                 inner_rotated[i]
             };
             drawFilledPolygon(image, trapezoid, color);
+        }
+    }
+
+
+
+
+
+
+
+
+    void drawStrokesRandomColor(Image& image, const std::vector<std::vector<Point>> strokes) { 
+
+        std::vector<image::Color> colors_used;
+        
+
+        for (std::vector<Point> stroke : strokes) { 
+            Color color;
+            do {
+                color = Random::randomColor();
+            } while (std::find(colors_used.begin(), colors_used.end(), color) != colors_used.end());
+            
+            colors_used.push_back(color);
+            
+            for (const auto& pt : stroke) {
+                if (pt.y >= 0 && pt.y < image.getHeight() && pt.x >= 0 && pt.x < image.getWidth()) {
+                    image.setPixel(pt.x, pt.y, color);
+                }
+            }
         }
     }
     

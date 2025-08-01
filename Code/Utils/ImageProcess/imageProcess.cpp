@@ -1,6 +1,7 @@
 #include "imageProcess.hpp"
 
 #include <queue>
+#include <algorithm>
 
 namespace image::process { 
 
@@ -76,7 +77,10 @@ namespace image::process {
 
 
 
-
+    void gaussianBlur(Image& src, Image& dest, int kernel_size, double blur_sigma) {
+        Size kernel(kernel_size, kernel_size);
+        gaussianBlur(src, dest, kernel, blur_sigma);
+    }
 
 
 
@@ -478,6 +482,96 @@ namespace image::process {
             }
         }
     }
+
+
+
+
+        // TODO move image processing pipeline to new class
+    int  divideIntoStrokes(const std::vector<std::vector<Point>>& cv_contours, 
+                            std::vector<std::vector<Point>>& segment_points, 
+                            Size image_size, 
+                            int segment_angle_window, 
+                            double max_segment_angle_rad, 
+                            int min_segment_length) 
+        { 
+
+        // // Find contours
+        // std::vector<std::vector<cv::Point>> cv_contours;
+        // cv::findContours(edges.clone(), cv_contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
+
+        // Create an output color image
+        Image contours(image_size);
+        int contour_id = 0;
+
+
+
+    
+
+        for (const std::vector<Point>& contour : cv_contours) {
+            if (contour.size() < 3)
+                continue;
+
+            std::vector<int> breaks;
+            int len = contour.size();
+            int w = segment_angle_window;
+
+            for (int i = w; i < len - w; ++i) {
+                Vec2d v1 = contour[i] - contour[i - w];
+                Vec2d v2 = contour[i + w] - contour[i];
+
+                double norm1 = std::sqrt(v1.x * v1.x + v1.y * v1.y) + 1e-8;
+                double norm2 = std::sqrt(v2.x * v2.x + v2.y * v2.y) + 1e-8;
+
+                Vec2d n1 = v1 / norm1;
+                Vec2d n2 = v2 / norm2;
+
+                double cosine = std::clamp(n1.dot(n2), -1.0, 1.0);
+                double angle = std::acos(std::abs(cosine));
+
+                if (angle > max_segment_angle_rad) {
+                    breaks.push_back(i);
+                }
+            }
+
+            // Build split indices
+            std::vector<int> split_idxs = {0};
+            split_idxs.insert(split_idxs.end(), breaks.begin(), breaks.end());
+            split_idxs.push_back(len);
+
+            for (size_t i = 0; i < split_idxs.size() - 1; ++i) {
+                int a = split_idxs[i];
+                int b = split_idxs[i + 1];
+                if (b - a < min_segment_length)
+                    continue;
+
+
+
+                segment_points.emplace_back(std::vector<Point>());
+                for (int j = a; j < b; ++j) {
+                    const Point& point = contour[j];
+                    if (point.y >= 0 && point.y < image_size.height && point.x >= 0 && point.x < image_size.width) {
+                        segment_points.at(segment_points.size() - 1).push_back(point);
+                    }
+                    
+                
+                }
+
+                ++contour_id;
+            }
+        }
+
+        // vvv PRINTS FOR DEBUGGING vvv
+        // cout << endl << "detected " << contour_id << " contours" << endl;
+        // cout << endl << "segments.size(): " << segments.size() << endl;
+        // cout << endl << "segments.at(0).size(): " << segments.at(0).size() << endl;
+        // for (const auto& pt : segments.at(0)) { 
+        //     cout << pt;
+        // }
+
+        return contour_id;
+    }
+
+
 
 
 
