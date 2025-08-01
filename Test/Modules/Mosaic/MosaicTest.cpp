@@ -33,16 +33,22 @@ void MosaicTest::testPipeline() {
     io::saveImage(strokes_img, "../Results/strokes.jpg");
 
 
-    
-
-
-
-
-
-
-
 }
 
+void MosaicTest::testSelectStroke() { 
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+
+    std::vector<int> stroke_ids = {0, 1, 2, 10};
+
+    for (int stroke_id : stroke_ids) {
+        mosaic.selectStroke(stroke_id);
+        io::saveImage(mosaic.selected_stroke, "../Results/selected_stroke" + std::to_string(stroke_id) + ".jpg");
+    }
+    
+}
 
 
 
@@ -58,6 +64,7 @@ void MosaicTest::runAllTests() {
     // call test functions
     total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
     total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
+    total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
 
 
    

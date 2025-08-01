@@ -20,7 +20,8 @@ namespace Graphics {
     void drawFilledPolygon(Image& image, const std::vector<Point>& polygon, const Color& color);
     void drawSquare(Image& image, const Point& center, double size, double angle_deg, const Color& color, int border_width);
 
-    void drawStrokesRandomColor(Image& image, const std::vector<std::vector<Point>> strokes);
+    void drawStroke(Image& image, const std::vector<Point>& strokes, const Color& color);
+    void drawStrokesRandomColor(Image& image, const std::vector<std::vector<Point>>& strokes);
 
 
     // TODO this will take some time

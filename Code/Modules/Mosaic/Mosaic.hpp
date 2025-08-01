@@ -100,7 +100,7 @@ class Mosaic {
 
 
         void contourPipeline();
-
+        void selectStroke(int stroke_id);
 
 
 
@@ -183,6 +183,7 @@ class Mosaic {
         Image original;
         Image resized;
         std::vector<std::vector<Point>> strokes;
+        Image selected_stroke;
 
 
 

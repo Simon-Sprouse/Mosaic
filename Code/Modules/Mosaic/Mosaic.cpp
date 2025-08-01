@@ -121,6 +121,16 @@ void Mosaic::contourPipeline() {
 
 }
 
+void Mosaic::selectStroke(int stroke_id) { 
+
+    if (stroke_id >= strokes.size()) { 
+        return;
+    }
+
+    Color color(255);
+    selected_stroke = Image(resized.size());
+    Graphics::drawStroke(selected_stroke, strokes[stroke_id], color);
+}
 
 
 // // TODO move this

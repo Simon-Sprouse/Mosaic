@@ -230,10 +230,16 @@ namespace Graphics {
 
 
 
+    void drawStroke(Image& image, const std::vector<Point>& stroke, const Color& color) {
+        for (const Point& pt : stroke) {
+            if (pt.y >= 0 && pt.y < image.getHeight() && pt.x >= 0 && pt.x < image.getWidth()) {
+                image.setPixel(pt.x, pt.y, color);
+            }
+        }
+    }
 
 
-
-    void drawStrokesRandomColor(Image& image, const std::vector<std::vector<Point>> strokes) { 
+    void drawStrokesRandomColor(Image& image, const std::vector<std::vector<Point>>& strokes) { 
 
         std::vector<image::Color> colors_used;
         
