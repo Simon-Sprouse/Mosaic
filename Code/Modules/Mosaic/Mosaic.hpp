@@ -52,7 +52,7 @@ struct Parameters {
 
 struct TileInfo { 
 
-    cv::Point center;
+    Point center;
     double size;
     double theta_deg;
     int order;
@@ -102,12 +102,15 @@ class Mosaic {
         void contourPipeline();
         void selectStroke(int stroke_id);
 
+        bool isValidTile(Point center, double size, double theta_deg);
+        bool tileInBounds(const Point& center);
+        bool tileOverlapsMask(const Point& center, double tile_size, double theta_deg);
+        TileInfo placeTile(Point center, double size, double theta_deg, int frontier=0, string text="");
 
 
-
-
-
-
+        // temp helpers
+        Image bitwise_and(const Image& a, const Image& b);
+        int countNonZero(const Image& image);
 
 
 
@@ -135,10 +138,10 @@ class Mosaic {
         void selectContour(int contour_id);
         cv::Point getRandomPointOnContour(int contour_id);
         double findBestTheta(cv::Point center, double size);
-        bool isValidTile(cv::Point center, double size, double theta_deg);
-        bool tileOverlapsMask(const cv::Point& center, double size, double theta_deg);
-        bool tileInBounds(const cv::Point& center, double size);
-        TileInfo placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
+        // bool isValidTile(cv::Point center, double size, double theta_deg);
+        // bool tileOverlapsMask(const cv::Point& center, double size, double theta_deg);
+        // bool tileInBounds(const cv::Point& center, double size);
+        // TileInfo placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
         void renderTiles();
         std::vector<cv::Point> findRingIntersections(const cv::Mat& contour_image, const cv::Point2f& center, double size, double theta_deg);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& intersection_points);

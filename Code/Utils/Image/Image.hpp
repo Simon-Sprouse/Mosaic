@@ -185,6 +185,8 @@ class Image {
 
     Color& at(int x, int y);
     const Color& at(int x, int y) const;
+    Color& at(Point pt);
+    const Color& at(Point pt) const;
     Size size() const;
     int getHeight() const;
     int getWidth() const;

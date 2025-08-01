@@ -133,6 +133,206 @@ void Mosaic::selectStroke(int stroke_id) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+bool Mosaic::isValidTile(Point center, double size, double theta_deg) {
+
+    if (mask.empty()) { 
+        mask = Image(resized.size());
+    }
+
+
+
+    // check for validity
+    if (theta_deg == ERROR_CODE_NO_VALID_THETA) { 
+        return false;
+    }
+    if (!tileInBounds(center)) { 
+        return false;
+    }
+    if (tileOverlapsMask(center, size, theta_deg)) { 
+        return false;
+    }
+    return true;
+}
+
+
+
+bool Mosaic::tileInBounds(const Point& center) { 
+    // Early exit if tile is far outside the image
+    // int margin = static_cast<int>(2 * tileSize);
+    int margin = 0;
+
+    if (center.x < -margin || center.y < -margin ||
+        center.x > mask.getWidth() + margin || center.y > mask.getHeight() + margin) {
+        return false;
+    }
+    return true;
+}
+
+
+bool Mosaic::tileOverlapsMask(const Point& center, double tile_size, double theta_deg) {
+
+    // 0. super fast check (5% speedup)
+    if (mask.at(center).r > 0) { 
+        return true;
+    }
+
+    // 1. Compute tile corners
+    double halfSize = static_cast<double>(tile_size / 2.0);
+    double theta = static_cast<double>(theta_deg * CV_PI / 180.0);
+
+    std::vector<Vec2d> localCorners = {
+        {-halfSize, -halfSize},
+        { halfSize, -halfSize},
+        { halfSize,  halfSize},
+        {-halfSize,  halfSize}
+    };
+
+    Vec2d cenderD(center);
+    std::vector<Point> worldCorners;
+    for (const Vec2d& pt : localCorners) {
+        double x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
+        double y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
+        worldCorners.emplace_back(Point(std::round(cenderD.x + x), std::round(cenderD.y + y)));
+    }
+
+    // 2. FAST CORNER CHECK (40:1 speed up for flood fill)
+    for (const Point& pt : worldCorners) {
+        if (pt.x >= 0 && pt.x < mask.getWidth() && pt.y >= 0 && pt.y < mask.getHeight()) {
+            if (mask.at(pt).r > 0) {
+                return true;
+            }
+        }
+    }
+
+    // 3. Create tile mask and check full overlap TODO - finish replacing cv
+    Image tileMask(resized.size());
+    Graphics::drawFilledPolygon(tileMask, worldCorners, Color(255));
+
+    Image overlap = bitwise_and(mask, tileMask);
+
+    return countNonZero(overlap) > 0;
+}
+
+Image Mosaic::bitwise_and(const Image& a, const Image& b) {
+    if (a.size() != b.size()) {
+        throw std::runtime_error("bitwise_and: Image size mismatch.");
+    }
+
+    Image result(a.size());
+    for (int y = 0; y < a.getHeight(); ++y) {
+        for (int x = 0; x < a.getWidth(); ++x) {
+            Color ca = a.at(x, y);
+            Color cb = b.at(x, y);
+
+            result.setPixel(x, y, Color(
+                ca.r & cb.r,
+                ca.g & cb.g,
+                ca.b & cb.b
+            ));
+        }
+    }
+    return result;
+}
+
+int Mosaic::countNonZero(const Image& image) {
+    int count = 0;
+    for (int y = 0; y < image.getHeight(); ++y) {
+        for (int x = 0; x < image.getWidth(); ++x) {
+            Color c = image.at(x, y);
+            if (c.r != 0 || c.g != 0 || c.b != 0) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+
+
+
+TileInfo Mosaic::placeTile(Point center, double size, double theta_deg, int frontier, string text) {
+
+
+
+    Graphics::drawSquare(mask, center, size, theta_deg, Color(255), size);
+
+    // TODO add tile metadata to the 
+    int order = tiles_placed.size();
+    TileInfo current_tile = {
+        center,
+        size, 
+        theta_deg,
+        order,
+        frontier
+    };
+    tiles_placed.push_back(current_tile);
+    // tiles_to_render.push_back(current_tile);
+
+    // if (tiles_to_render.size() >= params.tiles_per_frame) { 
+    //     renderTiles();
+    //     tiles_to_render.clear();
+    // }
+
+    return current_tile;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // // TODO move this
 // void sortSegmentsByLength(std::vector<std::vector<cv::Point>>& segments, std::vector<double>& lengths) {
 

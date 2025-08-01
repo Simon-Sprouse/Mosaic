@@ -51,6 +51,37 @@ void MosaicTest::testSelectStroke() {
 }
 
 
+void MosaicTest::testMask() { 
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    int size = mosaic.params.tile_size;
+
+    int num_points = 4000;
+    std::vector<Point> points = Random::randomPointsVector(mosaic.resized.size(), num_points);
+
+    for (Point pt : points) { 
+        double theta_deg = Random::randomDouble(0, 90);
+        if (mosaic.isValidTile(pt, size, theta_deg)) {
+            mosaic.placeTile(pt, size, theta_deg);
+        }
+    }
+
+    io::saveImage(mosaic.mask, "../Results/mask.jpg");
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -65,6 +96,7 @@ void MosaicTest::runAllTests() {
     total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
     total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
     total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
+    total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
 
 
    

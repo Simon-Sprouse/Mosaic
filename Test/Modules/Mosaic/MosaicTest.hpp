@@ -22,6 +22,7 @@ namespace mosaic_gen::test {
             void testConstructor();
             void testPipeline();
             void testSelectStroke();
+            void testMask();
         
             
             void runAllTests() override;

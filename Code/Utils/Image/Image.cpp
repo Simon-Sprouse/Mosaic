@@ -73,6 +73,12 @@ Color& Image::at(int x, int y) {
 const Color& Image::at(int x, int y) const {
     return data_[getLinearIndex_(x, y)];
 }
+Color& Image::at(Point pt) {
+    return data_[getLinearIndex_(pt.x, pt.y)];
+}
+const Color& Image::at(Point pt) const {
+    return data_[getLinearIndex_(pt.x, pt.y)];
+}
 
 Size Image::size() const { 
     return Size(width_, height_);
