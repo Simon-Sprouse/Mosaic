@@ -57,7 +57,7 @@ void MosaicTest::testMask() {
     mosaic.contourPipeline();
     int size = mosaic.params.tile_size;
 
-    int num_points = 4000;
+    int num_points = 500000;
     std::vector<Point> points = Random::randomPointsVector(mosaic.resized.size(), num_points);
 
     for (Point pt : points) { 

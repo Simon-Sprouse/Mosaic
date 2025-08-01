@@ -109,8 +109,8 @@ class Mosaic {
 
 
         // temp helpers
-        Image bitwise_and(const Image& a, const Image& b);
-        int countNonZero(const Image& image);
+
+
 
 
 

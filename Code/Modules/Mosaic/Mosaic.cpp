@@ -181,18 +181,15 @@ bool Mosaic::tileInBounds(const Point& center) {
     return true;
 }
 
-
 bool Mosaic::tileOverlapsMask(const Point& center, double tile_size, double theta_deg) {
+    // Step 1: Early center check
+    if (mask.at(center).r > 0) return true;
 
-    // 0. super fast check (5% speedup)
-    if (mask.at(center).r > 0) { 
-        return true;
-    }
+    double halfSize = tile_size / 2.0;
+    double theta = theta_deg * CV_PI / 180.0;
+    Vec2d centerD(center);
 
-    // 1. Compute tile corners
-    double halfSize = static_cast<double>(tile_size / 2.0);
-    double theta = static_cast<double>(theta_deg * CV_PI / 180.0);
-
+    // Step 2: Define corners in local space
     std::vector<Vec2d> localCorners = {
         {-halfSize, -halfSize},
         { halfSize, -halfSize},
@@ -200,65 +197,49 @@ bool Mosaic::tileOverlapsMask(const Point& center, double tile_size, double thet
         {-halfSize,  halfSize}
     };
 
-    Vec2d cenderD(center);
-    std::vector<Point> worldCorners;
+    // Step 2.1: Check rotated corners for early return
     for (const Vec2d& pt : localCorners) {
         double x = pt.x * std::cos(theta) - pt.y * std::sin(theta);
         double y = pt.x * std::sin(theta) + pt.y * std::cos(theta);
-        worldCorners.emplace_back(Point(std::round(cenderD.x + x), std::round(cenderD.y + y)));
-    }
+        Point worldPt(std::round(centerD.x + x), std::round(centerD.y + y));
 
-    // 2. FAST CORNER CHECK (40:1 speed up for flood fill)
-    for (const Point& pt : worldCorners) {
-        if (pt.x >= 0 && pt.x < mask.getWidth() && pt.y >= 0 && pt.y < mask.getHeight()) {
-            if (mask.at(pt).r > 0) {
+        if (worldPt.x >= 0 && worldPt.x < mask.getWidth() &&
+            worldPt.y >= 0 && worldPt.y < mask.getHeight()) {
+            if (mask.at(worldPt).r > 0) {
                 return true;
             }
         }
     }
 
-    // 3. Create tile mask and check full overlap TODO - finish replacing cv
-    Image tileMask(resized.size());
-    Graphics::drawFilledPolygon(tileMask, worldCorners, Color(255));
+    // Step 3: Sample along edges of the tile (skipping corners already checked)
+    const int samplesPerEdge = 10;
+    for (int i = 0; i < 4; ++i) {
+        Vec2d start = localCorners[i];
+        Vec2d end = localCorners[(i + 1) % 4];
 
-    Image overlap = bitwise_and(mask, tileMask);
+        for (int s = 1; s < samplesPerEdge; ++s) { // skip s = 0 and s = samplesPerEdge
+            double t = static_cast<double>(s) / samplesPerEdge;
+            Vec2d ptLocal(
+                start.x * (1 - t) + end.x * t,
+                start.y * (1 - t) + end.y * t
+            );
 
-    return countNonZero(overlap) > 0;
-}
+            double x = ptLocal.x * std::cos(theta) - ptLocal.y * std::sin(theta);
+            double y = ptLocal.x * std::sin(theta) + ptLocal.y * std::cos(theta);
+            Point worldPt(std::round(centerD.x + x), std::round(centerD.y + y));
 
-Image Mosaic::bitwise_and(const Image& a, const Image& b) {
-    if (a.size() != b.size()) {
-        throw std::runtime_error("bitwise_and: Image size mismatch.");
-    }
-
-    Image result(a.size());
-    for (int y = 0; y < a.getHeight(); ++y) {
-        for (int x = 0; x < a.getWidth(); ++x) {
-            Color ca = a.at(x, y);
-            Color cb = b.at(x, y);
-
-            result.setPixel(x, y, Color(
-                ca.r & cb.r,
-                ca.g & cb.g,
-                ca.b & cb.b
-            ));
-        }
-    }
-    return result;
-}
-
-int Mosaic::countNonZero(const Image& image) {
-    int count = 0;
-    for (int y = 0; y < image.getHeight(); ++y) {
-        for (int x = 0; x < image.getWidth(); ++x) {
-            Color c = image.at(x, y);
-            if (c.r != 0 || c.g != 0 || c.b != 0) {
-                ++count;
+            if (worldPt.x >= 0 && worldPt.x < mask.getWidth() &&
+                worldPt.y >= 0 && worldPt.y < mask.getHeight()) {
+                if (mask.at(worldPt).r > 0) {
+                    return true;
+                }
             }
         }
     }
-    return count;
+
+    return false;
 }
+
 
 
 
