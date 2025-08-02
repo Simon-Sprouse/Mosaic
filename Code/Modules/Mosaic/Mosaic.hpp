@@ -112,7 +112,8 @@ class Mosaic {
         double findBestTheta(Point center, double size);
         std::vector<Point> findNonZeroInRadius(const Image& src, const Point& center, int radius);
 
-        std::vector<Point> findRingIntersections(const Point& center, double tile_size, double theta_deg, int thickness);
+        std::vector<Point> findPointsMultipleRings(const Point& center, double theta_deg);
+        std::vector<Point> findRingIntersections(const Point& center, double ring_size, double theta_deg, int thickness);
 
 
         // temp helpers
@@ -150,7 +151,7 @@ class Mosaic {
         // bool tileInBounds(const cv::Point& center, double size);
         // TileInfo placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
         void renderTiles();
-        std::vector<cv::Point> findRingIntersections(const cv::Mat& contour_image, const cv::Point2f& center, double size, double theta_deg);
+        // std::vector<cv::Point> findRingIntersections(const cv::Mat& contour_image, const cv::Point2f& center, double size, double theta_deg);
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& intersection_points);
         
         // PLACE TILES FLOOD FILL

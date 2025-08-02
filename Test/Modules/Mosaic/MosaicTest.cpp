@@ -158,7 +158,7 @@ void MosaicTest::testRingIntersections() {
 
 
     // Draw ring
-    Color ring_color(0, 255, 0);
+    Color ring_color(0, 0, 255);
     Graphics::drawSquare(test_canvas, pt, ring_size, theta_deg, ring_color, 2);
 
     // Draw center tile
@@ -166,13 +166,45 @@ void MosaicTest::testRingIntersections() {
     Graphics::drawSquare(test_canvas, pt, size, theta_deg, tile_color, 2);
 
     // Draw intersections
-    Color point_color(100, 0, 210);
-    int point_size = 15;
+    Color point_color(0, 255, 0);
+    int point_size = 10;
     for (Point point : intersections) { 
         Graphics::drawSquare(test_canvas, point, point_size, 0, point_color, point_size);
     }
     
     io::saveImage(test_canvas, "../Results/intersections.jpg");
+
+
+}
+
+
+void MosaicTest::testMultipleRings() { 
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.selectStroke(0);
+
+    Image test_canvas = mosaic.selected_stroke.clone();
+    Point pt = mosaic.getRandomPointOnStroke(0);
+    int size = mosaic.params.tile_size;
+    double theta_deg = mosaic.findBestTheta(pt, size);
+
+    std::vector<Point> intersections = mosaic.findPointsMultipleRings(pt, theta_deg);
+
+
+    // Draw center tile
+    Color tile_color(255, 0, 0);
+    Graphics::drawSquare(test_canvas, pt, size, theta_deg, tile_color, 2);
+
+    // Draw intersections
+    Color point_color(0, 255, 0);
+    int point_size = 10;
+    for (Point point : intersections) { 
+        Graphics::drawSquare(test_canvas, point, point_size, 0, point_color, point_size);
+    }
+    
+    io::saveImage(test_canvas, "../Results/multiple_ring_intersections.jpg");
 
 
 }
@@ -202,6 +234,7 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
     // total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
     total_time += timeFunction("Find Ring Intersections", [&]() {testRingIntersections();});
+    total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
 
 
    

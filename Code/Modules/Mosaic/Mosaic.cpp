@@ -375,10 +375,10 @@ std::vector<Point> Mosaic::findNonZeroInRadius(const Image& src, const Point& ce
 
 
 
-std::vector<Point> Mosaic::findRingIntersections(const Point& center, double tile_size, double theta_deg, int thickness) {
+std::vector<Point> Mosaic::findRingIntersections(const Point& center, double ring_size, double theta_deg, int thickness) {
     std::vector<Point> intersections;
 
-    double halfSize = tile_size / 2.0;
+    double halfSize = ring_size / 2.0;
     double theta = theta_deg * M_PI / 180.0;
     Vec2d centerD(center);
 
@@ -461,10 +461,113 @@ std::vector<Point> Mosaic::findRingIntersections(const Point& center, double til
 
 
 
+std::vector<Point> Mosaic::findPointsMultipleRings(const Point& center, double theta_deg) { 
+
+    std::vector<Point> all_intersections;
+
+
+    double initial_size = params.tile_size;
+    double thickness = 2; // TODO make this a param
+    
+    for (int i = 0; i < params.number_of_rings; i++) { 
+        double current_ring_size = initial_size + i * params.step_size;
+                
+        std::vector<Point> current_ring_points = findRingIntersections(center, current_ring_size, theta_deg, thickness);
+
+
+        all_intersections.insert(all_intersections.end(), current_ring_points.begin(), current_ring_points.end());
+
+    }
+
+
+    // filter sort and reverse
+    int min_dist = params.min_intersection_distance;
+    Geometry::filterUniquePoints(all_intersections, min_dist);
+    std::sort(all_intersections.begin(), all_intersections.end(),
+        [&center](const Point& a, const Point& b) {
+            return Geometry::euclideanDistance(a, center) < Geometry::euclideanDistance(b, center);
+        });
+    std::reverse(all_intersections.begin(), all_intersections.end());
+
+    return all_intersections;
+
+
+}
 
 
 
 
+// void Mosaic::placeTileContour(int k) { 
+
+//     if (mask.empty()) { 
+//         mask = cv::Mat::zeros(resized.size(), CV_8UC1);
+//     }
+
+//     selectContour(k);
+
+
+//     cv::Point center = getRandomPointOnContour(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
+
+//     double size = params.tile_size;
+
+
+//     stack<cv::Point> s;
+//     cv::Point current_center;
+//     s.push(center);
+//     int squares_placed = 0;
+//     int frontier = 0;
+
+
+//     while(!s.empty()) { 
+//         current_center = s.top();
+//         s.pop();
+
+
+        
+//         double theta_deg = findBestTheta(current_center, size);
+//         if (!isValidTile(current_center, size, theta_deg)) { 
+//             continue;
+//         }
+        
+//         placeTile(current_center, size, theta_deg, frontier, std::to_string(squares_placed));
+
+        
+//         squares_placed++;
+
+
+   
+//         double initial_size = size;
+//         std::vector<cv::Point> allIntersections;
+
+
+//         for (int i = 0; i < params.number_of_rings; ++i) {
+//             double currentSize = initial_size + i * params.step_size;
+        
+//             std::vector<cv::Point> ringIntersections = findRingIntersections(
+//                 selected_contour, current_center, currentSize, theta_deg
+//             );
+        
+//             allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
+//         }
+
+
+//         // filter and sort -- add closest points to top of stack
+//         // TODO geometry
+//         allIntersections = filterUniqueIntersections(allIntersections);
+//         std::sort(allIntersections.begin(), allIntersections.end(),
+//         [&current_center](const cv::Point& a, const cv::Point& b) {
+//             return Geometry::euclideanDistance(a, current_center) < Geometry::euclideanDistance(b, current_center);
+//         });
+//         std::reverse(allIntersections.begin(), allIntersections.end());
+
+//         for (cv::Point p : allIntersections) { 
+//             s.push(p);
+//         }
+
+//     }
+
+
+// }
 
 
 
