@@ -134,6 +134,12 @@ void Image::fill(const Color& color) {
 }
 
 
+Image Image::clone() const {
+    Image copy(width_, height_);
+    copy.data_ = data_; // std::vector assignment performs a deep copy
+    return copy;
+}
+
 
 
 

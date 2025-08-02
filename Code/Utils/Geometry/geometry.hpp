@@ -29,4 +29,7 @@ namespace Geometry {
 
     void sortStrokesPCALength(std::vector<std::vector<Point>>& strokes);
 
+    double pointLineSegmentDistance(const Vec2d& p, const Vec2d& A, const Vec2d& B);
+    double norm(const Vec2d& v);
+
 }

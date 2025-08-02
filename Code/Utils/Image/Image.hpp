@@ -117,11 +117,19 @@ struct Vec2d {
 };
 
 // Subtraction operator
+inline Vec2d operator+(const Vec2d& a, const Vec2d& b) {
+    return Vec2d(a.x + b.x, a.y + b.y);
+}
+
 inline Vec2d operator-(const Vec2d& a, const Vec2d& b) {
     return Vec2d(a.x - b.x, a.y - b.y);
 }
 
 // TODO finish all arithmetic
+inline Vec2d operator*(const Vec2d& v, double scalar) {
+    return Vec2d(v.x * scalar, v.y * scalar);
+}
+
 inline Vec2d operator/(const Vec2d& v, double scalar) {
     return Vec2d(v.x / scalar, v.y / scalar);
 }
@@ -195,6 +203,7 @@ class Image {
     void setPixel(int x, int y, const Color& color);
     bool empty() const;
     void fill(const Color& color);
+    Image clone() const;
 
     bool operator==(const Image& other) const;
     bool operator!=(const Image& other) const;

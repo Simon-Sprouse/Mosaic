@@ -199,4 +199,27 @@ namespace Geometry {
     
     }
 
+
+
+
+    double norm(const Vec2d& v) {
+        return std::sqrt(v.x * v.x + v.y * v.y);
+    }
+    
+
+
+    double pointLineSegmentDistance(const Vec2d& p, const Vec2d& A, const Vec2d& B) {
+        Vec2d AB = B - A;
+        Vec2d AP = p - A;
+    
+        double ab2 = AB.dot(AB);
+        if (ab2 == 0.0) return norm(AP); // A == B case
+    
+        double t = AP.dot(AB) / ab2;
+        t = std::max(0.0, std::min(1.0, t)); // Clamp t to [0,1]
+    
+        Vec2d projection = A + AB * t;
+        return norm(p - projection);
+    }
+
 }

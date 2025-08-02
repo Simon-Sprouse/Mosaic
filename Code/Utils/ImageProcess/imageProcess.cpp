@@ -49,7 +49,7 @@ namespace image::process {
 
 
 
-    void grayscale(Image& src, Image& dest) { 
+    void grayscale(const Image& src, Image& dest) { 
         Size size = src.size();
         dest = Image(size);  // reallocate dest image with same size
 

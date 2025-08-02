@@ -3,6 +3,7 @@
 #include "../../../Code/Utils/Graphics/graphics.hpp"
 #include "../../../Code/Utils/Io/io.hpp"
 #include "../../../Code/Utils/Random/random.hpp"
+#include "geometry.hpp"
 
 namespace mosaic_gen::test { 
 
@@ -73,7 +74,82 @@ void MosaicTest::testMask() {
 }
 
 
+// todo make parameters settable
+void MosaicTest::testRandomStart() { 
 
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.selectStroke(0);
+
+    Image test_canvas = mosaic.selected_stroke.clone();
+    Point pt = mosaic.getRandomPointOnStroke(0);
+    int size = mosaic.params.tile_size;
+    double theta_deg = 0;
+    Color color(255, 0, 0);
+    Graphics::drawSquare(test_canvas, pt, size, theta_deg, color, 2);
+
+    io::saveImage(test_canvas, "../Results/first_tile.jpg");
+
+
+}
+
+
+
+void MosaicTest::testFindThetaStroke() { 
+
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.selectStroke(0);
+
+    Image test_canvas = mosaic.selected_stroke.clone();
+    Point pt = mosaic.getRandomPointOnStroke(0);
+    int size = mosaic.params.tile_size;
+
+
+    Color regionColor(0, 255, 0);
+    std::vector<Point> region_pixels = mosaic.findNonZeroInRadius(mosaic.selected_stroke, pt, size);
+    for (Point pt : region_pixels) { 
+        test_canvas.setPixel(pt.x, pt.y, regionColor);
+    }
+    io::saveImage(test_canvas, "../Results/region_pixels.jpg");
+
+
+
+
+    Vec2d direction = Geometry::pcaDirection(region_pixels);
+    // cout << "direction from test: " << direction << endl;
+
+
+
+    double theta_deg = mosaic.findBestTheta(pt, size);
+    // cout << "theta deg: " << theta_deg << endl;
+    Color color(255, 0, 0);
+    Graphics::drawSquare(test_canvas, pt, size, theta_deg, color, 2);
+
+    io::saveImage(test_canvas, "../Results/find_theta.jpg");
+
+
+}
+
+
+
+
+
+
+void MosaicTest::testRingIntersections() { 
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.selectStroke(0);
+
+
+
+
+}
 
 
 
@@ -97,6 +173,8 @@ void MosaicTest::runAllTests() {
     total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
     total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
     total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
+    total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
+    total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
 
 
    

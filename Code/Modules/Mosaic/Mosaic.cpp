@@ -286,6 +286,151 @@ TileInfo Mosaic::placeTile(Point center, double size, double theta_deg, int fron
 
 
 
+Point Mosaic::getRandomPointOnStroke(int stroke_id) {
+    // Safety check: make sure k is in bounds
+    if (stroke_id < 0 || stroke_id >= static_cast<int>(strokes.size())) {
+        throw std::out_of_range("Segment index k is out of range");
+    }
+
+    const std::vector<Point>& stroke = strokes.at(stroke_id);
+    if (stroke.empty()) {
+        throw std::runtime_error("No points in the selected segment");
+    }
+
+    return Random::selectFromVector<Point>(stroke);
+}
+
+
+
+
+
+
+
+
+
+
+
+double Mosaic::findBestTheta(Point center, double size) { 
+
+    int radius = static_cast<int>(size * 0.69); // HUGE impact on alignment TODO do some geometry
+
+
+    // Find non-zero stroke pixels
+    std::vector<Point> region_pixels = findNonZeroInRadius(selected_stroke, center, radius);
+
+    cout << "region_pixels.size(): " << region_pixels.size() << endl;
+
+    // Check if enough points for PCA
+    if (region_pixels.size() < 2) {
+        return ERROR_CODE_NO_VALID_THETA;
+    }
+
+    Vec2d direction = Geometry::pcaDirection(region_pixels);
+    double theta_deg = Geometry::vectorToAngleDegrees(direction);
+
+
+    return theta_deg;
+}
+
+
+std::vector<Point> Mosaic::findNonZeroInRadius(const Image& src, const Point& center, int radius) {
+    std::vector<Point> result;
+
+    int cx = center.x;
+    int cy = center.y;
+    int r2 = radius * radius;
+
+    int xmin = std::max(0, cx - radius);
+    int xmax = std::min(src.getWidth() - 1, cx + radius);
+    int ymin = std::max(0, cy - radius);
+    int ymax = std::min(src.getHeight() - 1, cy + radius);
+
+    for (int y = ymin; y <= ymax; ++y) {
+        for (int x = xmin; x <= xmax; ++x) {
+            int dx = x - cx;
+            int dy = y - cy;
+            if (dx * dx + dy * dy <= r2) {
+                const Color& c = src.at(Point(x, y));
+                if (c.r > 0 || c.g > 0 || c.b > 0) {
+                    result.emplace_back(x, y);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+std::vector<Point> Mosaic::findRingIntersections(const Point& center, double tile_size, double theta_deg) {
+    std::vector<Point> intersections;
+
+
+    double halfSize = tile_size / 2.0;
+    double theta = theta_deg * CV_PI / 180.0;
+    Vec2d centerD(center);
+
+    // Step 2: Define corners in local space
+    std::vector<Vec2d> localCorners = {
+        {-halfSize, -halfSize},
+        { halfSize, -halfSize},
+        { halfSize,  halfSize},
+        {-halfSize,  halfSize}
+    };
+
+
+
+    // Step 3: Sample along edges of the tile (skipping corners already checked)
+    const int samplesPerEdge = 10;
+    for (int i = 0; i < 4; ++i) {
+        Vec2d start = localCorners[i];
+        Vec2d end = localCorners[(i + 1) % 4];
+
+        for (int s = 0; s < samplesPerEdge; ++s) { // skip s = 0 and s = samplesPerEdge
+            double t = static_cast<double>(s) / samplesPerEdge;
+            Vec2d ptLocal(
+                start.x * (1 - t) + end.x * t,
+                start.y * (1 - t) + end.y * t
+            );
+
+            double x = ptLocal.x * std::cos(theta) - ptLocal.y * std::sin(theta);
+            double y = ptLocal.x * std::sin(theta) + ptLocal.y * std::cos(theta);
+            Point worldPt(std::round(centerD.x + x), std::round(centerD.y + y));
+
+            if (worldPt.x >= 0 && worldPt.x < mask.getWidth() &&
+                worldPt.y >= 0 && worldPt.y < mask.getHeight()) {
+                if (mask.at(worldPt).r > 0) {
+                    intersections.push_back(worldPt);
+                }
+            }
+        }
+    }
+
+    return intersections;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

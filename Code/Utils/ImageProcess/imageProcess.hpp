@@ -8,7 +8,7 @@ namespace image::process {
     Size resize(Image& src, Image& dest, Size size);
     Size resize(Image& src, Image& dest, double ratio);
 
-    void grayscale(Image& src, Image& dest);
+    void grayscale(const Image& src, Image& dest);
 
     void gaussianBlur(Image& src, Image& dest, Size kernel_size, double blur_sigma);
     void gaussianBlur(Image& src, Image& dest, int kernel_size, double blur_sigma);

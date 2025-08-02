@@ -23,6 +23,9 @@ namespace mosaic_gen::test {
             void testPipeline();
             void testSelectStroke();
             void testMask();
+            void testRandomStart();
+            void testFindThetaStroke();
+            void testRingIntersections();
         
             
             void runAllTests() override;
