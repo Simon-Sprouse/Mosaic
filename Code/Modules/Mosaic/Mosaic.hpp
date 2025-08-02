@@ -108,11 +108,11 @@ class Mosaic {
         TileInfo placeTile(Point center, double size, double theta_deg, int frontier=0, string text="");
 
         Point getRandomPointOnStroke(int stroke_id);
-        
+
         double findBestTheta(Point center, double size);
         std::vector<Point> findNonZeroInRadius(const Image& src, const Point& center, int radius);
 
-        std::vector<Point> findRingIntersections(const Point& center, double tile_size, double theta_deg);
+        std::vector<Point> findRingIntersections(const Point& center, double tile_size, double theta_deg, int thickness);
 
 
         // temp helpers

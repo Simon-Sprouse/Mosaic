@@ -17,6 +17,11 @@ namespace io {
     }
 
     void saveImage(const image::Image& img, const std::string& path) {
+
+        if (img.empty()) { 
+            return;
+        }
+
         cv::Mat mat = toCvMat(img);
         if (!cv::imwrite(path, mat)) {
             throw std::runtime_error("Failed to save image to: " + path);

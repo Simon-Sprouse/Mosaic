@@ -146,7 +146,33 @@ void MosaicTest::testRingIntersections() {
     mosaic.contourPipeline();
     mosaic.selectStroke(0);
 
+    Image test_canvas = mosaic.selected_stroke.clone();
+    Point pt = mosaic.getRandomPointOnStroke(0);
+    int size = mosaic.params.tile_size;
 
+    int ring_size = size * 2;
+    double theta_deg = mosaic.findBestTheta(pt, size);
+    int thickness = 2;
+    std::vector<Point> intersections = mosaic.findRingIntersections(pt, ring_size, theta_deg, thickness);
+    io::saveImage(mosaic.canvas, "../Results/checked_points.jpg");
+
+
+    // Draw ring
+    Color ring_color(0, 255, 0);
+    Graphics::drawSquare(test_canvas, pt, ring_size, theta_deg, ring_color, 2);
+
+    // Draw center tile
+    Color tile_color(255, 0, 0);
+    Graphics::drawSquare(test_canvas, pt, size, theta_deg, tile_color, 2);
+
+    // Draw intersections
+    Color point_color(100, 0, 210);
+    int point_size = 15;
+    for (Point point : intersections) { 
+        Graphics::drawSquare(test_canvas, point, point_size, 0, point_color, point_size);
+    }
+    
+    io::saveImage(test_canvas, "../Results/intersections.jpg");
 
 
 }
@@ -169,12 +195,13 @@ void MosaicTest::runAllTests() {
     chrono::duration<double> total_time(0.0);
 
     // call test functions
-    total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
-    total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
-    total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
-    total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
-    total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
-    total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
+    // total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
+    // total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
+    // total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
+    // total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
+    // total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
+    // total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
+    total_time += timeFunction("Find Ring Intersections", [&]() {testRingIntersections();});
 
 
    

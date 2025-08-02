@@ -118,6 +118,9 @@ void Mosaic::contourPipeline() {
     image::process::divideIntoStrokes(contours, strokes, canny.size(), params.segment_angle_window, params.max_segment_angle_rad, params.min_segment_length);
     Geometry::sortStrokesPCALength(strokes);
 
+    // TODO think about separate function
+    mask = Image(resized.size());
+
 
 }
 
@@ -318,7 +321,7 @@ double Mosaic::findBestTheta(Point center, double size) {
     // Find non-zero stroke pixels
     std::vector<Point> region_pixels = findNonZeroInRadius(selected_stroke, center, radius);
 
-    cout << "region_pixels.size(): " << region_pixels.size() << endl;
+    // cout << "region_pixels.size(): " << region_pixels.size() << endl;
 
     // Check if enough points for PCA
     if (region_pixels.size() < 2) {
@@ -372,15 +375,14 @@ std::vector<Point> Mosaic::findNonZeroInRadius(const Image& src, const Point& ce
 
 
 
-std::vector<Point> Mosaic::findRingIntersections(const Point& center, double tile_size, double theta_deg) {
+std::vector<Point> Mosaic::findRingIntersections(const Point& center, double tile_size, double theta_deg, int thickness) {
     std::vector<Point> intersections;
 
-
     double halfSize = tile_size / 2.0;
-    double theta = theta_deg * CV_PI / 180.0;
+    double theta = theta_deg * M_PI / 180.0;
     Vec2d centerD(center);
 
-    // Step 2: Define corners in local space
+    // Define corners in local space
     std::vector<Vec2d> localCorners = {
         {-halfSize, -halfSize},
         { halfSize, -halfSize},
@@ -388,36 +390,70 @@ std::vector<Point> Mosaic::findRingIntersections(const Point& center, double til
         {-halfSize,  halfSize}
     };
 
+    // DEBUG
+    // canvas = selected_stroke.clone();
 
-
-    // Step 3: Sample along edges of the tile (skipping corners already checked)
-    const int samplesPerEdge = 10;
     for (int i = 0; i < 4; ++i) {
         Vec2d start = localCorners[i];
-        Vec2d end = localCorners[(i + 1) % 4];
+        Vec2d end   = localCorners[(i + 1) % 4];
 
-        for (int s = 0; s < samplesPerEdge; ++s) { // skip s = 0 and s = samplesPerEdge
-            double t = static_cast<double>(s) / samplesPerEdge;
-            Vec2d ptLocal(
-                start.x * (1 - t) + end.x * t,
-                start.y * (1 - t) + end.y * t
-            );
+        Vec2d edge = end - start;
+        int numSteps = static_cast<int>(std::round(std::max(std::abs(edge.x), std::abs(edge.y))));
+        if (numSteps == 0) continue;
 
-            double x = ptLocal.x * std::cos(theta) - ptLocal.y * std::sin(theta);
-            double y = ptLocal.x * std::sin(theta) + ptLocal.y * std::cos(theta);
-            Point worldPt(std::round(centerD.x + x), std::round(centerD.y + y));
+        // Normalize edge direction and normal vector
+        Vec2d edgeStep(edge.x / numSteps, edge.y / numSteps);
+        Vec2d normal(-edgeStep.y, edgeStep.x); // 90° CCW
 
-            if (worldPt.x >= 0 && worldPt.x < mask.getWidth() &&
-                worldPt.y >= 0 && worldPt.y < mask.getHeight()) {
-                if (mask.at(worldPt).r > 0) {
-                    intersections.push_back(worldPt);
+        for (int s = 0; s <= numSteps; ++s) {
+            Vec2d ptLocal = start + edgeStep * s;
+
+            for (int d = 0; d <= thickness; ++d) {
+                Vec2d offset = ptLocal + normal * d;
+
+                // Apply rotation
+                double x = offset.x * std::cos(theta) - offset.y * std::sin(theta);
+                double y = offset.x * std::sin(theta) + offset.y * std::cos(theta);
+                Point worldPt(std::round(centerD.x + x), std::round(centerD.y + y));
+
+                // // DEBUG
+                // // set every pixel in mask as marked where we checked
+                // Color color(108, 0, 210);
+                // canvas.setPixel(worldPt.x, worldPt.y, color);
+
+                if (worldPt.x >= 0 && worldPt.x < mask.getWidth() &&
+                    worldPt.y >= 0 && worldPt.y < mask.getHeight()) {
+                    if (selected_stroke.at(worldPt).r > 0) {
+                        intersections.push_back(worldPt);
+                    }
                 }
             }
         }
     }
 
+    // std::cout << "intersections.size(): " << intersections.size() << std::endl;
+
+
+    // std::vector<Point> pixels_in_stroke;
+    // for (int x = 0; x < selected_stroke.getWidth(); x++) { 
+    //     for (int y = 0; y < selected_stroke.getHeight(); y++) { 
+    //         Color pixel = selected_stroke.at(x, y);
+    //         if (pixel.r > 0) { 
+    //             pixels_in_stroke.emplace_back(Point(x, y));
+    //         }
+    //     }
+    // }
+
+    // cout << "pixels in stroke: " << pixels_in_stroke.size() << endl;
+
+
+
+
+
+
     return intersections;
 }
+
 
 
 
