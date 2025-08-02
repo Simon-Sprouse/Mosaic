@@ -65,13 +65,13 @@ int main() {
     params.max_segment_angle_rad = 100 * M_PI / 180.0; // TODO why is this in rad
     params.min_segment_length = 20;
     params.segment_angle_window = 10;
-    params.tile_size = 10;
+    params.tile_size = 30;
     params.number_of_rings = 5;
     params.step_size = 1 * params.tile_size;
-    params.min_intersection_distance = params.tile_size;
+    params.min_intersection_distance = 1.5 * params.tile_size;
     params.max_frontiers = 40;
     params.flood_fill_neighbor_points = 16;
-    params.distance_from_center = params.tile_size * 1.5;
+    params.distance_from_center = 1.5 * params.tile_size;
     params.random_background_points = 50000;
     params.tiles_per_frame = 20;
     params.jitter_map.insert({4, 0});

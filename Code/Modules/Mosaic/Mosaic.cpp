@@ -466,7 +466,7 @@ std::vector<Point> Mosaic::findPointsMultipleRings(const Point& center, double t
     std::vector<Point> all_intersections;
 
 
-    double initial_size = params.tile_size;
+    double initial_size = 1 * params.tile_size; // TODO make this a param
     double thickness = 2; // TODO make this a param
     
     for (int i = 0; i < params.number_of_rings; i++) { 
@@ -535,6 +535,238 @@ void Mosaic::placeTilesAlongStroke(int stroke_id) {
 
 
 }
+
+
+void Mosaic::placeTilesAllStrokes() { 
+
+    for (int i = 0; i < strokes.size(); i++) { 
+        selectStroke(i);
+        placeTilesAlongStroke(i);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// void Mosaic::floodFill() {
+
+//     double distance_from_center = params.distance_from_center;
+//     const int max_frontiers = params.max_frontiers;
+//     int frontier = 1;
+//     std::vector<TileInfo> frontier_tiles(tiles_placed);
+
+//     while (!frontier_tiles.empty() && frontier <= max_frontiers) { 
+        
+//         // Collect all flood fill points for this frontier
+//         std::vector<cv::Point> all_flood_points;
+//         for (const TileInfo& tile : frontier_tiles) {
+//             int num_points = params.flood_fill_neighbor_points;
+//             int max_step = getJitter(frontier);
+//             std::vector<cv::Point> points = nextFrontierFromTile(tile.center, tile.theta_deg, distance_from_center, num_points);
+//             std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
+//             all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
+//         }
+
+//         // TODO sort somehow
+
+//         std::vector<TileInfo> next_frontier_tiles;
+//         // Now place tiles at unique positions
+//         for (const cv::Point& pt : all_flood_points) {
+//             double theta_deg = findBestThetaTangentField(pt);
+//             if (isValidTile(pt, params.tile_size, theta_deg)) { 
+//                 TileInfo current_tile = placeTile(pt, params.tile_size, theta_deg, frontier + 1);
+//                 next_frontier_tiles.push_back(current_tile);
+//             }
+            
+//         }
+
+//         frontier_tiles = next_frontier_tiles;
+//         frontier++;
+//     }
+// }
+
+
+
+// std::vector<cv::Point> Mosaic::nextFrontierFromTile(cv::Point center, double theta_deg, double distance_from_center, int num_points) {
+//     std::vector<cv::Point> flood_points;
+
+//     if (num_points <= 0) return flood_points;
+
+//     // Convert center to float
+//     cv::Point2f center_f(center.x, center.y);
+
+//     // Convert angle to radians
+//     double theta_rad = theta_deg * CV_PI / 180.0;
+
+//     // Rotated basis vectors
+//     cv::Point2f dx(std::cos(theta_rad), std::sin(theta_rad));       // along width
+//     cv::Point2f dy(-std::sin(theta_rad), std::cos(theta_rad));      // along height
+
+//     // Define half-size
+//     double h = distance_from_center;
+
+//     // Corners of the square (in local unrotated coordinates)
+//     std::vector<cv::Point2f> square = {
+//         cv::Point2f(-h, -h),  // top-left
+//         cv::Point2f(h, -h),   // top-right
+//         cv::Point2f(h, h),    // bottom-right
+//         cv::Point2f(-h, h)    // bottom-left
+//     };
+
+//     // Total perimeter of square
+//     double perimeter = 8 * h;
+
+//     for (int i = 0; i < num_points; ++i) {
+//         double t = (i / (double)num_points) * perimeter;
+
+//         cv::Point2f local;
+
+//         if (t < 2 * h) {
+//             // Top edge
+//             local = square[0] + cv::Point2f(t, 0);
+//         } else if (t < 4 * h) {
+//             // Right edge
+//             local = square[1] + cv::Point2f(0, t - 2 * h);
+//         } else if (t < 6 * h) {
+//             // Bottom edge
+//             local = square[2] + cv::Point2f(-(t - 4 * h), 0);
+//         } else {
+//             // Left edge
+//             local = square[3] + cv::Point2f(0, -(t - 6 * h));
+//         }
+
+//         // Rotate the local point using the dx/dy basis
+//         cv::Point2f rotated = center_f + dx * local.x + dy * local.y;
+
+//         // Convert to integer and store
+//         flood_points.push_back(cv::Point(cvRound(rotated.x), cvRound(rotated.y)));
+//     }
+
+//     return flood_points;
+// }
+
+
+// double Mosaic::findBestThetaTangentField(cv::Point center) { 
+//     auto [tangent, dist] = getTangentAtPoint(center);
+//     double theta_rad = std::atan2(tangent[1], tangent[0]);
+//     double theta_deg = theta_rad * 180.0 / CV_PI;
+
+
+//     return theta_deg;
+// };
+
+
+
+// std::tuple<cv::Vec2d, float> Mosaic::getTangentAtPoint(const cv::Point& pt) {
+
+//     if (distance_map.empty() || gradX.empty() || gradY.empty()) { 
+//         computeDistanceField();
+//     }
+
+//     int x = pt.x;
+//     int y = pt.y;
+
+//     if (x < 0 || x >= distance_map.cols || y < 0 || y >= distance_map.rows) {
+//     return {cv::Vec2d(0.0f, 0.0f), 0.0f};
+//     }
+
+//     float dx = gradX.at<float>(y, x);
+//     float dy = gradY.at<float>(y, x);
+
+//     // Rotate 90° counter-clockwise to get tangent
+//     float tx = -dy;
+//     float ty = dx;
+
+//     float magnitude = std::sqrt(tx * tx + ty * ty);
+//     cv::Vec2d tangent(0.0f, 0.0f);
+//     if (magnitude > 1e-5f) {
+//     tangent = cv::Vec2d(tx / magnitude, ty / magnitude);
+//     }
+
+//     float dist = distance_map.at<float>(y, x);
+//     return {tangent, dist};
+// }
+
+
+
+// void Mosaic::computeDistanceField() { 
+
+//     distance_map = cv::Mat::zeros(contours.size(), CV_8UC3);
+//     gradX = cv::Mat::zeros(contours.size(), CV_8UC3);
+//     gradY = cv::Mat::zeros(contours.size(), CV_8UC3);
+
+
+//     // Step 1: Convert to grayscale and binary edge map
+//     cv::Mat gray, binary;
+//     cv::cvtColor(contours, gray, cv::COLOR_BGR2GRAY);
+//     cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
+
+//     // Step 2: Invert binary
+//     cv::Mat inverted = 255 - binary;
+
+//     // Step 3: Compute distance transform
+//     cv::distanceTransform(inverted, distance_map, cv::DIST_L2, 3);
+
+//     // Step 4: Compute gradients
+//     cv::Sobel(distance_map, gradX, CV_32F, 1, 0, 3);
+//     cv::Sobel(distance_map, gradY, CV_32F, 0, 1, 3);
+
+
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

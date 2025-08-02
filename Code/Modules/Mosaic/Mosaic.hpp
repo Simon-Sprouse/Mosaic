@@ -117,6 +117,7 @@ class Mosaic {
 
 
         void placeTilesAlongStroke(int stroke_id);
+        void placeTilesAllStrokes();
 
 
         // temp helpers

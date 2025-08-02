@@ -222,4 +222,73 @@ namespace Geometry {
         return norm(p - projection);
     }
 
+
+
+
+
+
+
+
+
+    std::vector<Point> samplePointsSquareBorder(Point center, double theta_deg, double distance_from_center, int num_points) {
+        
+        std::vector<Point> flood_points;
+
+
+        // Convert center to float
+        Vec2d center_f(center.x, center.y);
+
+        // Convert angle to radians
+        double theta_rad = theta_deg * M_PI / 180.0;
+
+        // Rotated basis vectors
+        Vec2d dx(std::cos(theta_rad), std::sin(theta_rad));       // along width
+        Vec2d dy(-std::sin(theta_rad), std::cos(theta_rad));      // along height
+
+        // Define half-size
+        double h = distance_from_center;
+
+        // Corners of the square (in local unrotated coordinates)
+        std::vector<Vec2d> square = {
+            Vec2d(-h, -h),  // top-left
+            Vec2d(h, -h),   // top-right
+            Vec2d(h, h),    // bottom-right
+            Vec2d(-h, h)    // bottom-left
+        };
+
+        // Total perimeter of square
+        double perimeter = 8 * h;
+
+        for (int i = 0; i < num_points; ++i) {
+            double t = (i / (double)num_points) * perimeter;
+
+            Vec2d local;
+
+            if (t < 2 * h) {
+                // Top edge
+                local = square[0] + Vec2d(t, 0);
+            } else if (t < 4 * h) {
+                // Right edge
+                local = square[1] + Vec2d(0, t - 2 * h);
+            } else if (t < 6 * h) {
+                // Bottom edge
+                local = square[2] + Vec2d(-(t - 4 * h), 0);
+            } else {
+                // Left edge
+                local = square[3] + Vec2d(0, -(t - 6 * h));
+            }
+
+            // Rotate the local point using the dx/dy basis
+            Vec2d rotated = center_f + dx * local.x + dy * local.y;
+
+            // Convert to integer and store
+            flood_points.push_back(Point(std::round(rotated.x), std::round(rotated.y)));
+        }
+
+        return flood_points;
+    }
+
+
+
+
 }

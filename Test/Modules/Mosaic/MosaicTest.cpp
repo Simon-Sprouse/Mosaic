@@ -220,7 +220,90 @@ void MosaicTest::testPlaceTileStroke() {
     io::saveImage(mosaic.mask, "../Results/tiles_along_stroke0.jpg");
 }
 
+void MosaicTest::testPlaceTileAllStrokes() { 
 
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline(); 
+    mosaic.placeTilesAllStrokes();
+
+    io::saveImage(mosaic.mask, "../Results/tiles_all_strokes.jpg");
+}
+
+
+
+
+void MosaicTest::testSquareBorderPoints() { 
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline(); 
+
+    Image test_img(mosaic.resized.size());
+    int distance_from_center = mosaic.params.distance_from_center;
+
+
+    // Test once
+
+    Point center = Random::randomPoint(test_img.size());
+    double theta_deg = Random::randomDouble(0, 90);
+    int size = mosaic.params.tile_size;
+    int num_points = 16;
+    std::vector<Point> border_points = Geometry::samplePointsSquareBorder(center, theta_deg, distance_from_center, num_points);
+
+
+    Color tile_color(255);
+    Graphics::drawSquare(test_img, center, size, theta_deg, tile_color, size);
+
+    Color point_color(255, 0, 0);
+    int point_size = 10;
+    for (Point pt : border_points) { 
+        Graphics::drawSquare(test_img, pt, point_size, theta_deg, point_color, point_size);
+    }
+
+    io::saveImage(test_img, "../Results/border_points.jpg");
+
+
+
+
+
+    // Now test multiple
+
+    test_img.fill(Color()); // TODO make reset function
+    int max_border_points = 40;
+    for (int i = 0; i < max_border_points; i++) { 
+
+        Point center = Random::randomPoint(test_img.size());
+        double theta_deg = Random::randomDouble(0, 90);
+        int size = mosaic.params.tile_size;
+        int num_points = i;
+        std::vector<Point> border_points = Geometry::samplePointsSquareBorder(center, theta_deg, distance_from_center, num_points);
+
+
+        Color tile_color(255);
+        Graphics::drawSquare(test_img, center, size, theta_deg, tile_color, size);
+
+        Color point_color = Random::randomColor();
+        int point_size = 5;
+        for (Point pt : border_points) { 
+            Graphics::drawSquare(test_img, pt, point_size, theta_deg, point_color, point_size);
+        }
+    }
+
+
+    io::saveImage(test_img, "../Results/border_points_multiple.jpg");
+
+
+
+
+
+
+
+
+
+
+
+}
 
 
 
@@ -244,9 +327,11 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
     // total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
     // total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
-    total_time += timeFunction("Find Ring Intersections", [&]() {testRingIntersections();});
-    total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
-    total_time += timeFunction("Tiles Along sTroke", [&]() {testPlaceTileStroke();});
+    // total_time += timeFunction("Find Ring Intersections", [&]() {testRingIntersections();});
+    // total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
+    // total_time += timeFunction("Tiles Along Stroke", [&]() {testPlaceTileStroke();});
+    // total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
+    total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
 
 
    

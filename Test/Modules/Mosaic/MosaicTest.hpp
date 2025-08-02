@@ -28,7 +28,9 @@ namespace mosaic_gen::test {
             void testRingIntersections();
             void testMultipleRings();
             void testPlaceTileStroke();
-        
+            void testPlaceTileAllStrokes();
+
+            void testSquareBorderPoints(); // TODO this belongs in geometry test as well
             
             void runAllTests() override;
 

@@ -32,4 +32,7 @@ namespace Geometry {
     double pointLineSegmentDistance(const Vec2d& p, const Vec2d& A, const Vec2d& B);
     double norm(const Vec2d& v);
 
+
+    std::vector<Point> samplePointsSquareBorder(Point center, double theta_deg, double distance_from_center, int num_points);
+
 }
