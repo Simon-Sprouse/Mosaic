@@ -211,6 +211,17 @@ void MosaicTest::testMultipleRings() {
 
 
 
+void MosaicTest::testPlaceTileStroke() { 
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline(); 
+    mosaic.placeTilesAlongStroke(0);
+
+    io::saveImage(mosaic.mask, "../Results/tiles_along_stroke0.jpg");
+}
+
+
+
 
 
 
@@ -235,6 +246,7 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
     total_time += timeFunction("Find Ring Intersections", [&]() {testRingIntersections();});
     total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
+    total_time += timeFunction("Tiles Along sTroke", [&]() {testPlaceTileStroke();});
 
 
    

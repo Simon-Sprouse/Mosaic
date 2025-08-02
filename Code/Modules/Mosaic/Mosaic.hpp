@@ -116,6 +116,9 @@ class Mosaic {
         std::vector<Point> findRingIntersections(const Point& center, double ring_size, double theta_deg, int thickness);
 
 
+        void placeTilesAlongStroke(int stroke_id);
+
+
         // temp helpers
 
 

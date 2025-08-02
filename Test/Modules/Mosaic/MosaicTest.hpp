@@ -27,6 +27,7 @@ namespace mosaic_gen::test {
             void testFindThetaStroke();
             void testRingIntersections();
             void testMultipleRings();
+            void testPlaceTileStroke();
         
             
             void runAllTests() override;

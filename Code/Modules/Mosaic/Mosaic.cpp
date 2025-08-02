@@ -497,77 +497,44 @@ std::vector<Point> Mosaic::findPointsMultipleRings(const Point& center, double t
 
 
 
-// void Mosaic::placeTileContour(int k) { 
+void Mosaic::placeTilesAlongStroke(int stroke_id) { 
 
-//     if (mask.empty()) { 
-//         mask = cv::Mat::zeros(resized.size(), CV_8UC1);
-//     }
+    selectStroke(stroke_id);
 
-//     selectContour(k);
-
-
-//     cv::Point center = getRandomPointOnContour(k);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
-
-//     double size = params.tile_size;
+    Point center = getRandomPointOnStroke(stroke_id);     // TODO we can't just assume the first random spot will be valid for tile placement. (although this works first time)
+    double size = params.tile_size;
 
 
-//     stack<cv::Point> s;
-//     cv::Point current_center;
-//     s.push(center);
-//     int squares_placed = 0;
-//     int frontier = 0;
+    stack<Point> stack;
+    Point current;
+    stack.push(center);
+    int squares_placed = 0;
+    int frontier = 0;
 
 
-//     while(!s.empty()) { 
-//         current_center = s.top();
-//         s.pop();
+    while(!stack.empty()) { 
 
+        current = stack.top();
+        stack.pop();
+
+        double theta_deg = findBestTheta(current, size);
+        if (!isValidTile(current, size, theta_deg)) { 
+            continue;
+        }
+        
+        placeTile(current, size, theta_deg, frontier, std::to_string(squares_placed));
 
         
-//         double theta_deg = findBestTheta(current_center, size);
-//         if (!isValidTile(current_center, size, theta_deg)) { 
-//             continue;
-//         }
-        
-//         placeTile(current_center, size, theta_deg, frontier, std::to_string(squares_placed));
+        std::vector<Point> intersections = findPointsMultipleRings(current, theta_deg);
 
-        
-//         squares_placed++;
+        for (Point p : intersections) { 
+            stack.push(p);
+        }
+
+    }
 
 
-   
-//         double initial_size = size;
-//         std::vector<cv::Point> allIntersections;
-
-
-//         for (int i = 0; i < params.number_of_rings; ++i) {
-//             double currentSize = initial_size + i * params.step_size;
-        
-//             std::vector<cv::Point> ringIntersections = findRingIntersections(
-//                 selected_contour, current_center, currentSize, theta_deg
-//             );
-        
-//             allIntersections.insert(allIntersections.end(), ringIntersections.begin(), ringIntersections.end());
-//         }
-
-
-//         // filter and sort -- add closest points to top of stack
-//         // TODO geometry
-//         allIntersections = filterUniqueIntersections(allIntersections);
-//         std::sort(allIntersections.begin(), allIntersections.end(),
-//         [&current_center](const cv::Point& a, const cv::Point& b) {
-//             return Geometry::euclideanDistance(a, current_center) < Geometry::euclideanDistance(b, current_center);
-//         });
-//         std::reverse(allIntersections.begin(), allIntersections.end());
-
-//         for (cv::Point p : allIntersections) { 
-//             s.push(p);
-//         }
-
-//     }
-
-
-// }
+}
 
 
 
