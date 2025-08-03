@@ -291,4 +291,49 @@ namespace Geometry {
 
 
 
+
+
+
+
+
+
+
+
+    std::vector<Point> getPointsInsideSquare(Point center, int size, double angle_deg) {
+        std::vector<Point> result;
+
+
+    
+        double half = static_cast<double>(size) / 2.0;
+        double angle_rad = angle_deg * M_PI / 180.0;
+        double cos_a = std::cos(angle_rad);
+        double sin_a = std::sin(angle_rad);
+    
+        // Conservative bounding box
+        int min_x = static_cast<int>(std::floor(center.x - half - 1));
+        int max_x = static_cast<int>(std::ceil(center.x + half + 1));
+        int min_y = static_cast<int>(std::floor(center.y - half - 1));
+        int max_y = static_cast<int>(std::ceil(center.y + half + 1));
+    
+        for (int y = min_y; y <= max_y; ++y) {
+            for (int x = min_x; x <= max_x; ++x) {
+                // Translate to square center
+                double dx = static_cast<double>(x - center.x);
+                double dy = static_cast<double>(y - center.y);
+    
+                // Apply reverse rotation
+                double rx =  dx * cos_a + dy * sin_a;
+                double ry = -dx * sin_a + dy * cos_a;
+    
+                if (std::abs(rx) <= half && std::abs(ry) <= half) {
+                    result.push_back(Point(x, y));
+                }
+            }
+        }
+    
+        return result;
+    }
+
+
+
 }

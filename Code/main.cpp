@@ -60,7 +60,7 @@ int main() {
     mosaic_gen::Parameters params;
     params.image_path = "../Images/flower.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 1;
+    params.resize_factor = 2;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -72,13 +72,13 @@ int main() {
     params.number_of_rings = 5;
     params.step_size = 1 * params.tile_size;
     params.min_intersection_distance = 1.5 * params.tile_size;
-    params.max_frontiers = 2;
+    params.max_frontiers = 20;
     params.flood_fill_neighbor_points = 16;
     params.distance_from_center = 1.5 * params.tile_size;
     params.random_background_points = 50000;
     params.tiles_per_frame = 20;
     params.jitter_map.insert({4, 0});
-    params.jitter_map.insert({8, 2});
+    params.jitter_map.insert({8, 1});
     params.jitter_map.insert({12, 10});
 
 

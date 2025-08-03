@@ -205,6 +205,7 @@ class Image {
     bool empty() const;
     void fill(const Color& color);
     Image clone() const;
+    bool inBounds(int x, int y) const;
 
     bool operator==(const Image& other) const;
     bool operator!=(const Image& other) const;

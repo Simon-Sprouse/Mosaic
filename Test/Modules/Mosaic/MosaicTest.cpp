@@ -344,6 +344,38 @@ void MosaicTest::testFloodFill() {
 }
 
 
+void MosaicTest::testGapFill() { 
+    
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.placeTilesAllStrokes();
+    mosaic.floodFill();
+    mosaic.gapFill();
+
+    io::saveImage(mosaic.mask, "../Results/gap_fill.jpg");
+
+
+}
+
+
+
+void MosaicTest::testReconstructImage() { 
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.placeTilesAllStrokes();
+    mosaic.floodFill();
+    mosaic.gapFill();
+
+    mosaic.reconstructImage();
+ 
+     io::saveImage(mosaic.canvas, "../Results/reconstruction.jpg");
+
+}
+
 
 
 
@@ -370,8 +402,10 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Tiles Along Stroke", [&]() {testPlaceTileStroke();});
     // total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
     // total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
-    total_time += timeFunction("Show Vector Field", [&]() {testVectorField();});
-    total_time += timeFunction("Flood Fill", [&]() {testFloodFill();});
+    // total_time += timeFunction("Show Vector Field", [&]() {testVectorField();});
+    // total_time += timeFunction("Flood Fill", [&]() {testFloodFill();});
+    // total_time += timeFunction("Gap Fill", [&]() {testGapFill();});
+    total_time += timeFunction("Reconstruct Image", [&]() {testReconstructImage();});
 
 
    
@@ -383,6 +417,7 @@ void MosaicTest::runAllTests() {
 
     cout << endl;
 }
+
 
 
 

@@ -615,17 +615,6 @@ double Mosaic::findThetaTangent(Point center) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 void Mosaic::floodFill() {
 
     double distance_from_center = params.distance_from_center;
@@ -677,6 +666,140 @@ int Mosaic::getJitter(int frontier) {
     }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void Mosaic::gapFill() { 
+    if (grad_x.empty() || grad_y.empty()) { 
+        computeDistanceField();
+    }
+
+    double tile_size = params.tile_size;
+    int max_tiles_to_place = params.random_background_points;
+
+
+    std::vector<Point> points;
+    for (int y = 0; y < mask.getHeight(); ++y) {
+        for (int x = 0; x < mask.getWidth(); ++x) {
+            if (mask.at(x, y).r == 0) {
+                points.push_back(Point(x, y));
+            } 
+        }
+    }
+    Random::shuffleVector(points);
+
+
+   for (const Point& point : points) {
+
+
+        // Sample guidance field
+        
+        double theta_deg = findThetaTangent(point);
+
+        if (isValidTile(point, tile_size, theta_deg)) {
+
+            int frontier = -1;
+            placeTile(point, tile_size, theta_deg, frontier); 
+
+        }
+    }
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void Mosaic::reconstructImage() { 
+
+    // reset canvas
+    canvas = Image(resized.size());
+
+    for (TileInfo tile : tiles_placed) { 
+        Color color = sampleTileColor(tile);
+        Graphics::drawSquare(canvas, tile.center, tile.size * 1.0, tile.theta_deg, color, tile.size);
+    }
+
+
+}
+
+
+
+
+Color Mosaic::sampleTileColor(const TileInfo& tile) {
+    Point center = tile.center;
+    int size = tile.size / 4; // TODO make this tuneable
+    double theta_deg = tile.theta_deg;
+
+    std::vector<Point> points = Geometry::getPointsInsideSquare(center, size, theta_deg);
+
+    // Accumulate RGB channels
+    uint64_t r_sum = 0, g_sum = 0, b_sum = 0;
+    int count = 0;
+
+    for (const Point& pt : points) {
+        if (resized.inBounds(pt.x, pt.y)) {
+            Color sample = resized.at(pt);
+            r_sum += sample.r;
+            g_sum += sample.g;
+            b_sum += sample.b;
+            ++count;
+        }
+    }
+
+    if (count == 0) return Color(0, 0, 0);  // Avoid division by zero
+
+    uint8_t r_avg = static_cast<uint8_t>(r_sum / count);
+    uint8_t g_avg = static_cast<uint8_t>(g_sum / count);
+    uint8_t b_avg = static_cast<uint8_t>(b_sum / count);
+
+    return Color(r_avg, g_avg, b_avg);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

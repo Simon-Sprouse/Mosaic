@@ -35,4 +35,8 @@ namespace Geometry {
 
     std::vector<Point> samplePointsSquareBorder(Point center, double theta_deg, double distance_from_center, int num_points);
 
+
+    std::vector<Point> getPointsInsideSquare(Point center, int size, double angle_deg);
+
+
 }

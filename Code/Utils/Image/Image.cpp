@@ -141,6 +141,10 @@ Image Image::clone() const {
 }
 
 
+bool Image::inBounds(int x, int y) const {
+    return x >= 0 && y >= 0 && x < getWidth() && y < getHeight();
+}
+
 
 
 

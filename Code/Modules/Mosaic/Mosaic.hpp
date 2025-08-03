@@ -125,6 +125,11 @@ class Mosaic {
         void computeDistanceField();
         double findThetaTangent(Point center);
 
+        void gapFill();
+
+        void reconstructImage();
+        Color sampleTileColor(const TileInfo& tile);
+
         // temp helpers
 
 
@@ -172,12 +177,12 @@ class Mosaic {
         // void computeDistanceField();
         
         // PLACE TILES GAPS
-        void gapFill();
+        // void gapFill();
 
 
         // RECREATE IMAGE FROM DISCRETE STATE
-        void reconstructImage();
-        cv::Vec3b sampleTileColor(const TileInfo& tile);
+        // void reconstructImage();
+        // cv::Vec3b sampleTileColor(const TileInfo& tile);
 
 
         /*
