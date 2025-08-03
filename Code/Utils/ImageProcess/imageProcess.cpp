@@ -608,7 +608,7 @@ namespace image::process {
 
 
 
-    void computeDistanceField(const Image& strokes_img_source, Image& distance_map_dest) {
+    std::vector<float> computeDistanceField(const Image& strokes_img_source) {
         int width = strokes_img_source.getWidth();
         int height = strokes_img_source.getHeight();
     
@@ -626,7 +626,7 @@ namespace image::process {
         }
     
         // Step 3: Initialize distance buffer
-        std::vector<float> dist(width * height);
+        std::vector<float> distance_field(width * height);
         
         // Set initial distances:
         // - 0 distance for edge pixels (binary = true, i.e., stroke pixels)
@@ -636,10 +636,10 @@ namespace image::process {
                 int idx = y * width + x;
                 if (binary[idx]) {
                     // This is a stroke/edge pixel - distance = 0
-                    dist[idx] = 0.0f;
+                    distance_field[idx] = 0.0f;
                 } else {
                     // This is background - start with max distance
-                    dist[idx] = std::numeric_limits<float>::max();
+                    distance_field[idx] = std::numeric_limits<float>::max();
                 }
             }
         }
@@ -649,7 +649,7 @@ namespace image::process {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 int idx = y * width + x;
-                float& current_dist = dist[idx];
+                float& current_dist = distance_field[idx];
                 
                 // Skip if this is already a stroke pixel (distance = 0)
                 if (current_dist == 0.0f) continue;
@@ -657,22 +657,22 @@ namespace image::process {
                 // Check neighbors that have already been processed
                 // Left neighbor
                 if (x > 0) {
-                    current_dist = std::min(current_dist, dist[y * width + (x - 1)] + 1.0f);
+                    current_dist = std::min(current_dist, distance_field[y * width + (x - 1)] + 1.0f);
                 }
                 
                 // Top neighbor
                 if (y > 0) {
-                    current_dist = std::min(current_dist, dist[(y - 1) * width + x] + 1.0f);
+                    current_dist = std::min(current_dist, distance_field[(y - 1) * width + x] + 1.0f);
                 }
                 
                 // Top-left diagonal
                 if (x > 0 && y > 0) {
-                    current_dist = std::min(current_dist, dist[(y - 1) * width + (x - 1)] + std::sqrt(2.0f));
+                    current_dist = std::min(current_dist, distance_field[(y - 1) * width + (x - 1)] + std::sqrt(2.0f));
                 }
                 
                 // Top-right diagonal
                 if (x < width - 1 && y > 0) {
-                    current_dist = std::min(current_dist, dist[(y - 1) * width + (x + 1)] + std::sqrt(2.0f));
+                    current_dist = std::min(current_dist, distance_field[(y - 1) * width + (x + 1)] + std::sqrt(2.0f));
                 }
             }
         }
@@ -681,7 +681,7 @@ namespace image::process {
         for (int y = height - 1; y >= 0; --y) {
             for (int x = width - 1; x >= 0; --x) {
                 int idx = y * width + x;
-                float& current_dist = dist[idx];
+                float& current_dist = distance_field[idx];
                 
                 // Skip if this is already a stroke pixel (distance = 0)
                 if (current_dist == 0.0f) continue;
@@ -689,60 +689,128 @@ namespace image::process {
                 // Check neighbors that will be processed
                 // Right neighbor
                 if (x < width - 1) {
-                    current_dist = std::min(current_dist, dist[y * width + (x + 1)] + 1.0f);
+                    current_dist = std::min(current_dist, distance_field[y * width + (x + 1)] + 1.0f);
                 }
                 
                 // Bottom neighbor
                 if (y < height - 1) {
-                    current_dist = std::min(current_dist, dist[(y + 1) * width + x] + 1.0f);
+                    current_dist = std::min(current_dist, distance_field[(y + 1) * width + x] + 1.0f);
                 }
                 
                 // Bottom-right diagonal
                 if (x < width - 1 && y < height - 1) {
-                    current_dist = std::min(current_dist, dist[(y + 1) * width + (x + 1)] + std::sqrt(2.0f));
+                    current_dist = std::min(current_dist, distance_field[(y + 1) * width + (x + 1)] + std::sqrt(2.0f));
                 }
                 
                 // Bottom-left diagonal
                 if (x > 0 && y < height - 1) {
-                    current_dist = std::min(current_dist, dist[(y + 1) * width + (x - 1)] + std::sqrt(2.0f));
+                    current_dist = std::min(current_dist, distance_field[(y + 1) * width + (x - 1)] + std::sqrt(2.0f));
                 }
             }
         }
+
+        return distance_field;
+
+        // TODO make separate function for visualization
+        // // Step 5: Convert to output image
+        // // Find max distance for normalization (excluding infinite values)
+        // float max_dist = 0.0f;
+        // for (float d : dist) {
+        //     if (d != std::numeric_limits<float>::max()) {
+        //         max_dist = std::max(max_dist, d);
+        //     }
+        // }
+        // if (max_dist == 0.0f) max_dist = 1.0f; // Avoid divide by zero
     
-        // Step 5: Convert to output image
-        // Find max distance for normalization (excluding infinite values)
-        float max_dist = 0.0f;
-        for (float d : dist) {
-            if (d != std::numeric_limits<float>::max()) {
-                max_dist = std::max(max_dist, d);
-            }
-        }
-        if (max_dist == 0.0f) max_dist = 1.0f; // Avoid divide by zero
-    
-        distance_map_dest = Image(width, height);
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                float d = dist[y * width + x];
-                uint8_t val;
+        // distance_map_dest = Image(width, height);
+        // for (int y = 0; y < height; ++y) {
+        //     for (int x = 0; x < width; ++x) {
+        //         float d = dist[y * width + x];
+        //         uint8_t val;
                 
-                if (d == std::numeric_limits<float>::max()) {
-                    val = 255; // Max distance for unreachable pixels
-                } else {
-                    val = static_cast<uint8_t>(std::min(255.0f, 255.0f * (d / max_dist)));
-                }
+        //         if (d == std::numeric_limits<float>::max()) {
+        //             val = 255; // Max distance for unreachable pixels
+        //         } else {
+        //             val = static_cast<uint8_t>(std::min(255.0f, 255.0f * (d / max_dist)));
+        //         }
                 
-                distance_map_dest.at(x, y) = Color(val, val, val);
-            }
-        }
+        //         distance_map_dest.at(x, y) = Color(val, val, val);
+        //     }
+        // }
     }
     
     
     
+    Image floatMapToGrayscaleImage(const std::vector<float>& data, Size size) {
+        int width = size.width;
+        int height = size.height;
+        int count = width * height;
+        if (data.size() != count) {
+            throw std::runtime_error("floatMapToGrayscaleImage: size mismatch");
+        }
+    
+        // Find min/max for normalization
+        float min_val = std::numeric_limits<float>::max();
+        float max_val = std::numeric_limits<float>::lowest();
+        for (float v : data) {
+            if (!std::isfinite(v)) continue;
+            min_val = std::min(min_val, v);
+            max_val = std::max(max_val, v);
+        }
+    
+        if (min_val == max_val) max_val += 1.0f; // Avoid divide-by-zero
+    
+        Image img(width, height);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                float v = data[y * width + x];
+                uint8_t gray = 255;
+                if (std::isfinite(v)) {
+                    float norm = (v - min_val) / (max_val - min_val);
+                    gray = static_cast<uint8_t>(std::round(norm * 255.0f));
+                }
+                img.at(x, y) = Color(gray, gray, gray);
+            }
+        }
+        return img;
+    }
     
     
 
 
 
+    void computeSobelGradients(const std::vector<float>& distance_map, Size size, 
+        std::vector<float>& grad_x_dest, std::vector<float>& grad_y_dest) {
+
+        int width = size.width;
+        int height = size.height;
+
+        grad_x_dest.assign(width * height, 0.0f);
+        grad_y_dest.assign(width * height, 0.0f);
+
+        auto at = [&](int x, int y) -> float {
+            // Clamp edges
+            x = std::clamp(x, 0, width - 1);
+            y = std::clamp(y, 0, height - 1);
+            return distance_map[y * width + x];
+        };
+
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                float gx =
+                    -1.0f * at(x - 1, y - 1) + 1.0f * at(x + 1, y - 1) +
+                    -2.0f * at(x - 1, y    ) + 2.0f * at(x + 1, y    ) +
+                    -1.0f * at(x - 1, y + 1) + 1.0f * at(x + 1, y + 1);
+
+                float gy =
+                    -1.0f * at(x - 1, y - 1) + -2.0f * at(x, y - 1) + -1.0f * at(x + 1, y - 1) +
+                    1.0f * at(x - 1, y + 1) +  2.0f * at(x, y + 1) +  1.0f * at(x + 1, y + 1);
+
+                grad_x_dest[y * width + x] = gx;
+                grad_y_dest[y * width + x] = gy;
+            }
+        }
+    }
 
 
 

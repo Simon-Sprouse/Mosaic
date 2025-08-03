@@ -175,6 +175,7 @@ class Image {
     Image(int width, int height, const Color& fill);
     Image(Size size);
     Image(Size size, const Color& fill);
+    Image(Size size, const std::vector<float>& vec);
 
     // Copy constructor
     Image(const Image& other);

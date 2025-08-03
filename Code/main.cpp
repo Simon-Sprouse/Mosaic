@@ -40,7 +40,7 @@ int main() {
 
 
     // // Image process tests
-    image::process::test::ProcessTest my_process_test("../Images/flower.jpg");
+    image::process::test::ProcessTest my_process_test(image_path);
     my_process_test.runAllTests();
 
 
@@ -53,14 +53,14 @@ int main() {
     // Graphics::test::GraphicsTest my_graphics_test(image_path);
     // my_graphics_test.runAllTests();
 
-    return 0;
+
 
 
     // Mosaic Test
     mosaic_gen::Parameters params;
     params.image_path = "../Images/flower.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 0.1;
+    params.resize_factor = 1;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;

@@ -4,6 +4,7 @@
 #include "../../../Code/Utils/Io/io.hpp"
 #include "../../../Code/Utils/Random/random.hpp"
 #include "geometry.hpp"
+#include <opencv2/imgproc.hpp>
 
 namespace mosaic_gen::test { 
 
@@ -27,8 +28,7 @@ void MosaicTest::testPipeline() {
     mosaic.contourPipeline();
     io::saveImage(mosaic.original, "../Results/original.jpg");
     io::saveImage(mosaic.resized, "../Results/resized.jpg");
-    io::saveImage(mosaic.gradX, "../Results/gradX.jpg");
-    io::saveImage(mosaic.gradY, "../Results/gradY.jpg");
+
 
     Image strokes_img(mosaic.resized.size());
     Graphics::drawStrokesRandomColor(strokes_img, mosaic.strokes);
@@ -297,15 +297,37 @@ void MosaicTest::testSquareBorderPoints() {
 
 
 
+}
 
 
 
 
+void MosaicTest::testVectorField() { 
 
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.computeDistanceField();
 
+    int grid_size = 20;
+    int max_step = 4;
+    std::vector<Point> points = Random::gridPointsVector(mosaic.resized.size(), grid_size);
+    std::vector<Point> jittered_points = Random::jitterPoints(points, max_step, mosaic.resized.size());
 
+    Image test_canvas = mosaic.canny.clone();
+    for (Point pt : jittered_points) { 
+        double theta_deg = mosaic.findThetaTangent(pt);
+        Color arrow_color(255, 0, 0);
+        int length = 15;
+        int thickness = 3;
+        Graphics::drawArrow(test_canvas, pt, length, thickness, theta_deg, arrow_color);
+    }
+
+    io::saveImage(test_canvas, "../Results/vector_field.jpg");
 
 }
+
+
 
 
 
@@ -324,7 +346,7 @@ void MosaicTest::runAllTests() {
 
     // call test functions
     // total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
-    total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
+    // total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
     // total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
     // total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
     // total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
@@ -334,6 +356,7 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Tiles Along Stroke", [&]() {testPlaceTileStroke();});
     // total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
     // total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
+    total_time += timeFunction("Show Vector Field", [&]() {testVectorField();});
 
 
    

@@ -120,9 +120,13 @@ class Mosaic {
         void placeTilesAllStrokes();
 
 
+        void computeDistanceField();
+        double findThetaTangent(Point center);
+
         // temp helpers
 
 
+        // TODO add size function
 
 
 
@@ -163,7 +167,7 @@ class Mosaic {
         std::vector<cv::Point> nextFrontierFromTile(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         double findBestThetaTangentField(cv::Point center);
         std::tuple<cv::Vec2d, float> getTangentAtPoint(const cv::Point& point);
-        void computeDistanceField();
+        // void computeDistanceField();
         
         // PLACE TILES GAPS
         void gapFill();
@@ -197,10 +201,14 @@ class Mosaic {
         // image data various purposes
         Image original;
         Image resized;
+        Image canny;
         std::vector<std::vector<Point>> strokes;
         Image selected_stroke;
-        Image gradX;
-        Image gradY;
+        // Image gradX;
+        // Image gradY;
+
+        std::vector<float> grad_x;
+        std::vector<float> grad_y;
 
 
 

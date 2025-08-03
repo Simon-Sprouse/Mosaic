@@ -32,5 +32,7 @@ namespace image::process {
 
 
     // TODO separate logic for distance field and gradient of distance field
-    void computeDistanceField(const Image& strokes_img_source, Image& distance_map_dest);
+    std::vector<float> computeDistanceField(const Image& strokes_img_source);
+    Image floatMapToGrayscaleImage(const std::vector<float>& data, Size size);
+    void computeSobelGradients(const std::vector<float>& distance_map, Size size, std::vector<float>& grad_x, std::vector<float>& grad_y);
 }

@@ -104,7 +104,7 @@ void Mosaic::contourPipeline() {
     // helper side effects
     Image gray;
     Image blurred;
-    Image canny;
+
     std::vector<std::vector<Point>> contours;
 
     original = io::loadImage(params.image_path);
@@ -559,9 +559,54 @@ void Mosaic::placeTilesAllStrokes() {
 
 
 
+void Mosaic::computeDistanceField() { 
+    
+    std::vector<float> distance_field = image::process::computeDistanceField(canny);
+    
+    image::process::computeSobelGradients(distance_field, canny.size(), grad_x, grad_y);
 
+}
 
+double Mosaic::findThetaTangent(Point center) {
 
+    if (grad_x.empty() || grad_y.empty()) { 
+        computeDistanceField();
+    }
+
+    int width = canny.getWidth();
+    int height = canny.getHeight();
+        
+    int x = center.x;
+    int y = center.y;
+
+    int idx = y * width + x;
+
+    float gx = grad_x[idx];
+    float gy = grad_y[idx];
+
+    // Compute the normal vector (∇f = [gx, gy])
+    float nx = gx;
+    float ny = gy;
+
+    // Tangent is perpendicular to gradient
+    float tx = -ny;
+    float ty = nx;
+
+    // Normalize
+    float len = std::sqrt(tx * tx + ty * ty);
+    if (len > 1e-6f) {
+        tx /= len;
+        ty /= len;
+    } else {
+        tx = 0.0f;
+        ty = 0.0f;
+    }
+
+    double theta_rad = std::atan2(ty, tx);
+    double theta_deg = theta_rad * 180.0 / M_PI;
+
+    return theta_deg;
+}
 
 
 
