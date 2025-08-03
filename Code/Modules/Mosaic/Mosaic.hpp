@@ -87,7 +87,7 @@ class Mosaic {
 
     private: 
 
-        int getJitter(int frontier);
+        
 
 
         /*
@@ -120,6 +120,8 @@ class Mosaic {
         void placeTilesAllStrokes();
 
 
+        void floodFill();
+        int getJitter(int frontier);
         void computeDistanceField();
         double findThetaTangent(Point center);
 
@@ -163,7 +165,7 @@ class Mosaic {
         std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& intersection_points);
         
         // PLACE TILES FLOOD FILL
-        void floodFill();
+        // void floodFill();
         std::vector<cv::Point> nextFrontierFromTile(cv::Point center, double theta_deg, double distance_from_center, int num_points);
         double findBestThetaTangentField(cv::Point center);
         std::tuple<cv::Vec2d, float> getTangentAtPoint(const cv::Point& point);

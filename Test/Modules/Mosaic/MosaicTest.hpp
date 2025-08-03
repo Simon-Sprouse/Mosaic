@@ -32,6 +32,7 @@ namespace mosaic_gen::test {
 
             void testSquareBorderPoints(); // TODO this belongs in geometry test as well
             void testVectorField();
+            void testFloodFill();
             
             void runAllTests() override;
 

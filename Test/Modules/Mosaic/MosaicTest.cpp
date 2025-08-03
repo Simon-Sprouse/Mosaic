@@ -329,6 +329,20 @@ void MosaicTest::testVectorField() {
 
 
 
+void MosaicTest::testFloodFill() { 
+
+    // necessary progress
+    Mosaic mosaic(params_);
+    mosaic.contourPipeline();
+    mosaic.placeTilesAllStrokes();
+    mosaic.floodFill();
+
+    io::saveImage(mosaic.mask, "../Results/flood_fill.jpg");
+
+
+
+}
+
 
 
 
@@ -357,6 +371,7 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
     // total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
     total_time += timeFunction("Show Vector Field", [&]() {testVectorField();});
+    total_time += timeFunction("Flood Fill", [&]() {testFloodFill();});
 
 
    

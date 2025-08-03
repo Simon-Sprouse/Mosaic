@@ -626,42 +626,58 @@ double Mosaic::findThetaTangent(Point center) {
 
 
 
-// void Mosaic::floodFill() {
+void Mosaic::floodFill() {
 
-//     double distance_from_center = params.distance_from_center;
-//     const int max_frontiers = params.max_frontiers;
-//     int frontier = 1;
-//     std::vector<TileInfo> frontier_tiles(tiles_placed);
+    double distance_from_center = params.distance_from_center;
+    const int max_frontiers = params.max_frontiers;
+    int frontier = 1;
+    std::vector<TileInfo> frontier_tiles(tiles_placed);
 
-//     while (!frontier_tiles.empty() && frontier <= max_frontiers) { 
+    while (!frontier_tiles.empty() && frontier <= max_frontiers) { 
         
-//         // Collect all flood fill points for this frontier
-//         std::vector<cv::Point> all_flood_points;
-//         for (const TileInfo& tile : frontier_tiles) {
-//             int num_points = params.flood_fill_neighbor_points;
-//             int max_step = getJitter(frontier);
-//             std::vector<cv::Point> points = nextFrontierFromTile(tile.center, tile.theta_deg, distance_from_center, num_points);
-//             std::vector<cv::Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
-//             all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
-//         }
+        // Collect all flood fill points for this frontier
+        std::vector<Point> all_flood_points;
+        for (const TileInfo& tile : frontier_tiles) {
 
-//         // TODO sort somehow
+            int num_points = params.flood_fill_neighbor_points;
+            int max_step = getJitter(frontier);
+            std::vector<Point> points = Geometry::samplePointsSquareBorder(tile.center, tile.theta_deg, distance_from_center, num_points);
+            std::vector<Point> jittered_points = Random::jitterPoints(points, max_step, mask.size());
+            all_flood_points.insert(all_flood_points.end(), jittered_points.begin(), jittered_points.end());
+        }
 
-//         std::vector<TileInfo> next_frontier_tiles;
-//         // Now place tiles at unique positions
-//         for (const cv::Point& pt : all_flood_points) {
-//             double theta_deg = findBestThetaTangentField(pt);
-//             if (isValidTile(pt, params.tile_size, theta_deg)) { 
-//                 TileInfo current_tile = placeTile(pt, params.tile_size, theta_deg, frontier + 1);
-//                 next_frontier_tiles.push_back(current_tile);
-//             }
+        // TODO sort somehow
+
+        std::vector<TileInfo> next_frontier_tiles;
+        // Now place tiles at unique positions
+        for (const Point& pt : all_flood_points) {
+            double theta_deg = findThetaTangent(pt);
+            if (isValidTile(pt, params.tile_size, theta_deg)) { 
+                TileInfo current_tile = placeTile(pt, params.tile_size, theta_deg, frontier + 1);
+                next_frontier_tiles.push_back(current_tile);
+            }
             
-//         }
+        }
 
-//         frontier_tiles = next_frontier_tiles;
-//         frontier++;
-//     }
-// }
+        frontier_tiles = next_frontier_tiles;
+        frontier++;
+    }
+}
+
+
+
+int Mosaic::getJitter(int frontier) {
+    if (params.jitter_map.empty()) { 
+        return 0;
+    }
+    for (const auto& [threshold, jitter] : params.jitter_map) {
+        if (frontier < threshold) {
+            return jitter;
+        }
+    }
+    return 0;
+}
+
 
 
 
