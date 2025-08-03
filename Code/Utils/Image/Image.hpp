@@ -210,6 +210,8 @@ class Image {
     bool operator==(const Image& other) const;
     bool operator!=(const Image& other) const;
 
+    
+
 
     private:
 
@@ -275,6 +277,9 @@ inline std::ostream& operator<<(std::ostream& os, const Image& image) {
 
 
 
+
+
+Image fromEncodedBuffer(const uint8_t* data, size_t size);
 
 
 

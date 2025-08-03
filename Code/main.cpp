@@ -3,23 +3,30 @@
 #include <cmath>
 #include <string>
 #include <opencv2/opencv.hpp>
+#include <fstream>
 
-// #include "graphics.hpp"
-// #include "Mosaic.hpp"
-// #include "test.hpp"
-// #include "imageTest.hpp"
-// #include "imageProcessTest.hpp"
-// #include "geometryTest.hpp"
+
 
 #include "../Test/Utils/ImageProcess/ImageProcessTest.hpp"
 #include "../Test/Utils/Geometry/geometryTest.hpp"
 #include "../Test/Utils/Graphics/graphicsTest.hpp"
-#include "Modules/Mosaic/Mosaic.hpp"
 #include "../Test/Modules/Mosaic/MosaicTest.hpp"
+
+#include "Utils/Io/io.hpp"
+#include "Modules/Mosaic/Mosaic.hpp"
+
 
 
 using namespace std;
+using mosaic_gen::Mosaic;
 
+
+
+std::vector<uint8_t> loadFile(const std::string& path) {
+    std::ifstream f(path, std::ios::binary);
+    return std::vector<uint8_t>((std::istreambuf_iterator<char>(f)),
+                                std::istreambuf_iterator<char>());
+}
 
 
 
@@ -27,40 +34,24 @@ using namespace std;
 
 int main() { 
 
+    using image::Image;
 
 
     cout << "Hello From Mosaic Test" << endl;
     string image_path = "../Images/flower.jpg";
 
-    // // Image class tests
-    // bool verbose = false;
-    // image::test::ImageTest my_image_test(verbose);
-    // my_image_test.runAllTests();
+    auto data = loadFile(image_path);
+    Image img = image::fromEncodedBuffer(data.data(), data.size());
+    io::saveImage(img, "../Results/data.jpg");
 
-
-
-    // // Image process tests
-    // image::process::test::ProcessTest my_process_test(image_path);
-    // my_process_test.runAllTests();
-
-
-    // // Geometry tests
-    // Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
-    // my_geometry_test.runAllTests();
-
-
-    // // Graphics tests
-    // Graphics::test::GraphicsTest my_graphics_test(image_path);
-    // my_graphics_test.runAllTests();
-
-
+    
 
 
     // Mosaic Test
     mosaic_gen::Parameters params;
     params.image_path = "../Images/flower.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 2;
+    params.resize_factor = 0.8;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -82,8 +73,22 @@ int main() {
     params.jitter_map.insert({12, 10});
 
 
-    mosaic_gen::test::MosaicTest my_mosaic_test(params);
-    my_mosaic_test.runAllTests();
+
+
+
+
+    Mosaic my_mosaic(params);
+    my_mosaic.loadImageFromBuffer(data.data(), data.size());
+    my_mosaic.runAll();
+    io::saveImage(my_mosaic.getCanvas(), "../Results/output.png");
+    cout << "my_mosiac.getCanvas(): " << my_mosaic.getCanvas() << endl;
+
+
+
+
+
+
+
 
 
 
@@ -106,33 +111,10 @@ int main() {
 
     // // Load Object
 
-    // mosaic_gen::Parameters params;
-    // params.image_path = "../Images/flower.jpg";
-    // params.results_dir = "../Results";
-    // params.resize_factor = 1.5;
-    // params.blur_kernel_size = 3;
-    // params.blur_sigma = 1.4;
-    // params.canny_threshold_1 = 50;
-    // params.canny_threshold_2 = 100;
-    // params.max_segment_angle_rad = 100 * M_PI / 180.0;
-    // params.min_segment_length = 20;
-    // params.segment_angle_window = 10;
-    // params.tile_size = 10;
-    // params.number_of_rings = 10;
-    // params.step_size = 0.5 * params.tile_size;
-    // params.min_intersection_distance = params.tile_size;
-    // params.max_frontiers = 40;
-    // params.flood_fill_neighbor_points = 16;
-    // params.distance_from_center = params.tile_size * 1.5;
-    // params.random_background_points = 50000;
-    // params.tiles_per_frame = 20;
-    // params.jitter_map.insert({4, 0});
-    // params.jitter_map.insert({8, 20});
-    // params.jitter_map.insert({12, 10});
 
 
-    // mosaic_gen::Mosaic my_mosaic(params);
-    
+
+
 
 
 
@@ -159,6 +141,27 @@ int main() {
 
 
 
+
+    // // Image class tests
+    // bool verbose = false;
+    // image::test::ImageTest my_image_test(verbose);
+    // my_image_test.runAllTests();
+
+
+
+    // // Image process tests
+    // image::process::test::ProcessTest my_process_test(image_path);
+    // my_process_test.runAllTests();
+
+
+    // // Geometry tests
+    // Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
+    // my_geometry_test.runAllTests();
+
+
+    // // Graphics tests
+    // Graphics::test::GraphicsTest my_graphics_test(image_path);
+    // my_graphics_test.runAllTests();
 
 
     

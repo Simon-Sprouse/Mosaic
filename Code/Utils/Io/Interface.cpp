@@ -6,7 +6,12 @@
 extern "C" {
 
     const char* helloWorld() {
-        return "Hello world";
+        return "Hello world?";
+    }
+
+
+    image::Image* loadImageFromBytes(uint8_t* data, size_t length) {
+        return new image::Image(image::fromEncodedBuffer(data, length));
     }
 
     image::Image* constructImage(int w, int h) {

@@ -45,30 +45,45 @@ function App() {
             return;
         }
 
-
-        // very clumsy way to manage memory
-        wasmImage.destroy();
-        wasmImage.constructImage(width, height);
-
-        const message = wasmImage.getSizeStr();
-        setCppText(message);
-
-        const canvas = canvasRef.current;
-        canvas.width = wasmImage.width;
-        canvas.height = wasmImage.height;
-        const ctx = canvas.getContext('2d');
-        const dataArray = wasmImage.getDataArray();
-        const imageData = new ImageData(dataArray, width, height);
-        ctx.putImageData(imageData, 0, 0);
+        setCppText(wasmImage.getMessage());
+        console.log("message from c++: ", wasmImage.getMessage());
 
 
-        console.log("canvas updated from c++");
+        // // very clumsy way to manage memory
+        // wasmImage.destroy();
+        // wasmImage.constructImage(width, height);
+
+        // const message = wasmImage.getSizeStr();
+        // setCppText(message);
+
+        // const canvas = canvasRef.current;
+        // canvas.width = wasmImage.width;
+        // canvas.height = wasmImage.height;
+        // const ctx = canvas.getContext('2d');
+        // const dataArray = wasmImage.getDataArray();
+        // const imageData = new ImageData(dataArray, width, height);
+        // ctx.putImageData(imageData, 0, 0);
+
+
+        // console.log("canvas updated from c++");
 
     };
+
+
+    const handleUpload = async (event) => { 
+        const file = event.target.files[0];
+        if (!file || !wasmImage) return;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const byteArray = new Uint8Array(arrayBuffer);
+
+        wasmImage.loadImageFromBuffer(byteArray);
+    }
 
     return (
         <div className="App">
         <header className="App-header">
+            <input type="file" accept="image/*" onChange={handleUpload} />
             <p>{cppText || "Click the button to run C++ code"}</p>
             <button onClick={handleClick}>Call C++</button>
             <canvas ref={canvasRef} />

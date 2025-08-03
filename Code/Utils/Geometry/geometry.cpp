@@ -134,7 +134,7 @@ namespace Geometry {
     }
 
     double vectorToAngleDegrees(const Vec2d& vec) {
-        return std::atan2(vec.y, vec.x) * 180.0 / CV_PI;
+        return std::atan2(vec.y, vec.x) * 180.0 / M_PI;
     }
 
 

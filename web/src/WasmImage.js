@@ -1,24 +1,46 @@
 export default class WasmImage {
     constructor(Module) {
-      this.Module = Module;
-      
+        this.Module = Module;
+        this.img_ptr = null;
+    }
+
+    getMessage() { 
+        const message_ptr = this.Module._helloWorld();
+        const message_string = this.Module.UTF8ToString(message_ptr);
+        return message_string;
     }
 
     constructImage(width, height) {
-        this.ptr = this.Module._constructImage(width, height);
+        this.image_ptr = this.Module._constructImage(width, height);
         this.width = width;
         this.height = height;
     }
+
+
+    loadImageFromBuffer(byteArray) { 
+        const length = byteArray.length;
+        const ptr = this.Module._malloc(length);
+        this.Module.HEAPU8.set(byteArray, ptr);
+
+        this.image_ptr = this.Module._loadImageFromBytes(ptr, length);  // assumes C++ function exists
+
+        this.Module._free(ptr);
+    }
+
+
+
+
+
+
   
     getSizeStr() {
-      const strPtr = this.Module._getSize(this.ptr);
+      const strPtr = this.Module._getSize(this.image_ptr);
       return this.Module.UTF8ToString(strPtr);
     }
 
     getDataArray() {
 
-        
-        
+    
         if (!this.Module) {
             throw new Error("Module not available")
         }
@@ -26,7 +48,7 @@ export default class WasmImage {
             throw new Error("Module.HEAPU8 not available");
           }
       
-        const ptr = this.Module._getData(this.ptr);
+        const ptr = this.Module._getData(this.image_ptr);
 
         const totalSize = this.width * this.height * 4; // assuming RGB
       

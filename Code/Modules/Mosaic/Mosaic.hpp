@@ -6,7 +6,7 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include <opencv2/core.hpp>
+
 
 using namespace std;
 
@@ -70,16 +70,17 @@ class Mosaic {
     public: 
 
         Mosaic(const Parameters& p) : params(p) {};
-        void setWindow(std::string name);
-        void resetData();
+        // void setWindow(std::string name);
+        // void resetData();
         
+        void loadImageFromBuffer(const uint8_t* data, size_t size);
         void runAll();
-        cv::Mat getCanvas();
+        Image getCanvas();
 
 
-        void saveImage(const cv::Mat& image, const std::string& suffix);
-        void saveGif(int tiles_per_frame, const std::string& suffix);
-        void saveTileInfo(const std::string& suffix);
+        // void saveImage(const cv::Mat& image, const std::string& suffix);
+        // void saveGif(int tiles_per_frame, const std::string& suffix);
+        // void saveTileInfo(const std::string& suffix);
         
 
         string image_name;
@@ -130,59 +131,7 @@ class Mosaic {
         void reconstructImage();
         Color sampleTileColor(const TileInfo& tile);
 
-        // temp helpers
-
-
-        // TODO add size function
-
-
-
-
-
-
-
-
-
-
-
-
-        // CONTOUR DETECTION PIPELINE
-        void loadImage();
-        void resizeOriginal();
-        void grayImage();
-        void blurImage();
-        void cannyFilter();
-        int detectContours();
-        void rankContours();
-
-        // PLACE TILES OVER CONTOURS
-        void placeTileAllContours();
-        void placeTileContour(int contour_id);
-        // void selectContour(int contour_id);
-        // cv::Point getRandomPointOnContour(int contour_id);
-        // double findBestTheta(cv::Point center, double size);
-        // bool isValidTile(cv::Point center, double size, double theta_deg);
-        // bool tileOverlapsMask(const cv::Point& center, double size, double theta_deg);
-        // bool tileInBounds(const cv::Point& center, double size);
-        // TileInfo placeTile(cv::Point center, double size, double theta_deg, int frontier=0, string text="");
-        void renderTiles();
-        // std::vector<cv::Point> findRingIntersections(const cv::Mat& contour_image, const cv::Point2f& center, double size, double theta_deg);
-        std::vector<cv::Point> filterUniqueIntersections(const std::vector<cv::Point>& intersection_points);
-        
-        // PLACE TILES FLOOD FILL
-        // void floodFill();
-        std::vector<cv::Point> nextFrontierFromTile(cv::Point center, double theta_deg, double distance_from_center, int num_points);
-        double findBestThetaTangentField(cv::Point center);
-        std::tuple<cv::Vec2d, float> getTangentAtPoint(const cv::Point& point);
-        // void computeDistanceField();
-        
-        // PLACE TILES GAPS
-        // void gapFill();
-
-
-        // RECREATE IMAGE FROM DISCRETE STATE
-        // void reconstructImage();
-        // cv::Vec3b sampleTileColor(const TileInfo& tile);
+     
 
 
         /*
@@ -194,52 +143,23 @@ class Mosaic {
         // settings for logic - should be user defined
         Parameters params;
         
-        // store contours and their lengths
-        std::vector<std::vector<Point>> segments;
-        std::vector<double> segment_lengths;
-
-        // discrete state representation for tiles
+       
         std::vector<TileInfo> tiles_placed;
-        std::vector<TileInfo> tiles_to_render; // to store tiles not yet rendered on canvas (will be cleared after render)
-
-        // for the imshow operation
-        std::string window_name;
-
+        
         // image data various purposes
         Image original;
         Image resized;
         Image canny;
         std::vector<std::vector<Point>> strokes;
         Image selected_stroke;
-        // Image gradX;
-        // Image gradY;
 
         std::vector<float> grad_x;
         std::vector<float> grad_y;
 
-
-
-
-
-        // Image contours; // I question if we need this
-   
-
         Image mask;
         Image canvas;
 
-        // cv::Mat original;
-        // cv::Mat resized;
-        // cv::Mat grayscale;
-        // cv::Mat blurred;
-        // cv::Mat edges;
-        // cv::Mat contours;
-        // cv::Mat selected_contour;
-        // cv::Mat distance_map;
-        // cv::Mat gradX;
-        // cv::Mat gradY;
-        
-        // cv::Mat mask;
-        // cv::Mat canvas;
+
 
 
         // in case pca function fails
