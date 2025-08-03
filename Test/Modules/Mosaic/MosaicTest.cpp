@@ -27,6 +27,8 @@ void MosaicTest::testPipeline() {
     mosaic.contourPipeline();
     io::saveImage(mosaic.original, "../Results/original.jpg");
     io::saveImage(mosaic.resized, "../Results/resized.jpg");
+    io::saveImage(mosaic.gradX, "../Results/gradX.jpg");
+    io::saveImage(mosaic.gradY, "../Results/gradY.jpg");
 
     Image strokes_img(mosaic.resized.size());
     Graphics::drawStrokesRandomColor(strokes_img, mosaic.strokes);
@@ -322,7 +324,7 @@ void MosaicTest::runAllTests() {
 
     // call test functions
     // total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
-    // total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
+    total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
     // total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
     // total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
     // total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
@@ -331,7 +333,7 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
     // total_time += timeFunction("Tiles Along Stroke", [&]() {testPlaceTileStroke();});
     // total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
-    total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
+    // total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
 
 
    

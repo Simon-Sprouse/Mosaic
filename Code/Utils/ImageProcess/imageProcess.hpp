@@ -3,6 +3,8 @@
 
 namespace image::process { 
 
+
+
     // nearest neighbor sampling - TODO more elegant sampling
     Size resize(Image& src, Image& dest, int w, int h);
     Size resize(Image& src, Image& dest, Size size);
@@ -28,4 +30,7 @@ namespace image::process {
         double max_segment_angle_rad, 
         int min_segment_length);
 
+
+    // TODO separate logic for distance field and gradient of distance field
+    void computeDistanceField(const Image& strokes_img_source, Image& distance_map_dest);
 }

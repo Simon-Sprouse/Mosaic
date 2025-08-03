@@ -1,4 +1,5 @@
 #include "imageProcess.hpp"
+#include "../Geometry/geometry.hpp"
 
 #include <queue>
 #include <algorithm>
@@ -573,9 +574,170 @@ namespace image::process {
 
 
 
+    // vvv OLD CODE vvv
+    // void Mosaic::computeDistanceField() { 
+
+    //     distance_map = cv::Mat::zeros(contours.size(), CV_8UC3);
+    //     gradX = cv::Mat::zeros(contours.size(), CV_8UC3);
+    //     gradY = cv::Mat::zeros(contours.size(), CV_8UC3);
+
+
+    //     // Step 1: Convert to grayscale and binary edge map
+    //     cv::Mat gray, binary;
+    //     cv::cvtColor(contours, gray, cv::COLOR_BGR2GRAY);
+    //     cv::threshold(gray, binary, 1, 255, cv::THRESH_BINARY);
+
+    //     // Step 2: Invert binary
+    //     cv::Mat inverted = 255 - binary;
+
+    //     // Step 3: Compute distance transform
+    //     cv::distanceTransform(inverted, distance_map, cv::DIST_L2, 3);
+
+    //     // Step 4: Compute gradients
+    //     cv::Sobel(distance_map, gradX, CV_32F, 1, 0, 3);
+    //     cv::Sobel(distance_map, gradY, CV_32F, 0, 1, 3);
+
+
+    // }
+
+
+    // // TODO complete this code
+    // void computeDistaceField(const Image& strokes_img_source, Image& grad_x_dest, Image& grad_y_dest) { 
+
+    // }
 
 
 
+    void computeDistanceField(const Image& strokes_img_source, Image& distance_map_dest) {
+        int width = strokes_img_source.getWidth();
+        int height = strokes_img_source.getHeight();
+    
+        // Step 1: Convert to grayscale
+        Image gray(width, height);
+        grayscale(strokes_img_source, gray);
+    
+        // Step 2: Create binary map (threshold at 1, like OpenCV code)
+        std::vector<bool> binary(width * height);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                // Threshold: anything > 1 becomes true (white), else false (black)
+                binary[y * width + x] = (gray.at(x, y).r > 1);
+            }
+        }
+    
+        // Step 3: Initialize distance buffer
+        std::vector<float> dist(width * height);
+        
+        // Set initial distances:
+        // - 0 distance for edge pixels (binary = true, i.e., stroke pixels)
+        // - max distance for background pixels (binary = false)
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                int idx = y * width + x;
+                if (binary[idx]) {
+                    // This is a stroke/edge pixel - distance = 0
+                    dist[idx] = 0.0f;
+                } else {
+                    // This is background - start with max distance
+                    dist[idx] = std::numeric_limits<float>::max();
+                }
+            }
+        }
+    
+        // Step 4: Two-pass chamfer distance transform
+        // First pass: top-left to bottom-right
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                int idx = y * width + x;
+                float& current_dist = dist[idx];
+                
+                // Skip if this is already a stroke pixel (distance = 0)
+                if (current_dist == 0.0f) continue;
+                
+                // Check neighbors that have already been processed
+                // Left neighbor
+                if (x > 0) {
+                    current_dist = std::min(current_dist, dist[y * width + (x - 1)] + 1.0f);
+                }
+                
+                // Top neighbor
+                if (y > 0) {
+                    current_dist = std::min(current_dist, dist[(y - 1) * width + x] + 1.0f);
+                }
+                
+                // Top-left diagonal
+                if (x > 0 && y > 0) {
+                    current_dist = std::min(current_dist, dist[(y - 1) * width + (x - 1)] + std::sqrt(2.0f));
+                }
+                
+                // Top-right diagonal
+                if (x < width - 1 && y > 0) {
+                    current_dist = std::min(current_dist, dist[(y - 1) * width + (x + 1)] + std::sqrt(2.0f));
+                }
+            }
+        }
+    
+        // Second pass: bottom-right to top-left
+        for (int y = height - 1; y >= 0; --y) {
+            for (int x = width - 1; x >= 0; --x) {
+                int idx = y * width + x;
+                float& current_dist = dist[idx];
+                
+                // Skip if this is already a stroke pixel (distance = 0)
+                if (current_dist == 0.0f) continue;
+                
+                // Check neighbors that will be processed
+                // Right neighbor
+                if (x < width - 1) {
+                    current_dist = std::min(current_dist, dist[y * width + (x + 1)] + 1.0f);
+                }
+                
+                // Bottom neighbor
+                if (y < height - 1) {
+                    current_dist = std::min(current_dist, dist[(y + 1) * width + x] + 1.0f);
+                }
+                
+                // Bottom-right diagonal
+                if (x < width - 1 && y < height - 1) {
+                    current_dist = std::min(current_dist, dist[(y + 1) * width + (x + 1)] + std::sqrt(2.0f));
+                }
+                
+                // Bottom-left diagonal
+                if (x > 0 && y < height - 1) {
+                    current_dist = std::min(current_dist, dist[(y + 1) * width + (x - 1)] + std::sqrt(2.0f));
+                }
+            }
+        }
+    
+        // Step 5: Convert to output image
+        // Find max distance for normalization (excluding infinite values)
+        float max_dist = 0.0f;
+        for (float d : dist) {
+            if (d != std::numeric_limits<float>::max()) {
+                max_dist = std::max(max_dist, d);
+            }
+        }
+        if (max_dist == 0.0f) max_dist = 1.0f; // Avoid divide by zero
+    
+        distance_map_dest = Image(width, height);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                float d = dist[y * width + x];
+                uint8_t val;
+                
+                if (d == std::numeric_limits<float>::max()) {
+                    val = 255; // Max distance for unreachable pixels
+                } else {
+                    val = static_cast<uint8_t>(std::min(255.0f, 255.0f * (d / max_dist)));
+                }
+                
+                distance_map_dest.at(x, y) = Color(val, val, val);
+            }
+        }
+    }
+    
+    
+    
     
     
 

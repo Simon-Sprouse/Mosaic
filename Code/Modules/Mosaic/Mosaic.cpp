@@ -118,6 +118,9 @@ void Mosaic::contourPipeline() {
     image::process::divideIntoStrokes(contours, strokes, canny.size(), params.segment_angle_window, params.max_segment_angle_rad, params.min_segment_length);
     Geometry::sortStrokesPCALength(strokes);
 
+    // should be separate function, this can run concurrent with stroke covering
+    //image::process::computeDistanceField(canny, gradX, gradY);
+
     // TODO think about separate function
     mask = Image(resized.size());
 

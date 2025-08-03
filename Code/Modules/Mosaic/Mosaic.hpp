@@ -199,13 +199,15 @@ class Mosaic {
         Image resized;
         std::vector<std::vector<Point>> strokes;
         Image selected_stroke;
+        Image gradX;
+        Image gradY;
 
 
 
 
 
         // Image contours; // I question if we need this
-        Image selected_contour;
+   
 
         Image mask;
         Image canvas;

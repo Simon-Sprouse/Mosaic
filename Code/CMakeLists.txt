@@ -22,6 +22,7 @@ add_executable(mosaic_tiler
     ../Test/Modules/Mosaic/MosaicTest.cpp
     ../Test/Utils/Geometry/geometryTest.cpp
     ../Test/Utils/Graphics/graphicsTest.cpp
+    ../Test/Utils/ImageProcess/ImageProcessTest.cpp
 
 
     main.cpp

@@ -11,6 +11,7 @@
 // #include "imageProcessTest.hpp"
 // #include "geometryTest.hpp"
 
+#include "../Test/Utils/ImageProcess/ImageProcessTest.hpp"
 #include "../Test/Utils/Geometry/geometryTest.hpp"
 #include "../Test/Utils/Graphics/graphicsTest.hpp"
 #include "Modules/Mosaic/Mosaic.hpp"
@@ -39,8 +40,8 @@ int main() {
 
 
     // // Image process tests
-    // image::process::test::ProcessTest my_process_test("../Images/flower.jpg");
-    // my_process_test.runAllTests();
+    image::process::test::ProcessTest my_process_test("../Images/flower.jpg");
+    my_process_test.runAllTests();
 
 
     // // Geometry tests
@@ -52,12 +53,14 @@ int main() {
     // Graphics::test::GraphicsTest my_graphics_test(image_path);
     // my_graphics_test.runAllTests();
 
+    return 0;
+
 
     // Mosaic Test
     mosaic_gen::Parameters params;
     params.image_path = "../Images/flower.jpg";
     params.results_dir = "../Results";
-    params.resize_factor = 1.5;
+    params.resize_factor = 0.1;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
