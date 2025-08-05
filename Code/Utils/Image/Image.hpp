@@ -237,9 +237,7 @@ inline std::ostream& operator<<(std::ostream& os, const Size& s) {
 }
 
 inline std::string Size::toString() const {
-    std::ostringstream oss;
-    oss << *this;  // uses your already defined operator<<
-    return oss.str();
+    return std::to_string(width) + "," + std::to_string(height);
 }
 
 // Stream operator for Color

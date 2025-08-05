@@ -6,11 +6,10 @@ import WasmImage from './WasmImage';
 function App() {
 
     const canvasRef = useRef(null);
-    const [cppText, setCppText] = useState('');
+    const [text, setText] = useState('');
     const [wasmImage, setWasmImage] = useState(null);
 
-    const width = 800;
-    const height = 400;
+
 
     // LOAD WASM + SAVE MODULE IN CLASS
     useEffect(() => {
@@ -41,31 +40,32 @@ function App() {
 
     const handleClick = () => {
         if (!wasmImage) {
-            setCppText('WASM not loaded yet');
+            setText('WASM not loaded yet');
             return;
         }
 
-        setCppText(wasmImage.getMessage());
-        console.log("message from c++: ", wasmImage.getMessage());
+        if (wasmImage.empty()) { 
+            setText("No Image uploaded");
+            return;
+        }
+
+        
+        const { width, height } = wasmImage.getSize();
+        const canvas = canvasRef.current;
+        canvas.width = width;
+        canvas.height = height;
+        const text_string = "Image: " + width + " x " + height;
+        setText(text_string);
+
+        const ctx = canvas.getContext('2d');
+        const dataArray = wasmImage.getDataArray();
+        const imageData = new ImageData(dataArray, width, height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imageData, 0, 0);
 
 
-        // // very clumsy way to manage memory
-        // wasmImage.destroy();
-        // wasmImage.constructImage(width, height);
-
-        // const message = wasmImage.getSizeStr();
-        // setCppText(message);
-
-        // const canvas = canvasRef.current;
-        // canvas.width = wasmImage.width;
-        // canvas.height = wasmImage.height;
-        // const ctx = canvas.getContext('2d');
-        // const dataArray = wasmImage.getDataArray();
-        // const imageData = new ImageData(dataArray, width, height);
-        // ctx.putImageData(imageData, 0, 0);
-
-
-        // console.log("canvas updated from c++");
+        
+        console.log("canvas updated from c++");
 
     };
 
@@ -74,17 +74,21 @@ function App() {
         const file = event.target.files[0];
         if (!file || !wasmImage) return;
 
+        if (!wasmImage.empty()) { 
+            wasmImage.destroy();
+        }
+
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
+        wasmImage.loadImageFromBytes(byteArray);
 
-        wasmImage.loadImageFromBuffer(byteArray);
     }
 
     return (
         <div className="App">
         <header className="App-header">
             <input type="file" accept="image/*" onChange={handleUpload} />
-            <p>{cppText || "Click the button to run C++ code"}</p>
+            <p>{text || "Click the button to run C++ code"}</p>
             <button onClick={handleClick}>Call C++</button>
             <canvas ref={canvasRef} />
         </header>

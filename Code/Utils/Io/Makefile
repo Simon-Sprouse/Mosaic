@@ -6,7 +6,7 @@ OUT_DIR = ../../../web/public/wasm
 OUT = $(OUT_DIR)/image_module.js
 
 CXXFLAGS = -O3 -std=c++17
-EXPORTS="['_helloWorld','_loadImageFromBytes','_constructImage','_getData','_getSize','_deleteImage']"
+EXPORTS="['_helloWorld','_loadImageFromBytes','_constructImage','_getData','_getSizeStr','_empty','_deleteImage','_malloc','_free']"
 
 RUNTIME_METHODS="['UTF8ToString','HEAPU8']"
 

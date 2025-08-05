@@ -6,27 +6,44 @@
 extern "C" {
 
     const char* helloWorld() {
-        return "Hello world?";
+        return "Hello from Interface.cpp";
     }
+
 
 
     image::Image* loadImageFromBytes(uint8_t* data, size_t length) {
         return new image::Image(image::fromEncodedBuffer(data, length));
     }
 
-    image::Image* constructImage(int w, int h) {
-        image::Color color = Random::randomColor();
-        return new image::Image(w, h, color);
+    const char* getSizeStr(image::Image* img) { 
+        static char buffer[32]; // big enough for "12345,12345\0"
+        std::string result = img->size().toString();
+        strncpy(buffer, result.c_str(), sizeof(buffer));
+        buffer[sizeof(buffer) - 1] = '\0'; // null-terminate
+        return buffer;
+    }
+    
+
+    bool empty(image::Image* img) { 
+        return img->empty();
     }
 
     uint8_t* getData(image::Image* img) {
         return img->rawData();
     }
 
-    const char* getSize(image::Image* img) { 
-        static std::string result = img->size().toString();
-        return result.c_str();
+
+
+
+
+    image::Image* constructImage(int w, int h) {
+        image::Color color = Random::randomColor();
+        return new image::Image(w, h, color);
     }
+
+    
+
+    
 
     void deleteImage(image::Image* img) { 
         delete img;
