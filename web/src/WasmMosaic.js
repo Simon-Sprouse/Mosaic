@@ -7,7 +7,7 @@ export default class WasmMosaic {
 
 
 
-    loadImageFromBytes(byteArray) { 
+    loadMosaicFromBytes(byteArray) { 
 
         if (this.mosaic_ptr) {
             this.Module._deleteMosaic(this.mosaic_ptr); // ✅ free old image
@@ -18,7 +18,7 @@ export default class WasmMosaic {
         const ptr = this.Module._malloc(length);
         this.Module.HEAPU8.set(byteArray, ptr);
 
-        this.mosaic_ptr = this.Module._loadImageFromBytes(ptr, length);  // assumes C++ function exists
+        this.mosaic_ptr = this.Module._loadMosaicFromBytes(ptr, length);  // assumes C++ function exists
 
         this.Module._free(ptr);
     }

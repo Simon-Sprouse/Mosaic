@@ -5,10 +5,10 @@ SRC = Interface.cpp ../Image/Image.cpp ../ImageProcess/imageProcess.cpp ../Rando
 OUT_DIR = ../../../web/public/wasm
 OUT = $(OUT_DIR)/image_module.js
 
-CXXFLAGS = -O3 -std=c++17
+CXXFLAGS = -O3 -std=c++17 -g
 EXPORTS="['_helloWorld','_loadImageFromBytes','_getData','_getSizeStr','_empty','_deleteImage','_loadMosaicFromBytes','_getMosaicOutput','_getMosaicSizeStr','_mosaicIsEmpty','_deleteMosaic','_malloc','_free']"
 
-RUNTIME_METHODS="['UTF8ToString','HEAPU8']"
+RUNTIME_METHODS="['UTF8ToString','HEAPU8','ccall','cwrap']"
 
 all:
 	mkdir -p $(OUT_DIR)
@@ -17,6 +17,8 @@ all:
 		-sEXPORTED_RUNTIME_METHODS=$(RUNTIME_METHODS) \
 		-sMODULARIZE=1 \
 		-sEXPORT_NAME=Module \
+		-sALLOW_MEMORY_GROWTH \
+		-sINITIAL_MEMORY=67108864 \
 		-sASSERTIONS \
 		$(CXXFLAGS)
 

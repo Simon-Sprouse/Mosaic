@@ -85,7 +85,11 @@ function App() {
 
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
-        wasmMosaic.loadImageFromBytes(byteArray);
+        wasmMosaic.loadMosaicFromBytes(byteArray);
+
+        const { width, height } = wasmMosaic.getSize();
+        const size_string = "Mosaic: " + width + " x " + height;
+        setText(size_string)
 
     }
 

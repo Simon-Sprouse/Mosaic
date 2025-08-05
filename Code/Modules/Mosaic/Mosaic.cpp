@@ -45,6 +45,11 @@ bool Mosaic::empty() {
     return original.empty();
 }
 
+Size Mosaic::size() { 
+    if (!resized.empty()) return resized.size();
+    return Size();
+}
+
 // // param constructor
 // Mosaic::Mosaic(const Parameters& hp) { 
 //     params = hp;
@@ -198,6 +203,9 @@ bool Mosaic::empty() {
 
 void Mosaic::loadImageFromBuffer(const uint8_t *data, size_t size) { 
     original = image::fromEncodedBuffer(data, size);
+    image::process::resize(original, resized, params.resize_factor);
+
+    cout << "inside Mosaic: resized.size(): " << resized.size() << endl;
 }
 
 
@@ -211,7 +219,7 @@ void Mosaic::contourPipeline() {
     std::vector<std::vector<Point>> contours;
 
     // original = io::loadImage(params.image_path); // done from standalone function now
-    image::process::resize(original, resized, params.resize_factor);
+    // image::process::resize(original, resized, params.resize_factor);
 
     
     image::process::grayscale(resized, gray);

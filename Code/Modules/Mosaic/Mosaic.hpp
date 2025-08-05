@@ -77,6 +77,7 @@ class Mosaic {
         void runAll();
         Image getCanvas();
         bool empty();
+        Size size();
 
 
         // void saveImage(const cv::Mat& image, const std::string& suffix);

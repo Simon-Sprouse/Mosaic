@@ -38,6 +38,8 @@ Image::Image(Image&& other) noexcept
 // Copy assignment
 Image& Image::operator=(const Image& other) {
     if (this != &other) { 
+        data_.clear();
+
         width_ = other.width_;
         height_ = other.height_;
         data_ = other.data_;
@@ -46,8 +48,11 @@ Image& Image::operator=(const Image& other) {
 }
 
 // Move assignment
+
 Image& Image::operator=(Image&& other) noexcept {
     if (this != &other) { 
+        data_.clear();
+
         width_ = other.width_;
         height_ = other.height_;
         data_ = std::move(other.data_);
@@ -107,6 +112,7 @@ bool Image::operator==(const Image& other) const {
     }
     return true;
 }
+
 
 bool Image::operator!=(const Image& other) const {
     return !(*this==other);
