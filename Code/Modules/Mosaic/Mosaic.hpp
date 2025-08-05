@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Code/Utils/Image/Image.hpp"
+#include "../../Utils/Image/Image.hpp"
 
 #include <string>
 #include <vector>
@@ -76,6 +76,7 @@ class Mosaic {
         void loadImageFromBuffer(const uint8_t* data, size_t size);
         void runAll();
         Image getCanvas();
+        bool empty();
 
 
         // void saveImage(const cv::Mat& image, const std::string& suffix);

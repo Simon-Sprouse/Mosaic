@@ -1,12 +1,12 @@
 #include "Mosaic.hpp"
-#include "Image.hpp"
-#include "graphics.hpp"
-#include "geometry.hpp"
-#include "random.hpp"
-#include "../../Utils/Io/io.hpp"
+
+#include "../../Utils/Graphics/graphics.hpp"
+#include "../../Utils/Geometry/geometry.hpp"
+#include "../../Utils/Random/random.hpp"
+// #include "../../Utils/Io/io.hpp"
 #include "../../Utils/ImageProcess/imageProcess.hpp"
 
-#include "gif.h"
+// #include "gif.h" TODO add this later
 
 // #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -39,6 +39,10 @@ void Mosaic::runAll() {
 
 Image Mosaic::getCanvas() { 
     return canvas.clone();
+}
+
+bool Mosaic::empty() { 
+    return original.empty();
 }
 
 // // param constructor
@@ -206,7 +210,7 @@ void Mosaic::contourPipeline() {
 
     std::vector<std::vector<Point>> contours;
 
-    original = io::loadImage(params.image_path);
+    // original = io::loadImage(params.image_path); // done from standalone function now
     image::process::resize(original, resized, params.resize_factor);
 
     
@@ -291,7 +295,7 @@ bool Mosaic::tileOverlapsMask(const Point& center, double tile_size, double thet
     if (mask.at(center).r > 0) return true;
 
     double halfSize = tile_size / 2.0;
-    double theta = theta_deg * CV_PI / 180.0;
+    double theta = theta_deg * M_PI / 180.0;
     Vec2d centerD(center);
 
     // Step 2: Define corners in local space

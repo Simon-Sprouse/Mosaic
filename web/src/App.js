@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 import WasmImage from './WasmImage';
+import WasmMosaic from './WasmMosaic';
 
 function App() {
 
     const canvasRef = useRef(null);
     const [text, setText] = useState('');
     const [wasmImage, setWasmImage] = useState(null);
+    const [wasmMosaic, setWasmMosaic] = useState(null);
 
 
 
@@ -19,8 +21,9 @@ function App() {
         script.onload = () => {
         window.Module().then((instance) => {
             const img = new WasmImage(instance);
-            // img.constructImage(width, height);
+            const mosaic = new WasmMosaic(instance);
             setWasmImage(img);
+            setWasmMosaic(mosaic);
         }).catch((err) => {
             console.error('Failed to instantiate WASM module:', err);
         });
@@ -39,18 +42,18 @@ function App() {
 
 
     const handleClick = () => {
-        if (!wasmImage) {
+        if (!wasmMosaic) {
             setText('WASM not loaded yet');
             return;
         }
 
-        if (wasmImage.empty()) { 
+        if (wasmMosaic.empty()) { 
             setText("No Image uploaded");
             return;
         }
 
         
-        const { width, height } = wasmImage.getSize();
+        const { width, height } = wasmMosaic.getSize();
         const canvas = canvasRef.current;
         canvas.width = width;
         canvas.height = height;
@@ -58,7 +61,7 @@ function App() {
         setText(text_string);
 
         const ctx = canvas.getContext('2d');
-        const dataArray = wasmImage.getDataArray();
+        const dataArray = wasmMosaic.runAndGetData();
         const imageData = new ImageData(dataArray, width, height);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.putImageData(imageData, 0, 0);
@@ -72,15 +75,17 @@ function App() {
 
     const handleUpload = async (event) => { 
         const file = event.target.files[0];
-        if (!file || !wasmImage) return;
+        if (!file || !wasmMosaic) return;
 
-        if (!wasmImage.empty()) { 
-            wasmImage.destroy();
+        if (!wasmMosaic.empty()) { 
+            wasmMosaic.destroy();
         }
+
+
 
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
-        wasmImage.loadImageFromBytes(byteArray);
+        wasmMosaic.loadImageFromBytes(byteArray);
 
     }
 
