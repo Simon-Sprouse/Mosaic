@@ -4,7 +4,7 @@
 
 #include "../../../Code/Utils/Geometry/geometry.hpp"
 #include "../../../Code/Utils/Image/Image.hpp"
-#include "../../../Code/Utils/Io/io.hpp"
+#include "../../../Code/Utils/Image/io.hpp"
 #include "../../../Code/Utils/Random/random.hpp"
 
 
@@ -14,6 +14,8 @@ using image::Image;
 using image::Color;
 using image::Size;
 using image::Point;
+using image::io::loadImageFileSystem;
+
 
 
 
@@ -21,7 +23,7 @@ using image::Point;
 bool GeometryTest::testComputeMean() { 
     bool all_passed = true;
 
-    Image img = io::loadImageFileSystem(image_path_);
+    Image img = loadImageFileSystem(image_path_);
     int num_points = 15;
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
 
@@ -49,7 +51,7 @@ bool GeometryTest::testComputeMean() {
 bool GeometryTest::testCovarianceMatrix() { 
     bool all_passed = true;
 
-    Image img = io::loadImageFileSystem(image_path_);
+    Image img = loadImageFileSystem(image_path_);
     int num_points = 15;
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
 
@@ -100,7 +102,7 @@ bool GeometryTest::testCovarianceMatrix() {
 bool GeometryTest::testFirstEigenVector() { 
     bool all_passed = true;
 
-    Image img = io::loadImageFileSystem(image_path_);
+    Image img = loadImageFileSystem(image_path_);
     int num_points = 15;
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
     Point mean = Geometry::computeMean(points);
@@ -155,7 +157,7 @@ bool GeometryTest::testPcaLength() {
 
     bool all_passed = true;
 
-    Image img = io::loadImageFileSystem(image_path_);
+    Image img = loadImageFileSystem(image_path_);
     int num_points = 15;
 
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
@@ -189,7 +191,7 @@ bool GeometryTest::testPcaDirection() {
 
     bool all_passed = true;
 
-    Image img = io::loadImageFileSystem(image_path_);
+    Image img = loadImageFileSystem(image_path_);
     int num_points = 15;
 
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);

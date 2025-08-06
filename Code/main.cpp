@@ -9,7 +9,7 @@
 #include "../Test/Utils/Graphics/graphicsTest.hpp"
 #include "../Test/Modules/Mosaic/MosaicTest.hpp"
 
-#include "Utils/Io/io.hpp"
+#include "Utils/Image/io.hpp"
 #include "Modules/Mosaic/Mosaic.hpp"
 
 
@@ -61,7 +61,7 @@ int main() {
 
 
 
-    Image img = io::loadImageFileSystem(file_system_image_path);
+    Image img = image::io::loadImageFileSystem(file_system_image_path);
     cout << "Loaded image from: " << file_system_image_path << endl;
     cout << "Original Dimensions: " << img.size() << endl;
 
@@ -70,7 +70,7 @@ int main() {
     my_mosaic.runAll();
 
     cout << "Results Dimensions: " << my_mosaic.getCanvas().size() << endl;
-    io::saveImageFileSystem(my_mosaic.getCanvas(), "../Results/result.jpg");
+    image::io::saveImageFileSystem(my_mosaic.getCanvas(), "../Results/result.jpg");
 
 
 

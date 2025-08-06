@@ -11,18 +11,18 @@
 using namespace std;
 
 
-namespace io { 
+namespace image::io { 
 
    
 
 
-    image::Image loadImageFileSystem(const std::string& path) { 
+    Image loadImageFileSystem(const std::string& path) { 
         std::ifstream f(path, std::ios::binary);
         auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-        return image::fromEncodedBuffer(data.data(), data.size());
+        return fromEncodedBuffer(data.data(), data.size());
     }
 
-    void saveImageFileSystem(const image::Image& img, const std::string& save_path) {
+    void saveImageFileSystem(const Image& img, const std::string& save_path) {
         int width = img.getWidth();
         int height = img.getHeight();
         int channels = 4; // RGBA
@@ -32,7 +32,7 @@ namespace io {
     
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                image::Color c = img.at(x, y);
+                Color c = img.at(x, y);
                 int idx = (y * width + x) * channels;
                 buffer[idx + 0] = c.r;
                 buffer[idx + 1] = c.g;

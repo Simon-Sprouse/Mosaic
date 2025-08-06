@@ -1,7 +1,7 @@
 #include "graphicsTest.hpp"
 
 #include "../../../Code/Utils/Graphics/graphics.hpp"
-#include "../../../Code/Utils/Io/io.hpp"
+#include "../../../Code/Utils/Image/io.hpp"
 #include "../../../Code/Utils/Random/random.hpp"
 
 namespace Graphics::test { 
@@ -9,6 +9,7 @@ namespace Graphics::test {
 using image::Image;
 using image::Size;
 using image::Point;
+using image::io::saveImageFileSystem;
 
 
 
@@ -21,7 +22,7 @@ void GraphicsTest::testLine() {
     Color color = Random::randomColor();
 
     Graphics::drawLine(img, point_a, point_b, thickness, color);
-    io::saveImageFileSystem(img, "../Results/line_test.jpg");
+    saveImageFileSystem(img, "../Results/line_test.jpg");
 
 }
 
@@ -43,7 +44,7 @@ void GraphicsTest::testLineMultiple() {
         
     }
 
-    io::saveImageFileSystem(img, "../Results/draw_line_fc.jpg");
+    saveImageFileSystem(img, "../Results/draw_line_fc.jpg");
 
 
 
@@ -62,7 +63,7 @@ void GraphicsTest::testArrow() {
     Color color = Random::randomColor();
 
     Graphics::drawArrow(img, center, length, thickness, theta_deg, color);
-    io::saveImageFileSystem(img, "../Results/arrow_test.jpg");
+    saveImageFileSystem(img, "../Results/arrow_test.jpg");
 
 
 
@@ -81,7 +82,7 @@ void GraphicsTest::testArrow() {
         
     }
 
-    io::saveImageFileSystem(img, "../Results/arrow_test_multiple.jpg");
+    saveImageFileSystem(img, "../Results/arrow_test_multiple.jpg");
 
 
 }
@@ -107,7 +108,7 @@ void GraphicsTest::testFillPolygon() {
         Color color(0, 255, 255); // TODO construct colors from hex codes
         Graphics::drawFilledPolygon(img, points, color);
 
-        io::saveImageFileSystem(img, "../Results/polygon_test_" + std::to_string(number)  + "_points.jpg");
+        saveImageFileSystem(img, "../Results/polygon_test_" + std::to_string(number)  + "_points.jpg");
 
     }
     
@@ -125,7 +126,7 @@ void GraphicsTest::testDrawSquare() {
 
 
     Graphics::drawSquare(img, center, size, theta_deg, color, border_width);
-    io::saveImageFileSystem(img, "../Results/draw_square_test.jpg");
+    saveImageFileSystem(img, "../Results/draw_square_test.jpg");
 
 
 
@@ -151,7 +152,7 @@ void GraphicsTest::testDrawSquareMultiple() {
     }
     
    
-    io::saveImageFileSystem(img, "../Results/draw_square_test_multiple.jpg");
+    saveImageFileSystem(img, "../Results/draw_square_test_multiple.jpg");
 
 
 
@@ -165,7 +166,7 @@ void GraphicsTest::testRandom() {
     Image img(400, 400);
     Color color = Random::randomColor();
     img.fill(color);
-    io::saveImageFileSystem(img, "../Results/random_fill.jpg");
+    saveImageFileSystem(img, "../Results/random_fill.jpg");
 
     // random points
     img.fill(Color());
@@ -177,7 +178,7 @@ void GraphicsTest::testRandom() {
         color = Random::randomColor();
         Graphics::drawSquare(img, point, size, theta_deg, color, size);
     }
-    io::saveImageFileSystem(img, "../Results/random_points.jpg");
+    saveImageFileSystem(img, "../Results/random_points.jpg");
 
     // grid points
     img.fill(Color());
@@ -187,7 +188,7 @@ void GraphicsTest::testRandom() {
         color = Random::randomColor();
         Graphics::drawSquare(img, point, size, theta_deg, color, size);
     }
-    io::saveImageFileSystem(img, "../Results/grid_points.jpg");
+    saveImageFileSystem(img, "../Results/grid_points.jpg");
 
     // jitter grid
     img.fill(Color());
@@ -197,7 +198,7 @@ void GraphicsTest::testRandom() {
         color = Random::randomColor();
         Graphics::drawSquare(img, point, size, theta_deg, color, size);
     }
-    io::saveImageFileSystem(img, "../Results/jitter_points.jpg");
+    saveImageFileSystem(img, "../Results/jitter_points.jpg");
 
 
 }
