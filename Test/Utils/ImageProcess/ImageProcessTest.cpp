@@ -9,7 +9,7 @@ namespace image::process::test {
 
 
 void ProcessTest::testLoadImage() { 
-    Image img = io::loadImageFromCv(image_path_);
+    Image img = io::loadImageFileSystem(image_path_);
     io::saveImageFileSystem(img, "../Results/original.jpg");
 
 
@@ -25,7 +25,7 @@ void ProcessTest::testComputeDistanceField() {
 
 
     // necessary progress
-    Image src_img = io::loadImageFromCv(image_path_);
+    Image src_img = io::loadImageFileSystem(image_path_);
 
     Image gray_img;
     grayscale(src_img, gray_img);
@@ -58,7 +58,7 @@ void ProcessTest::testComputeDistanceField() {
 void ProcessTest::testDistanceGradients() { 
 
         // necessary progress
-        Image src_img = io::loadImageFromCv(image_path_);
+        Image src_img = io::loadImageFileSystem(image_path_);
 
         Image gray_img;
         grayscale(src_img, gray_img);

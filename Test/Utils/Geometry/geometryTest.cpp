@@ -1,3 +1,5 @@
+#include <opencv2/opencv.hpp>
+
 #include "geometryTest.hpp"
 
 #include "../../../Code/Utils/Geometry/geometry.hpp"
@@ -19,7 +21,7 @@ using image::Point;
 bool GeometryTest::testComputeMean() { 
     bool all_passed = true;
 
-    Image img = io::loadImageFromCv(image_path_);
+    Image img = io::loadImageFileSystem(image_path_);
     int num_points = 15;
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
 
@@ -47,7 +49,7 @@ bool GeometryTest::testComputeMean() {
 bool GeometryTest::testCovarianceMatrix() { 
     bool all_passed = true;
 
-    Image img = io::loadImageFromCv(image_path_);
+    Image img = io::loadImageFileSystem(image_path_);
     int num_points = 15;
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
 
@@ -98,7 +100,7 @@ bool GeometryTest::testCovarianceMatrix() {
 bool GeometryTest::testFirstEigenVector() { 
     bool all_passed = true;
 
-    Image img = io::loadImageFromCv(image_path_);
+    Image img = io::loadImageFileSystem(image_path_);
     int num_points = 15;
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
     Point mean = Geometry::computeMean(points);
@@ -153,7 +155,7 @@ bool GeometryTest::testPcaLength() {
 
     bool all_passed = true;
 
-    Image img = io::loadImageFromCv(image_path_);
+    Image img = io::loadImageFileSystem(image_path_);
     int num_points = 15;
 
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
@@ -187,7 +189,7 @@ bool GeometryTest::testPcaDirection() {
 
     bool all_passed = true;
 
-    Image img = io::loadImageFromCv(image_path_);
+    Image img = io::loadImageFileSystem(image_path_);
     int num_points = 15;
 
     std::vector<Point> points = Random::randomPointsVector(img.size(), num_points);
