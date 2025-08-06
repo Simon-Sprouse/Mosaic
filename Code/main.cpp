@@ -22,7 +22,6 @@ int main() {
 
 
     string file_system_image_path = "../Images/flower.jpg";
-    string file_system_results_dir = "../Results";
 
     mosaic_gen::Parameters params;
     params.resize_factor = 0.8;
@@ -62,14 +61,16 @@ int main() {
 
 
 
+    Image img = io::loadImageFileSystem(file_system_image_path);
+    cout << "Loaded image from: " << file_system_image_path << endl;
+    cout << "Original Dimensions: " << img.size() << endl;
 
     Mosaic my_mosaic(params);
-    Image img = io::loadImageFileSystem(file_system_image_path);
-    cout << "img.size(): " << img.size() << endl;
     my_mosaic.loadExistingImage(img);
     my_mosaic.runAll();
-    cout << "my_mosaic.getCanvas().size(): " << my_mosaic.getCanvas().size() << endl;
-    io::saveImage(my_mosaic.getCanvas(), "../Results/output.png");
+
+    cout << "Results Dimensions: " << my_mosaic.getCanvas().size() << endl;
+    io::saveImageFileSystem(my_mosaic.getCanvas(), "../Results/result.jpg");
 
 
 

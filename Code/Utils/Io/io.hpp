@@ -9,6 +9,9 @@
 namespace io {
 
     image::Image loadImageFileSystem(const std::string& path);
+    void saveImageFileSystem(const image::Image& img, const std::string& save_path);
+
+
     image::Image loadImageFromCv(const std::string& image_path);
     void saveImage(const image::Image& img, const std::string& path);
     image::Image fromCvMat(const cv::Mat& mat);

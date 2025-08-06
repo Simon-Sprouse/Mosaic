@@ -10,7 +10,7 @@ namespace image::process::test {
 
 void ProcessTest::testLoadImage() { 
     Image img = io::loadImageFromCv(image_path_);
-    io::saveImage(img, "../Results/original.jpg");
+    io::saveImageFileSystem(img, "../Results/original.jpg");
 
 
     
@@ -47,7 +47,7 @@ void ProcessTest::testComputeDistanceField() {
     std::vector<float> distance_field = computeDistanceField(canny_img);
     Image distance_field_img = floatMapToGrayscaleImage(distance_field, canny_img.size());
 
-    io::saveImage(distance_field_img, "../Results/distance_field.jpg");
+    io::saveImageFileSystem(distance_field_img, "../Results/distance_field.jpg");
 
 
 }
@@ -87,8 +87,8 @@ void ProcessTest::testDistanceGradients() {
         Image grad_x_img = floatMapToGrayscaleImage(grad_x, canny_img.size());
         Image grad_y_img = floatMapToGrayscaleImage(grad_y, canny_img.size());
     
-        io::saveImage(grad_x_img, "../Results/grad_x.jpg");
-        io::saveImage(grad_y_img, "../Results/grad_y.jpg");
+        io::saveImageFileSystem(grad_x_img, "../Results/grad_x.jpg");
+        io::saveImageFileSystem(grad_y_img, "../Results/grad_y.jpg");
         
     
 }

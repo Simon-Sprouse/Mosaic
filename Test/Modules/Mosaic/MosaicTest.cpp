@@ -26,14 +26,14 @@ void MosaicTest::testPipeline() {
 
     Mosaic mosaic(params_);
     mosaic.contourPipeline();
-    io::saveImage(mosaic.original, "../Results/original.jpg");
-    io::saveImage(mosaic.resized, "../Results/resized.jpg");
+    io::saveImageFileSystem(mosaic.original, "../Results/original.jpg");
+    io::saveImageFileSystem(mosaic.resized, "../Results/resized.jpg");
 
 
     Image strokes_img(mosaic.resized.size());
     Graphics::drawStrokesRandomColor(strokes_img, mosaic.strokes);
 
-    io::saveImage(strokes_img, "../Results/strokes.jpg");
+    io::saveImageFileSystem(strokes_img, "../Results/strokes.jpg");
 
 
 }
@@ -48,7 +48,7 @@ void MosaicTest::testSelectStroke() {
 
     for (int stroke_id : stroke_ids) {
         mosaic.selectStroke(stroke_id);
-        io::saveImage(mosaic.selected_stroke, "../Results/selected_stroke" + std::to_string(stroke_id) + ".jpg");
+        io::saveImageFileSystem(mosaic.selected_stroke, "../Results/selected_stroke" + std::to_string(stroke_id) + ".jpg");
     }
     
 }
@@ -70,7 +70,7 @@ void MosaicTest::testMask() {
         }
     }
 
-    io::saveImage(mosaic.mask, "../Results/mask.jpg");
+    io::saveImageFileSystem(mosaic.mask, "../Results/mask.jpg");
 
 
 }
@@ -91,7 +91,7 @@ void MosaicTest::testRandomStart() {
     Color color(255, 0, 0);
     Graphics::drawSquare(test_canvas, pt, size, theta_deg, color, 2);
 
-    io::saveImage(test_canvas, "../Results/first_tile.jpg");
+    io::saveImageFileSystem(test_canvas, "../Results/first_tile.jpg");
 
 
 }
@@ -116,7 +116,7 @@ void MosaicTest::testFindThetaStroke() {
     for (Point pt : region_pixels) { 
         test_canvas.setPixel(pt.x, pt.y, regionColor);
     }
-    io::saveImage(test_canvas, "../Results/region_pixels.jpg");
+    io::saveImageFileSystem(test_canvas, "../Results/region_pixels.jpg");
 
 
 
@@ -131,7 +131,7 @@ void MosaicTest::testFindThetaStroke() {
     Color color(255, 0, 0);
     Graphics::drawSquare(test_canvas, pt, size, theta_deg, color, 2);
 
-    io::saveImage(test_canvas, "../Results/find_theta.jpg");
+    io::saveImageFileSystem(test_canvas, "../Results/find_theta.jpg");
 
 
 }
@@ -156,7 +156,7 @@ void MosaicTest::testRingIntersections() {
     double theta_deg = mosaic.findBestTheta(pt, size);
     int thickness = 2;
     std::vector<Point> intersections = mosaic.findRingIntersections(pt, ring_size, theta_deg, thickness);
-    io::saveImage(mosaic.canvas, "../Results/checked_points.jpg");
+    io::saveImageFileSystem(mosaic.canvas, "../Results/checked_points.jpg");
 
 
     // Draw ring
@@ -174,7 +174,7 @@ void MosaicTest::testRingIntersections() {
         Graphics::drawSquare(test_canvas, point, point_size, 0, point_color, point_size);
     }
     
-    io::saveImage(test_canvas, "../Results/intersections.jpg");
+    io::saveImageFileSystem(test_canvas, "../Results/intersections.jpg");
 
 
 }
@@ -206,7 +206,7 @@ void MosaicTest::testMultipleRings() {
         Graphics::drawSquare(test_canvas, point, point_size, 0, point_color, point_size);
     }
     
-    io::saveImage(test_canvas, "../Results/multiple_ring_intersections.jpg");
+    io::saveImageFileSystem(test_canvas, "../Results/multiple_ring_intersections.jpg");
 
 
 }
@@ -219,7 +219,7 @@ void MosaicTest::testPlaceTileStroke() {
     mosaic.contourPipeline(); 
     mosaic.placeTilesAlongStroke(0);
 
-    io::saveImage(mosaic.mask, "../Results/tiles_along_stroke0.jpg");
+    io::saveImageFileSystem(mosaic.mask, "../Results/tiles_along_stroke0.jpg");
 }
 
 void MosaicTest::testPlaceTileAllStrokes() { 
@@ -229,7 +229,7 @@ void MosaicTest::testPlaceTileAllStrokes() {
     mosaic.contourPipeline(); 
     mosaic.placeTilesAllStrokes();
 
-    io::saveImage(mosaic.mask, "../Results/tiles_all_strokes.jpg");
+    io::saveImageFileSystem(mosaic.mask, "../Results/tiles_all_strokes.jpg");
 }
 
 
@@ -263,7 +263,7 @@ void MosaicTest::testSquareBorderPoints() {
         Graphics::drawSquare(test_img, pt, point_size, theta_deg, point_color, point_size);
     }
 
-    io::saveImage(test_img, "../Results/border_points.jpg");
+    io::saveImageFileSystem(test_img, "../Results/border_points.jpg");
 
 
 
@@ -293,7 +293,7 @@ void MosaicTest::testSquareBorderPoints() {
     }
 
 
-    io::saveImage(test_img, "../Results/border_points_multiple.jpg");
+    io::saveImageFileSystem(test_img, "../Results/border_points_multiple.jpg");
 
 
 
@@ -323,7 +323,7 @@ void MosaicTest::testVectorField() {
         Graphics::drawArrow(test_canvas, pt, length, thickness, theta_deg, arrow_color);
     }
 
-    io::saveImage(test_canvas, "../Results/vector_field.jpg");
+    io::saveImageFileSystem(test_canvas, "../Results/vector_field.jpg");
 
 }
 
@@ -337,7 +337,7 @@ void MosaicTest::testFloodFill() {
     mosaic.placeTilesAllStrokes();
     mosaic.floodFill();
 
-    io::saveImage(mosaic.mask, "../Results/flood_fill.jpg");
+    io::saveImageFileSystem(mosaic.mask, "../Results/flood_fill.jpg");
 
 
 
@@ -354,7 +354,7 @@ void MosaicTest::testGapFill() {
     mosaic.floodFill();
     mosaic.gapFill();
 
-    io::saveImage(mosaic.mask, "../Results/gap_fill.jpg");
+    io::saveImageFileSystem(mosaic.mask, "../Results/gap_fill.jpg");
 
 
 }
@@ -372,7 +372,7 @@ void MosaicTest::testReconstructImage() {
 
     mosaic.reconstructImage();
  
-     io::saveImage(mosaic.canvas, "../Results/reconstruction.jpg");
+     io::saveImageFileSystem(mosaic.canvas, "../Results/reconstruction.jpg");
 
 }
 
