@@ -391,8 +391,8 @@ void MosaicTest::runAllTests() {
     chrono::duration<double> total_time(0.0);
 
     // call test functions
-    // total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
-    // total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
+    total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
+    total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
     // total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
     // total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
     // total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
@@ -405,7 +405,7 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Show Vector Field", [&]() {testVectorField();});
     // total_time += timeFunction("Flood Fill", [&]() {testFloodFill();});
     // total_time += timeFunction("Gap Fill", [&]() {testGapFill();});
-    total_time += timeFunction("Reconstruct Image", [&]() {testReconstructImage();});
+    // total_time += timeFunction("Reconstruct Image", [&]() {testReconstructImage();});
 
 
    

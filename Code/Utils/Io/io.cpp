@@ -1,14 +1,25 @@
 #include "io.hpp"
+#include "Image.hpp"
 
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
 
 namespace io { 
 
+   
 
-    image::Image loadImage(const std::string& image_path) { 
+
+    image::Image loadImageFileSystem(const std::string& path) { 
+        std::ifstream f(path, std::ios::binary);
+        auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+        return image::fromEncodedBuffer(data.data(), data.size());
+    }
+
+
+    image::Image loadImageFromCv(const std::string& image_path) { 
         
         cv::Mat mat = cv::imread(image_path);
     

@@ -54,8 +54,6 @@ extern "C" {
 
 
         mosaic_gen::Parameters params;
-        params.image_path = "../Images/flower.jpg";
-        params.results_dir = "../Results";
         params.resize_factor = 2;
         params.blur_kernel_size = 3;
         params.blur_sigma = 1.4;

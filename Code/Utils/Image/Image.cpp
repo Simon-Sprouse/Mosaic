@@ -155,6 +155,8 @@ bool Image::inBounds(int x, int y) const {
 }
 
 
+
+// TODO maybe this should be a constructor? 
 Image fromEncodedBuffer(const uint8_t* data, size_t size) {
     int width, height, channels;
 

@@ -2,9 +2,6 @@
 #include <chrono>
 #include <cmath>
 #include <string>
-#include <opencv2/opencv.hpp>
-#include <fstream>
-
 
 
 #include "../Test/Utils/ImageProcess/ImageProcessTest.hpp"
@@ -17,40 +14,17 @@
 
 
 
-using namespace std;
-using mosaic_gen::Mosaic;
-
-
-
-std::vector<uint8_t> loadFile(const std::string& path) {
-    std::ifstream f(path, std::ios::binary);
-    return std::vector<uint8_t>((std::istreambuf_iterator<char>(f)),
-                                std::istreambuf_iterator<char>());
-}
-
-
-
-
-
 int main() { 
 
+    using namespace std;
     using image::Image;
+    using mosaic_gen::Mosaic;
 
 
-    cout << "Hello From Mosaic Test" << endl;
-    string image_path = "../Images/flower.jpg";
+    string file_system_image_path = "../Images/flower.jpg";
+    string file_system_results_dir = "../Results";
 
-    auto data = loadFile(image_path);
-    Image img = image::fromEncodedBuffer(data.data(), data.size());
-    io::saveImage(img, "../Results/data.jpg");
-
-    
-
-
-    // Mosaic Test
     mosaic_gen::Parameters params;
-    params.image_path = "../Images/flower.jpg";
-    params.results_dir = "../Results";
     params.resize_factor = 0.8;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
@@ -73,98 +47,39 @@ int main() {
     params.jitter_map.insert({12, 10});
 
 
+    // // cout << "Hello From Mosaic" << endl << endl;
+    cout << R"(
+    ███╗   ███╗ ██████╗ ███████╗ █████╗ ██╗ ██████╗     █████╗ ██████╗ ████████╗
+    ████╗ ████║██╔═══██╗██╔════╝██╔══██╗██║██╔════╝    ██╔══██╗██╔══██╗╚══██╔══╝
+    ██╔████╔██║██║   ██║███████╗███████║██║██║         ███████║██████╔╝   ██║   
+    ██║╚██╔╝██║██║   ██║╚════██║██╔══██║██║██║         ██╔══██║██╔══██╗   ██║   
+    ██║ ╚═╝ ██║╚██████╔╝███████║██║  ██║██║╚██████╗    ██║  ██║██║  ██║   ██║   
+    ╚═╝     ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝    ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   
+    )" << endl;
+    // credit :: https://patorjk.com/software/taag/#p=testall&f=Doom&t=Mosaic%20Art
+    auto start = std::chrono::high_resolution_clock::now();
+
 
 
 
 
     Mosaic my_mosaic(params);
-    my_mosaic.loadImageFromBuffer(data.data(), data.size());
+    Image img = io::loadImageFileSystem(file_system_image_path);
+    cout << "img.size(): " << img.size() << endl;
+    my_mosaic.loadExistingImage(img);
     my_mosaic.runAll();
+    cout << "my_mosaic.getCanvas().size(): " << my_mosaic.getCanvas().size() << endl;
     io::saveImage(my_mosaic.getCanvas(), "../Results/output.png");
-    cout << "my_mosiac.getCanvas(): " << my_mosaic.getCanvas() << endl;
 
 
 
 
+    auto end = std::chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = end - start;
+    cout << "Main.cpp execution time: " << elapsed.count() << " s" << endl;
 
 
 
-
-
-
-
-
-
-    // auto start = std::chrono::high_resolution_clock::now();
-
-
-    // // cout << "Hello From Mosaic" << endl << endl;
-    // cout << R"(
-    // ███╗   ███╗ ██████╗ ███████╗ █████╗ ██╗ ██████╗     █████╗ ██████╗ ████████╗
-    // ████╗ ████║██╔═══██╗██╔════╝██╔══██╗██║██╔════╝    ██╔══██╗██╔══██╗╚══██╔══╝
-    // ██╔████╔██║██║   ██║███████╗███████║██║██║         ███████║██████╔╝   ██║   
-    // ██║╚██╔╝██║██║   ██║╚════██║██╔══██║██║██║         ██╔══██║██╔══██╗   ██║   
-    // ██║ ╚═╝ ██║╚██████╔╝███████║██║  ██║██║╚██████╗    ██║  ██║██║  ██║   ██║   
-    // ╚═╝     ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝    ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   
-    // )" << endl;
-    // // credit :: https://patorjk.com/software/taag/#p=testall&f=Doom&t=Mosaic%20Art
-
-    // // Load Object
-
-
-
-
-
-
-
-
-    // // RUN TESTS
-    // mosaic_gen::test::MosaicTest my_mosaic_test(my_mosaic);
-    // my_mosaic_test.runAllTests();
-    // my_mosaic_test.runTimedProcess();
-
-
-    // // RUN PREVIEW IN WINDOW
-    // my_mosaic.resetData();
-    // string window_name = "Mosaic Preview";
-    // cv::namedWindow(window_name, cv::WINDOW_NORMAL);
-
-    // my_mosaic.setWindow(window_name);
-    // my_mosaic.runAll();
-
-    // auto end = std::chrono::high_resolution_clock::now();
-    // chrono::duration<double> elapsed = end - start;
-    // cout << "Main.cpp execution time: " << elapsed.count() << " s" << endl;
-
-    // cv::imshow(window_name, my_mosaic.getCanvas());
-    // cv::waitKey(0);
-
-
-
-
-    // // Image class tests
-    // bool verbose = false;
-    // image::test::ImageTest my_image_test(verbose);
-    // my_image_test.runAllTests();
-
-
-
-    // // Image process tests
-    // image::process::test::ProcessTest my_process_test(image_path);
-    // my_process_test.runAllTests();
-
-
-    // // Geometry tests
-    // Geometry::test::GeometryTest my_geometry_test("../Images/flower.jpg");
-    // my_geometry_test.runAllTests();
-
-
-    // // Graphics tests
-    // Graphics::test::GraphicsTest my_graphics_test(image_path);
-    // my_graphics_test.runAllTests();
-
-
-    
 
 
 
@@ -172,27 +87,3 @@ int main() {
 }
 
 
-
-
-/*
-TODO LIST
-
-- replace drawSquare scalar function in all instances with vec3b ✅
-- finish visualizations ✅
-    - intersections ✅
-    - fix vector field ✅
-    - color frontiers ✅
-    - show flood fill points along segment ✅
-    - number segment placement ordering ✅
-- utils/math/random file ✅
-- color sampling options
-- rename functions and variables
-- standardize const and reference in function params
-- use friend classes to move data back into mosiac private ✅
-- vector of mats for saveGif/output
-
-stretch goals
-- more effieicnt getIntersections
-
-
-*/

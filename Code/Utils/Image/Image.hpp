@@ -277,6 +277,14 @@ inline std::ostream& operator<<(std::ostream& os, const Image& image) {
 
 
 
+// std::vector<uint8_t> loadFile(const std::string& path) {
+//     std::ifstream f(path, std::ios::binary);
+//     return std::vector<uint8_t>((std::istreambuf_iterator<char>(f)),
+//                                 std::istreambuf_iterator<char>());
+// }
+
+
+
 Image fromEncodedBuffer(const uint8_t* data, size_t size);
 
 

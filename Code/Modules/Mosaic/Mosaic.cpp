@@ -209,6 +209,15 @@ void Mosaic::loadImageFromBuffer(const uint8_t *data, size_t size) {
 }
 
 
+void Mosaic::loadExistingImage(const Image& img) { 
+    original = img.clone();
+    image::process::resize(original, resized, params.resize_factor);
+}
+
+
+
+
+
 
 void Mosaic::contourPipeline() {
 
@@ -869,7 +878,7 @@ void Mosaic::reconstructImage() {
 
 Color Mosaic::sampleTileColor(const TileInfo& tile) {
     Point center = tile.center;
-    int size = tile.size / 4; // TODO make this tuneable
+    int size = tile.size / 2; // TODO make this tuneable
     double theta_deg = tile.theta_deg;
 
     std::vector<Point> points = Geometry::getPointsInsideSquare(center, size, theta_deg);

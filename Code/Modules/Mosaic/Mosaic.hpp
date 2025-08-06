@@ -25,8 +25,8 @@ using image::Vec2d;
 
 struct Parameters { 
 
-    string image_path;
-    string results_dir;
+    // string image_path;
+    // string results_dir;
     double resize_factor;
     int blur_kernel_size;
     double blur_sigma;
@@ -74,6 +74,8 @@ class Mosaic {
         // void resetData();
         
         void loadImageFromBuffer(const uint8_t* data, size_t size);
+        void loadExistingImage(const Image& img);
+
         void runAll();
         Image getCanvas();
         bool empty();
