@@ -22,9 +22,10 @@ int main() {
 
 
     string file_system_image_path = "../Images/flower.jpg";
+    string file_system_save_dir = "../Results/";
 
     mosaic_gen::Parameters params;
-    params.resize_factor = 0.8;
+    params.resize_factor = 1.5;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -37,13 +38,26 @@ int main() {
     params.step_size = 1 * params.tile_size;
     params.min_intersection_distance = 1.5 * params.tile_size;
     params.max_frontiers = 20;
-    params.flood_fill_neighbor_points = 16;
+    params.flood_fill_neighbor_points = 4;
     params.distance_from_center = 1.5 * params.tile_size;
     params.random_background_points = 50000;
     params.tiles_per_frame = 20;
     params.jitter_map.insert({4, 0});
     params.jitter_map.insert({8, 1});
     params.jitter_map.insert({12, 10});
+
+
+
+
+
+    // mosaic_gen::test::MosaicTest my_mosaic_test(params, file_system_image_path, file_system_save_dir);
+    // my_mosaic_test.runAllTests();
+
+
+
+
+
+
 
 
     // // cout << "Hello From Mosaic" << endl << endl;

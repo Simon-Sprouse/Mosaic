@@ -17,7 +17,8 @@ namespace mosaic_gen::test {
 
         public: 
 
-            explicit MosaicTest(Parameters& params): params_(params) {};
+            explicit MosaicTest(Parameters& params, string image_path, string save_dir) 
+                : params_(params), image_path_(image_path), save_dir_(save_dir) {};
             
             void testConstructor();
             void testPipeline();
@@ -47,6 +48,8 @@ namespace mosaic_gen::test {
 
             bool verbose_;
             Parameters params_; 
+            string image_path_;
+            string save_dir_;
 
 
            
