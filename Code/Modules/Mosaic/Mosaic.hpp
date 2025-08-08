@@ -2,6 +2,8 @@
 
 #include "../../Utils/Image/Image.hpp"
 
+#include <queue>
+#include <stack>
 #include <string>
 #include <vector>
 #include <map>
@@ -58,6 +60,7 @@ struct TileInfo {
     Point center;
     double size;
     double theta_deg;
+    Color color;
     int order;
     int frontier;
 
@@ -139,7 +142,11 @@ class Mosaic {
         void gapFill();
 
         void reconstructImage();
-        Color sampleTileColor(const TileInfo& tile);
+        void reconstructShowFrontiers();
+        Color sampleTileColor(Point center, double size, double theta_deg);
+
+        bool stepOnce();
+        
 
      
 
@@ -152,7 +159,6 @@ class Mosaic {
 
         // settings for logic - should be user defined
         Parameters params;
-        
        
         std::vector<TileInfo> tiles_placed;
         
@@ -169,6 +175,15 @@ class Mosaic {
         Image mask;
         Image canvas;
 
+
+
+        std::stack<Point> strokePointsStack;
+        std::queue<Point> floodPointsQueue;
+        std::vector<Point> gapPointsVector;
+
+        int strokes_completed = 0;
+        int frontiers_completed = 0;
+        bool gaps_calculated = false;
 
 
 

@@ -247,8 +247,8 @@ void Mosaic::contourPipeline() {
     image::process::divideIntoStrokes(contours, strokes, canny.size(), params.segment_angle_window, params.max_segment_angle_rad, params.min_segment_length);
     Geometry::sortStrokesPCALength(strokes);
 
-    // should be separate function, this can run concurrent with stroke covering
-    //image::process::computeDistanceField(canny, gradX, gradY);
+    // could be separate function, this can run concurrent with stroke covering
+    computeDistanceField();
 
     // TODO think about separate function
     mask = Image(resized.size());
@@ -385,12 +385,15 @@ TileInfo Mosaic::placeTile(Point center, double size, double theta_deg, int fron
 
     Graphics::drawSquare(mask, center, size, theta_deg, Color(255), size);
 
-    // TODO add tile metadata to the 
+
+    // TODO add tile metadata to the tiles_placed vector
     int order = tiles_placed.size();
+    Color color = sampleTileColor(center, size, theta_deg);
     TileInfo current_tile = {
         center,
         size, 
         theta_deg,
+        color,
         order,
         frontier
     };
@@ -876,7 +879,31 @@ void Mosaic::reconstructImage() {
     canvas = Image(resized.size());
 
     for (TileInfo tile : tiles_placed) { 
-        Color color = sampleTileColor(tile);
+        // Color color = sampleTileColor(tile);
+        Graphics::drawSquare(canvas, tile.center, tile.size * 1.0, tile.theta_deg, tile.color, tile.size);
+    }
+
+
+}
+
+
+void Mosaic::reconstructShowFrontiers() { 
+
+    // reset canvas
+    canvas = Image(resized.size());
+
+    for (TileInfo tile : tiles_placed) { 
+        // Color color = sampleTileColor(tile);
+        Color color;
+        if (tile.frontier == 0) { 
+            color = Color(255, 0, 0);
+        }
+        else if (tile.frontier > 0) { 
+            color = Color(0, 255, 0);
+        }
+        else if (tile.frontier == -1) {
+            color = Color(0, 0, 255);
+        }
         Graphics::drawSquare(canvas, tile.center, tile.size * 1.0, tile.theta_deg, color, tile.size);
     }
 
@@ -886,10 +913,9 @@ void Mosaic::reconstructImage() {
 
 
 
-Color Mosaic::sampleTileColor(const TileInfo& tile) {
-    Point center = tile.center;
-    int size = tile.size / 2; // TODO make this tuneable
-    double theta_deg = tile.theta_deg;
+Color Mosaic::sampleTileColor(Point center, double size, double theta_deg) {
+
+    size /= 2; // TODO make this tuneable
 
     std::vector<Point> points = Geometry::getPointsInsideSquare(center, size, theta_deg);
 
@@ -915,6 +941,143 @@ Color Mosaic::sampleTileColor(const TileInfo& tile) {
 
     return Color(r_avg, g_avg, b_avg);
 }
+
+
+
+
+
+
+bool Mosaic::stepOnce() { 
+
+
+    if (canny.empty()) {
+        contourPipeline();
+        if (canny.empty()) return false;
+        return stepOnce();
+    }
+
+    int num_strokes = strokes.size();
+    if (strokes_completed < num_strokes) { 
+
+        if (strokePointsStack.empty()) { 
+            int stroke_id = strokes_completed;
+            selectStroke(stroke_id);
+            int max_starts = 10;
+            for (int i = 0; i < max_starts; i++) {
+                Point starting_point = getRandomPointOnStroke(stroke_id);
+                double starting_theta = findBestTheta(starting_point, params.tile_size);
+                if (isValidTile(starting_point, params.tile_size, starting_theta)) { 
+                    int frontier = 0;
+                    placeTile(starting_point, params.tile_size, starting_theta, frontier);
+                    std::vector<Point> next_points = findPointsMultipleRings(starting_point, starting_theta);
+                    for (Point p : next_points) { 
+                        strokePointsStack.push(p);
+                    }
+                    return true;
+                }
+            }
+            // if we can't find a valid start, move on
+            strokes_completed++;
+            return stepOnce();
+        }
+
+        while (!strokePointsStack.empty()) { 
+            Point pt = strokePointsStack.top();
+            strokePointsStack.pop();
+            double best_theta = findBestTheta(pt, params.tile_size);
+            if (isValidTile(pt, params.tile_size, best_theta)) { 
+                int frontier = 0;
+                placeTile(pt, params.tile_size, best_theta, frontier);
+                std::vector<Point> next_points = findPointsMultipleRings(pt, best_theta);
+                for (Point p : next_points) { 
+                    strokePointsStack.push(p);
+                }
+                return true;
+            }
+        }
+        // exhausted points in stroke, move on
+        strokes_completed++;
+        return stepOnce();
+
+    }
+
+    int max_frontiers = params.max_frontiers;
+    if (frontiers_completed < max_frontiers) { 
+
+        if (floodPointsQueue.empty()) { 
+
+            // get next set of points from last frontier
+            for (TileInfo tile : tiles_placed) { 
+                if (tile.frontier == frontiers_completed) { 
+                    double distance_from_center = params.distance_from_center;
+                    int num_points = params.flood_fill_neighbor_points;
+                    std::vector<Point> points = Geometry::samplePointsSquareBorder(tile.center, tile.theta_deg, distance_from_center, num_points);
+                    for (Point pt : points) { 
+                        floodPointsQueue.push(pt);
+                    }
+                }
+            }
+
+            // if we didn't add any points, flood fill is done
+            if (floodPointsQueue.empty()) { 
+                frontiers_completed = max_frontiers;
+            }
+            return stepOnce();
+        }
+        while (!floodPointsQueue.empty()) { 
+            Point pt = floodPointsQueue.front();
+            floodPointsQueue.pop();
+            double best_theta = findThetaTangent(pt);
+            if (isValidTile(pt, params.tile_size, best_theta)) { 
+                int frontier = frontiers_completed + 1;
+                placeTile(pt, params.tile_size, best_theta, frontier);
+                return true;
+            }
+        }
+        // exhausted points in frontier, move on
+        frontiers_completed++;
+        return stepOnce();
+
+    }
+
+    if (gapPointsVector.empty()) { 
+        if (!gaps_calculated) { 
+            for (int y = 0; y < mask.getHeight(); ++y) {
+                for (int x = 0; x < mask.getWidth(); ++x) {
+                    if (mask.at(x, y).r == 0) {
+                        gapPointsVector.push_back(Point(x, y));
+                    } 
+                }
+            }
+            Random::shuffleVector(gapPointsVector);
+            gaps_calculated = true;
+            return stepOnce();
+        }
+        else { 
+            // gaps calculated, and all points checked -- we are done!
+            return false;
+        }
+
+    }
+    while (!gapPointsVector.empty()) { 
+        Point pt = gapPointsVector.back();
+        gapPointsVector.pop_back();
+        double best_theta = findThetaTangent(pt);
+        if (isValidTile(pt, params.tile_size, best_theta)) { 
+            int frontier = -1;
+            placeTile(pt, params.tile_size, best_theta, frontier);
+            return true;
+        }
+    }
+    // gap points exhausted -- we are done!
+    return false;
+
+
+
+}
+
+
+
 
 
 

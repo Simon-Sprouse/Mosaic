@@ -245,43 +245,6 @@ void MosaicTest::testPlaceTileStroke() {
 
 
 
-void MosaicTest::testNewStroke() { 
-
-    Color tile_color(0, 255, 0);
-    Color point_color(255, 0, 0);
-    int point_size = 5;
-
-
-    Mosaic mosaic(params_);
-    Image original = image::io::loadImageFileSystem(image_path_);
-    mosaic.loadExistingImage(original);
-    mosaic.contourPipeline(); 
-
-    int size = mosaic.params.tile_size;
-
-    int stroke_id = 0;
-    mosaic.selectStroke(stroke_id);
-    Image test_canvas = mosaic.selected_stroke.clone();
-
-    Point random_start = mosaic.getRandomPointOnStroke(stroke_id);
-    double start_theta = mosaic.findBestTheta(random_start, size);
-
-    if (mosaic.isValidTile(random_start, size, start_theta)) { 
-        mosaic.placeTile(random_start, size, start_theta);
-        Graphics::drawSquare(test_canvas, random_start, size, start_theta, tile_color, 2);
-    }
-
-    std::vector<Point> ring_points = mosaic.findPointsMultipleRings(random_start, start_theta);
-    for (Point pt : ring_points) { 
-        Graphics::drawSquare(test_canvas, pt, point_size, 0, point_color, point_size);
-    }
-
-
-
-    image::io::saveImageFileSystem(test_canvas, save_dir_ + "ring_test.jpg");
-
-}
-
 
 
 
@@ -475,6 +438,31 @@ void MosaicTest::testReconstructImage() {
 }
 
 
+void MosaicTest::testStepOnce() { 
+
+
+    Mosaic mosaic(params_);
+    Image original = image::io::loadImageFileSystem(image_path_);
+    mosaic.loadExistingImage(original);
+
+    // test first step
+    mosaic.stepOnce();
+    image::io::saveImageFileSystem(mosaic.mask, save_dir_ + "mask_first_step.jpg");
+
+
+    // test all steps
+    while (mosaic.stepOnce()) {}
+    
+    mosaic.reconstructShowFrontiers();
+    image::io::saveImageFileSystem(mosaic.canvas, save_dir_ + "all_steps.jpg");
+
+
+    
+
+
+
+}
+
 
 
 
@@ -499,7 +487,6 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
     // total_time += timeFunction("Tiles Along Stroke", [&]() {testPlaceTileStroke();});
 
-    total_time += timeFunction("Candidates Along Stroke", [&]() {testNewStroke();});
 
     // total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
     // total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
@@ -509,6 +496,7 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Reconstruct Image", [&]() {testReconstructImage();});
 
 
+    total_time += timeFunction("Step Once", [&]() {testStepOnce();});
    
 
 

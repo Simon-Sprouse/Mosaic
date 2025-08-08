@@ -30,7 +30,7 @@ namespace mosaic_gen::test {
             void testMultipleRings();
             void testPlaceTileStroke();
 
-            void testNewStroke();
+
 
             void testPlaceTileAllStrokes();
 
@@ -40,6 +40,9 @@ namespace mosaic_gen::test {
             void testGapFill();
 
             void testReconstructImage();
+
+
+            void testStepOnce();
             
             void runAllTests() override;
 

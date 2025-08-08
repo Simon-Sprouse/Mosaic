@@ -38,7 +38,7 @@ int main() {
     params.initial_step = 1.5 * params.tile_size;
     params.step_size = 0.25 * params.tile_size;
     params.min_intersection_distance = 0.25 * params.tile_size;
-    params.max_frontiers = 4;
+    params.max_frontiers = 7;
     params.flood_fill_neighbor_points = 4;
     params.distance_from_center = 1.5 * params.tile_size;
     params.random_background_points = 50000;
@@ -47,7 +47,7 @@ int main() {
     // params.jitter_map.insert({8, 1});
     // params.jitter_map.insert({12, 10});
 
-
+    int squeeb = 42;
 
 
 
@@ -56,7 +56,7 @@ int main() {
 
 
 
-
+    return 0;
 
 
 
