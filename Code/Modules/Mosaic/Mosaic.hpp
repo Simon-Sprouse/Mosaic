@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <functional>
+
 
 
 using namespace std;
@@ -24,6 +24,8 @@ using image::Color;
 using image::Vec2d;
 
 struct Parameters { 
+
+
 
     // string image_path;
     // string results_dir;
@@ -44,7 +46,7 @@ struct Parameters {
     double distance_from_center;
     int random_background_points;
     int tiles_per_frame;
-    std::map<int, int> jitter_map;
+    // std::map<int, int> jitter_map;
     
     
 
@@ -74,10 +76,13 @@ class Mosaic {
         // void resetData();
         
         void loadImageFromBuffer(const uint8_t* data, size_t size);
+        void loadImageFromVector(const std::vector<uint8_t>& buffer);
+
         void loadExistingImage(const Image& img);
 
         void runAll();
         Image getCanvas();
+        uint8_t* getRawData();
         bool empty();
         Size size();
 

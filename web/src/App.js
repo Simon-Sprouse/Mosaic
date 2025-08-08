@@ -8,7 +8,6 @@ function App() {
 
     const canvasRef = useRef(null);
     const [text, setText] = useState('');
-    const [wasmImage, setWasmImage] = useState(null);
     const [wasmMosaic, setWasmMosaic] = useState(null);
 
 
@@ -20,9 +19,7 @@ function App() {
 
         script.onload = () => {
         window.Module().then((instance) => {
-            const img = new WasmImage(instance);
             const mosaic = new WasmMosaic(instance);
-            setWasmImage(img);
             setWasmMosaic(mosaic);
         }).catch((err) => {
             console.error('Failed to instantiate WASM module:', err);
@@ -61,7 +58,8 @@ function App() {
         setText(text_string);
 
         const ctx = canvas.getContext('2d');
-        const dataArray = wasmMosaic.runAndGetData();
+        wasmMosaic.runAll();
+        const dataArray = wasmMosaic.getRawData();
         const imageData = new ImageData(dataArray, width, height);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.putImageData(imageData, 0, 0);
@@ -85,7 +83,8 @@ function App() {
 
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
-        wasmMosaic.loadMosaicFromBytes(byteArray);
+        const size = byteArray.length;
+        wasmMosaic.loadMosaicFromBytes(byteArray, size);
 
         const { width, height } = wasmMosaic.getSize();
         const size_string = "Mosaic: " + width + " x " + height;

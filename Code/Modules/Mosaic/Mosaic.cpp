@@ -41,6 +41,10 @@ Image Mosaic::getCanvas() {
     return canvas.clone();
 }
 
+uint8_t* Mosaic::getRawData() { 
+    return canvas.rawData();
+}
+
 bool Mosaic::empty() { 
     return original.empty();
 }
@@ -208,6 +212,11 @@ void Mosaic::loadImageFromBuffer(const uint8_t *data, size_t size) {
     cout << "inside Mosaic: resized.size(): " << resized.size() << endl;
 }
 
+void Mosaic::loadImageFromVector(const std::vector<uint8_t>& buffer){
+    original = image::fromEncodedBuffer(buffer.data(), buffer.size());
+    image::process::resize(original, resized, params.resize_factor);
+
+}
 
 void Mosaic::loadExistingImage(const Image& img) { 
     original = img.clone();
@@ -776,14 +785,15 @@ void Mosaic::floodFill() {
 
 
 int Mosaic::getJitter(int frontier) {
-    if (params.jitter_map.empty()) { 
-        return 0;
-    }
-    for (const auto& [threshold, jitter] : params.jitter_map) {
-        if (frontier < threshold) {
-            return jitter;
-        }
-    }
+    // TODO fix this -- broken because of embind
+    // if (params.jitter_map.empty()) { 
+    //     return 0;
+    // }
+    // for (const auto& [threshold, jitter] : params.jitter_map) {
+    //     if (frontier < threshold) {
+    //         return jitter;
+    //     }
+    // }
     return 0;
 }
 

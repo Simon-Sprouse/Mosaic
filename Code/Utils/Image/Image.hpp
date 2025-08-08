@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
 #include <ostream>
-#include <sstream>
 #include <vector>
 
 namespace image { 
