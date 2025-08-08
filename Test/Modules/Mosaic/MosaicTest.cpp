@@ -239,6 +239,70 @@ void MosaicTest::testPlaceTileStroke() {
     saveImageFileSystem(mosaic.mask, save_dir_ + "tiles_along_stroke0.jpg");
 }
 
+
+
+
+
+
+
+void MosaicTest::testNewStroke() { 
+
+    Color tile_color(0, 255, 0);
+    Color point_color(255, 0, 0);
+    int point_size = 5;
+
+
+    Mosaic mosaic(params_);
+    Image original = image::io::loadImageFileSystem(image_path_);
+    mosaic.loadExistingImage(original);
+    mosaic.contourPipeline(); 
+
+    int size = mosaic.params.tile_size;
+
+    int stroke_id = 0;
+    mosaic.selectStroke(stroke_id);
+    Image test_canvas = mosaic.selected_stroke.clone();
+
+    Point random_start = mosaic.getRandomPointOnStroke(stroke_id);
+    double start_theta = mosaic.findBestTheta(random_start, size);
+
+    if (mosaic.isValidTile(random_start, size, start_theta)) { 
+        mosaic.placeTile(random_start, size, start_theta);
+        Graphics::drawSquare(test_canvas, random_start, size, start_theta, tile_color, 2);
+    }
+
+    std::vector<Point> ring_points = mosaic.findPointsMultipleRings(random_start, start_theta);
+    for (Point pt : ring_points) { 
+        Graphics::drawSquare(test_canvas, pt, point_size, 0, point_color, point_size);
+    }
+
+
+
+    image::io::saveImageFileSystem(test_canvas, save_dir_ + "ring_test.jpg");
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void MosaicTest::testPlaceTileAllStrokes() { 
 
     // necessary progress
@@ -425,21 +489,24 @@ void MosaicTest::runAllTests() {
     chrono::duration<double> total_time(0.0);
 
     // call test functions
-    total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
-    total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
-    total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
-    total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
-    total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
-    total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
-    total_time += timeFunction("Find Ring Intersections", [&]() {testRingIntersections();});
-    total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
-    total_time += timeFunction("Tiles Along Stroke", [&]() {testPlaceTileStroke();});
-    total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
-    total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
-    total_time += timeFunction("Show Vector Field", [&]() {testVectorField();});
-    total_time += timeFunction("Flood Fill", [&]() {testFloodFill();});
-    total_time += timeFunction("Gap Fill", [&]() {testGapFill();});
-    total_time += timeFunction("Reconstruct Image", [&]() {testReconstructImage();});
+    // total_time += timeFunction("Construct Mosaic", [&]() {testConstructor();});
+    // total_time += timeFunction("Contour Pipeline", [&]() {testPipeline();});
+    // total_time += timeFunction("Select Stroke", [&]() {testSelectStroke();});
+    // total_time += timeFunction("Mask Overlap Check", [&]() {testMask();});
+    // total_time += timeFunction("Choose Point on Stroke", [&]() {testRandomStart();});
+    // total_time += timeFunction("Find Theta on Stroke", [&]() {testFindThetaStroke();});
+    // total_time += timeFunction("Find Ring Intersections", [&]() {testRingIntersections();});
+    // total_time += timeFunction("Multiple Ring Intersections", [&]() {testMultipleRings();});
+    // total_time += timeFunction("Tiles Along Stroke", [&]() {testPlaceTileStroke();});
+
+    total_time += timeFunction("Candidates Along Stroke", [&]() {testNewStroke();});
+
+    // total_time += timeFunction("Tiles Along All Strokes", [&]() {testPlaceTileAllStrokes();});
+    // total_time += timeFunction("Square Border Points", [&]() {testSquareBorderPoints();});
+    // total_time += timeFunction("Show Vector Field", [&]() {testVectorField();});
+    // total_time += timeFunction("Flood Fill", [&]() {testFloodFill();});
+    // total_time += timeFunction("Gap Fill", [&]() {testGapFill();});
+    // total_time += timeFunction("Reconstruct Image", [&]() {testReconstructImage();});
 
 
    

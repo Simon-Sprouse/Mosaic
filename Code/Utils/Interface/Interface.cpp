@@ -52,6 +52,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .property("segment_angle_window", &Parameters::segment_angle_window)
         .property("tile_size", &Parameters::tile_size)
         .property("number_of_rings", &Parameters::number_of_rings)
+        .property("initial_step", &Parameters::initial_step)
         .property("step_size", &Parameters::step_size)
         .property("min_intersection_distance", &Parameters::min_intersection_distance)
         .property("max_frontiers", &Parameters::max_frontiers)
@@ -94,7 +95,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .function("getRawData", optional_override([](Mosaic& self) -> uintptr_t {
                     uint8_t* data = self.getRawData();
                     return reinterpret_cast<uintptr_t>(data);
-                }))        .function("empty", &Mosaic::empty)
+                }))        
+        .function("empty", &Mosaic::empty)
         .function("size", &Mosaic::size)
         // You can add more Mosaic methods as needed
         ;

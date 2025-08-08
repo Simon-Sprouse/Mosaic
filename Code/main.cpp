@@ -25,7 +25,7 @@ int main() {
     string file_system_save_dir = "../Results/";
 
     mosaic_gen::Parameters params;
-    params.resize_factor = 1.5;
+    params.resize_factor = 2;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;
@@ -34,10 +34,11 @@ int main() {
     params.min_segment_length = 20;
     params.segment_angle_window = 10;
     params.tile_size = 10;
-    params.number_of_rings = 5;
-    params.step_size = 1 * params.tile_size;
-    params.min_intersection_distance = 1.5 * params.tile_size;
-    params.max_frontiers = 20;
+    params.number_of_rings = 3;
+    params.initial_step = 1.5 * params.tile_size;
+    params.step_size = 0.25 * params.tile_size;
+    params.min_intersection_distance = 0.25 * params.tile_size;
+    params.max_frontiers = 4;
     params.flood_fill_neighbor_points = 4;
     params.distance_from_center = 1.5 * params.tile_size;
     params.random_background_points = 50000;
@@ -50,8 +51,8 @@ int main() {
 
 
 
-    // mosaic_gen::test::MosaicTest my_mosaic_test(params, file_system_image_path, file_system_save_dir);
-    // my_mosaic_test.runAllTests();
+    mosaic_gen::test::MosaicTest my_mosaic_test(params, file_system_image_path, file_system_save_dir);
+    my_mosaic_test.runAllTests();
 
 
 

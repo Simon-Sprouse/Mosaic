@@ -39,6 +39,7 @@ struct Parameters {
     int segment_angle_window;
     int tile_size;
     int number_of_rings;
+    double initial_step;
     int step_size;
     int min_intersection_distance;
     int max_frontiers;

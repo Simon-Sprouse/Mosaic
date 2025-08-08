@@ -510,7 +510,7 @@ std::vector<Point> Mosaic::findNonZeroInRadius(const Image& src, const Point& ce
 std::vector<Point> Mosaic::findRingIntersections(const Point& center, double ring_size, double theta_deg, int thickness) {
     std::vector<Point> intersections;
 
-    double halfSize = ring_size / 2.0;
+    double halfSize = ring_size / 1.0; // TODO semantic clean up, intended behavior is distance from center
     double theta = theta_deg * M_PI / 180.0;
     Vec2d centerD(center);
 
@@ -598,8 +598,8 @@ std::vector<Point> Mosaic::findPointsMultipleRings(const Point& center, double t
     std::vector<Point> all_intersections;
 
 
-    double initial_size = 1 * params.tile_size; // TODO make this a param
-    double thickness = 2; // TODO make this a param
+    double initial_size = params.initial_step; // TODO make this a param
+    double thickness = 1; // TODO make this a param
     
     for (int i = 0; i < params.number_of_rings; i++) { 
         double current_ring_size = initial_size + i * params.step_size;

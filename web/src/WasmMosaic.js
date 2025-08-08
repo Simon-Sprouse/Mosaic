@@ -8,19 +8,20 @@ export default class WasmMosaic {
 
     create() {
         this.params = new this.Module.Parameters;
-        this.params.resize_factor = 1.5;
+        this.params.resize_factor = 2;
         this.params.blur_kernel_size = 3;
         this.params.blur_sigma = 1.4;
         this.params.canny_threshold_1 = 50;
         this.params.canny_threshold_2 = 100;
-        this.params.max_segment_angle_rad = 100 * Math.PI / 180.0; // TODO why is this in rad
+        this.params.max_segment_angle_rad = 100 * Math.pi / 180.0; // TODO why is this in rad
         this.params.min_segment_length = 20;
         this.params.segment_angle_window = 10;
         this.params.tile_size = 10;
-        this.params.number_of_rings = 5;
-        this.params.step_size = 1 * this.params.tile_size;
-        this.params.min_intersection_distance = 1.5 * this.params.tile_size;
-        this.params.max_frontiers = 20;
+        this.params.number_of_rings = 3;
+        this.params.initial_step = 1.5 * this.params.tile_size;
+        this.params.step_size = 0.25 * this.params.tile_size;
+        this.params.min_intersection_distance = 0.25 * this.params.tile_size;
+        this.params.max_frontiers = 4;
         this.params.flood_fill_neighbor_points = 4;
         this.params.distance_from_center = 1.5 * this.params.tile_size;
         this.params.random_background_points = 50000;
