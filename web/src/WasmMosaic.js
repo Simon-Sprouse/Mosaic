@@ -8,7 +8,7 @@ export default class WasmMosaic {
 
     create() {
         this.params = new this.Module.Parameters;
-        this.params.resize_factor = 2;
+        this.params.resize_factor = 0.5;
         this.params.blur_kernel_size = 3;
         this.params.blur_sigma = 1.4;
         this.params.canny_threshold_1 = 50;
@@ -25,7 +25,7 @@ export default class WasmMosaic {
         this.params.flood_fill_neighbor_points = 4;
         this.params.distance_from_center = 1.5 * this.params.tile_size;
         this.params.random_background_points = 50000;
-        this.params.tiles_per_frame = 20;
+        this.params.tiles_per_frame = 20; //  TODO remove
 
         this.mosaic = new this.Module.Mosaic(this.params);
         
@@ -67,11 +67,37 @@ export default class WasmMosaic {
         return width * height;
     }
 
-    runAll() { 
-        this.mosaic.runAll();
+    stepK(k) { 
+        // this.mosaic.runAll();
+        return this.mosaic.stepK(k);
+        // this.mosaic.reconstructImageNewTiles();
     }
 
+
+    getRenderPointer() { 
+        return this.mosaic.getRenderPointer();
+    }
+
+
+    renderImageRange(start, num_tiles) { 
+        this.mosaic.renderImageRange(start, num_tiles);
+    }
+
+    resetRenderPointer() {
+        this.mosaic.setRenderPointer(0);
+    }
+
+    resetCanvas() { 
+        this.mosaic.resetCanvas();
+    }
+
+
+
+
+
+
     getRawData() {
+
         if (!this.mosaic || this.mosaic.empty()) {
             throw new Error("No mosaic data available");
         }
@@ -84,6 +110,7 @@ export default class WasmMosaic {
         const totalSize = this.getLength() * 4;
         return new Uint8ClampedArray(this.Module.HEAPU8.buffer, ptr, totalSize);
     }
+
 
 
     destroy() {

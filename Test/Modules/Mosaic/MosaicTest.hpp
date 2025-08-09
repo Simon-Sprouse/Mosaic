@@ -43,6 +43,7 @@ namespace mosaic_gen::test {
 
 
             void testStepOnce();
+            void testStepK();
             
             void runAllTests() override;
 

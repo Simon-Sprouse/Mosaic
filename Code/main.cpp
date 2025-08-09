@@ -25,7 +25,7 @@ int main() {
     string file_system_save_dir = "../Results/";
 
     mosaic_gen::Parameters params;
-    params.resize_factor = 2;
+    params.resize_factor = 0.5;
     params.blur_kernel_size = 3;
     params.blur_sigma = 1.4;
     params.canny_threshold_1 = 50;

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
-import WasmImage from './WasmImage';
 import WasmMosaic from './WasmMosaic';
 
 function App() {
@@ -9,6 +8,10 @@ function App() {
     const canvasRef = useRef(null);
     const [text, setText] = useState('');
     const [wasmMosaic, setWasmMosaic] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [computationComplete, setComputationComplete] = useState(false);
+
+    const k = 100;
 
 
 
@@ -37,43 +40,59 @@ function App() {
     }, []);
 
 
+    // Request Animation frame if play button
+    useEffect(() => {
 
-    const handleClick = () => {
-        if (!wasmMosaic) {
-            setText('WASM not loaded yet');
-            return;
+        let animationFrameId;
+
+        const animate = () => {
+            if (!isPlaying || !wasmMosaic || wasmMosaic.empty()) return;
+
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+
+            const { width, height } = wasmMosaic.getSize();
+            canvas.width = width;
+            canvas.height = height;
+
+            let step_was_valid;
+            if (!computationComplete) {
+                step_was_valid = wasmMosaic.stepK(k);
+                if (!step_was_valid) {
+                    setComputationComplete(true);
+                }
+                
+            }
+            
+            const start = wasmMosaic.getRenderPointer();
+            wasmMosaic.renderImageRange(start, k);
+
+            const dataArray = wasmMosaic.getRawData();
+            const imageData = new ImageData(dataArray, width, height);
+            ctx.putImageData(imageData, 0, 0);
+
+            
+            
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        if (isPlaying) { 
+            animationFrameId = requestAnimationFrame(animate);
         }
 
-        if (wasmMosaic.empty()) { 
-            setText("No Image uploaded");
-            return;
-        }
-
-        
-        const { width, height } = wasmMosaic.getSize();
-        const canvas = canvasRef.current;
-        canvas.width = width;
-        canvas.height = height;
-        const text_string = "Image: " + width + " x " + height;
-        setText(text_string);
-
-        const ctx = canvas.getContext('2d');
-        wasmMosaic.runAll();
-        const dataArray = wasmMosaic.getRawData();
-        const imageData = new ImageData(dataArray, width, height);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.putImageData(imageData, 0, 0);
+        return () => cancelAnimationFrame(animationFrameId);
 
 
-        
-        console.log("canvas updated from c++");
+    }, [isPlaying, wasmMosaic, computationComplete]);
 
-    };
+
 
 
     const handleUpload = async (event) => { 
         const file = event.target.files[0];
         if (!file || !wasmMosaic) return;
+
+        setIsPlaying(false);
 
         if (!wasmMosaic.empty()) { 
             wasmMosaic.destroy();
@@ -92,12 +111,29 @@ function App() {
 
     }
 
+    function handleReset() { 
+        if (!wasmMosaic || wasmMosaic.empty()) return;
+        wasmMosaic.resetRenderPointer();
+        wasmMosaic.resetCanvas();
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        setIsPlaying(true);
+    }
+
     return (
         <div className="App">
         <header className="App-header">
             <input type="file" accept="image/*" onChange={handleUpload} />
             <p>{text || "Click the button to run C++ code"}</p>
-            <button onClick={handleClick}>Call C++</button>
+            <button onClick={() => setIsPlaying(prev => !prev)}>
+                {isPlaying ? "Pause" : "Play"}
+            </button>
+            <button onClick={handleReset}>
+                Reset Animation
+            </button>
             <canvas ref={canvasRef} />
         </header>
         </div>

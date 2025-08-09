@@ -6,7 +6,7 @@
 #include <stack>
 #include <string>
 #include <vector>
-#include <map>
+
 
 
 
@@ -90,10 +90,13 @@ class Mosaic {
         bool empty();
         Size size();
 
+        bool stepK(int k);
+        void renderImageRange(int start, int num_tiles);
+        int getRenderPointer();
+        void setRenderPointer(int start);
+        void resetCanvas();
 
-        // void saveImage(const cv::Mat& image, const std::string& suffix);
-        // void saveGif(int tiles_per_frame, const std::string& suffix);
-        // void saveTileInfo(const std::string& suffix);
+
         
 
         string image_name;
@@ -142,10 +145,13 @@ class Mosaic {
         void gapFill();
 
         void reconstructImage();
+        
+
         void reconstructShowFrontiers();
         Color sampleTileColor(Point center, double size, double theta_deg);
 
         bool stepOnce();
+        
         
 
      
@@ -185,6 +191,8 @@ class Mosaic {
         int frontiers_completed = 0;
         bool gaps_calculated = false;
 
+        // int num_tiles_rendered = 0; // used to avoid re-rendering entire tiles_placed vector every step;
+        int render_pointer = 0;
 
 
         // in case pca function fails

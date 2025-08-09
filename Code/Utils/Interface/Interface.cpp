@@ -92,6 +92,11 @@ EMSCRIPTEN_BINDINGS(my_module) {
             return self.loadImageFromBuffer(data, size);
         }))
         .function("runAll", &Mosaic::runAll)
+        .function("stepK", &Mosaic::stepK)
+        .function("renderImageRange", &Mosaic::renderImageRange)
+        .function("setRenderPointer", &Mosaic::setRenderPointer)
+        .function("getRenderPointer", &Mosaic::getRenderPointer)
+        .function("resetCanvas", &Mosaic::resetCanvas)
         .function("getRawData", optional_override([](Mosaic& self) -> uintptr_t {
                     uint8_t* data = self.getRawData();
                     return reinterpret_cast<uintptr_t>(data);

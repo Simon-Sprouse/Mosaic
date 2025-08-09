@@ -451,15 +451,29 @@ void MosaicTest::testStepOnce() {
 
 
     // test all steps
-    while (mosaic.stepOnce()) {}
+    int num_steps = 0;
+    while (mosaic.stepOnce()) {num_steps++;};
+    cout << "num steps taken stepOnce() loop: " << num_steps << endl;
     
     mosaic.reconstructShowFrontiers();
     image::io::saveImageFileSystem(mosaic.canvas, save_dir_ + "all_steps.jpg");
 
 
-    
 
+}
 
+void MosaicTest::testStepK() { 
+
+    int k = 100000;
+    Mosaic mosaic(params_);
+    Image original = image::io::loadImageFileSystem(image_path_);
+    mosaic.loadExistingImage(original);
+    mosaic.stepK(k);
+
+    mosaic.reconstructImage();
+    image::io::saveImageFileSystem(mosaic.canvas, save_dir_ + "step_k.png");
+
+    cout << "length tiles_placed: " << mosaic.tiles_placed.size() << endl;
 
 }
 
@@ -497,6 +511,7 @@ void MosaicTest::runAllTests() {
 
 
     total_time += timeFunction("Step Once", [&]() {testStepOnce();});
+    total_time += timeFunction("Step k", [&]() {testStepK();});
    
 
 
