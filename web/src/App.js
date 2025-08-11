@@ -11,14 +11,15 @@ function App() {
     const [text, setText] = useState('');
     const [wasmModule, setWasmModule] = useState(null);
     const [wasmMosaic, setWasmMosaic] = useState(null);
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [animationMode, setAnimationMode] = useState("paused");
     const [computationComplete, setComputationComplete] = useState(false);
 
     const k = 100;
+    const multi_step = 100;
 
 
 
-    // Function to call stepK from wasmMosaic
+    // Function to progress wasm computation (if needed) and handle forward animation
     const stepK = (k) => { 
 
         if (!wasmMosaic || wasmMosaic.empty()) return;
@@ -43,8 +44,28 @@ function App() {
         ctx.putImageData(imageData, 0, 0);
 
 
-        
+    }
 
+    // Function to handle backward animation
+    const reverseStepK = (k) => { 
+        if (!wasmMosaic || wasmMosaic.empty()) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        const { width, height } = wasmMosaic.getSize();
+        canvas.width = width;
+        canvas.height = height;
+
+        const current = wasmMosaic.getRenderPointer();
+        
+        wasmMosaic.resetCanvas();
+        wasmMosaic.resetRenderPointer();
+        wasmMosaic.renderImageRange(0, Math.max(0, current - k));
+
+        const dataArray = wasmMosaic.getRawData();
+        const imageData = new ImageData(dataArray, width, height);
+        ctx.putImageData(imageData, 0, 0);
     }
 
 
@@ -73,21 +94,40 @@ function App() {
     }, []);
 
 
-    // Request Animation frame if play button
+    // Request Animation frame if play/reverse mode
     useEffect(() => {
-        const animate = () => {
-            if (!isPlaying) return;
 
-            stepK(k);
+        const animate = () => {
+
+            if (animationMode === "paused") { 
+                return;
+            }
+            else if (animationMode === "play") { 
+                stepK(k);
+            }
+            else if (animationMode === "reverse") { 
+                reverseStepK(k);
+            }
+            
             animationFrameRef.current = requestAnimationFrame(animate);
         };
 
-        if (isPlaying) {
+        if (animationMode !== "paused") {
             animationFrameRef.current = requestAnimationFrame(animate);
         }
 
         return () => cancelAnimationFrame(animationFrameRef.current);
-    }, [isPlaying, wasmMosaic, computationComplete]);
+    }, [animationMode, wasmMosaic, computationComplete]);
+
+    const stopAnimation = () => { 
+
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+
+        setAnimationMode("paused");
+    }
 
 
 
@@ -96,9 +136,9 @@ function App() {
         const file = event.target.files[0];
         if (!file || !wasmModule) return;
 
-        setIsPlaying(false);
+        setAnimationMode(false);
         cancelAnimationFrame(animationFrameRef.current);
-        setIsPlaying(false);
+        setAnimationMode(false);
         setComputationComplete(false);
 
         if (wasmMosaic && !wasmMosaic.empty()) { 
@@ -132,12 +172,26 @@ function App() {
 
 
 
-    const handlePlayPause = () => { 
-        if (!wasmMosaic || wasmMosaic.empty()) {
-            setIsPlaying(false);
-            return;
+    const handlePlay = () => { 
+        if (animationMode === "play") { 
+            setAnimationMode("paused");
         }
-        setIsPlaying(!isPlaying);
+        else {
+            setAnimationMode("play");
+        }
+    }
+
+    const handlePause = () => { 
+        setAnimationMode("paused");
+    }
+
+    const handleReverse = () => { 
+        if (animationMode === "reverse") {
+            setAnimationMode("paused");
+        }
+        else { 
+            setAnimationMode("reverse");
+        }
     }
 
     const handleReplay = () => { 
@@ -149,12 +203,12 @@ function App() {
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        setIsPlaying(true);
+        setAnimationMode("play");
     }
 
     const handleReset = () => { 
 
-        setIsPlaying(false);
+        setAnimationMode("paused");
 
         if (!wasmMosaic || wasmMosaic.empty()) return;
         wasmMosaic.resetRenderPointer();
@@ -168,49 +222,42 @@ function App() {
         
     }
 
-    const stepOnce = () => {
-        if (isPlaying) return;
+    const stepForward = () => {
+        if (animationMode !== "paused") stopAnimation();
         stepK(1);
     };
 
     const stepBack = () => {
-
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-        }
-        setIsPlaying(false);
-
-        if (!wasmMosaic || wasmMosaic.empty()) return;
-
-
-
-
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-
-        const { width, height } = wasmMosaic.getSize();
-        canvas.width = width;
-        canvas.height = height;
-
-        const current = wasmMosaic.getRenderPointer();
-        
-        wasmMosaic.resetCanvas();
-        wasmMosaic.resetRenderPointer();
-        wasmMosaic.renderImageRange(0, current - 100);
-
-        const dataArray = wasmMosaic.getRawData();
-        const imageData = new ImageData(dataArray, width, height);
-        ctx.putImageData(imageData, 0, 0);
+        if (animationMode !== "paused") stopAnimation();
+        reverseStepK(1);
     }
+
+    const stepForwardMulti = () => { 
+        if (animationMode !== "paused") stopAnimation();
+        stepK(multi_step);
+    }
+
+    const stepBackMulti = () => { 
+        if (animationMode !== "paused") stopAnimation();
+        reverseStepK(multi_step);
+    }
+
+
+
 
     return (
         <div className="App">
         <header className="App-header">
             <input type="file" accept="image/*" onChange={handleUpload} />
             <p>{text || "Click the button to run C++ code"}</p>
-            <button onClick={handlePlayPause}>
-                {isPlaying ? "Pause" : "Play"}
+            <button onClick={handlePlay}>
+                Play
+            </button>
+            <button onClick={handlePause}>
+                Pause
+            </button>
+            <button onClick={handleReverse}>
+                Reverse
             </button>
             <button onClick={handleReplay}>
                 Replay Animation
@@ -218,11 +265,17 @@ function App() {
             <button onClick={handleReset}>
                 Reset Animation
             </button>
-            <button onClick={stepOnce}>
-                Next Step
+            <button onClick={stepForward}>
+                Step Forward
             </button>
             <button onClick={stepBack}>
                 Step Back
+            </button>
+            <button onClick={stepForwardMulti}>
+                Step Forward Multi
+            </button>
+            <button onClick={stepBackMulti}>
+                Step Back Multi
             </button>
             <canvas ref={canvasRef} />
         </header>
