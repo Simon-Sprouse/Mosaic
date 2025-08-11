@@ -42,6 +42,9 @@ function App() {
         const imageData = new ImageData(dataArray, width, height);
         ctx.putImageData(imageData, 0, 0);
 
+
+        
+
     }
 
 
@@ -127,6 +130,16 @@ function App() {
 
     }
 
+
+
+    const handlePlayPause = () => { 
+        if (!wasmMosaic || wasmMosaic.empty()) {
+            setIsPlaying(false);
+            return;
+        }
+        setIsPlaying(!isPlaying);
+    }
+
     const handleReplay = () => { 
         if (!wasmMosaic || wasmMosaic.empty()) return;
         wasmMosaic.resetRenderPointer();
@@ -155,17 +168,48 @@ function App() {
         
     }
 
-    const stepOnce = useCallback(() => {
+    const stepOnce = () => {
         if (isPlaying) return;
         stepK(1);
-    }, [isPlaying, wasmMosaic]);
+    };
+
+    const stepBack = () => {
+
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        setIsPlaying(false);
+
+        if (!wasmMosaic || wasmMosaic.empty()) return;
+
+
+
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        const { width, height } = wasmMosaic.getSize();
+        canvas.width = width;
+        canvas.height = height;
+
+        const current = wasmMosaic.getRenderPointer();
+        
+        wasmMosaic.resetCanvas();
+        wasmMosaic.resetRenderPointer();
+        wasmMosaic.renderImageRange(0, current - 100);
+
+        const dataArray = wasmMosaic.getRawData();
+        const imageData = new ImageData(dataArray, width, height);
+        ctx.putImageData(imageData, 0, 0);
+    }
 
     return (
         <div className="App">
         <header className="App-header">
             <input type="file" accept="image/*" onChange={handleUpload} />
             <p>{text || "Click the button to run C++ code"}</p>
-            <button onClick={() => setIsPlaying(prev => !prev)}>
+            <button onClick={handlePlayPause}>
                 {isPlaying ? "Pause" : "Play"}
             </button>
             <button onClick={handleReplay}>
@@ -176,6 +220,9 @@ function App() {
             </button>
             <button onClick={stepOnce}>
                 Next Step
+            </button>
+            <button onClick={stepBack}>
+                Step Back
             </button>
             <canvas ref={canvasRef} />
         </header>

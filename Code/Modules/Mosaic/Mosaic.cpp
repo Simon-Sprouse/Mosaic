@@ -901,7 +901,7 @@ void Mosaic::renderImageRange(int start, int num_tiles) {
 }
 
 int Mosaic::getRenderPointer() { 
-    return render_pointer;
+    return std::min(static_cast<int>(tiles_placed.size()), render_pointer);
 }
 
 void Mosaic::setRenderPointer(int start) { 
