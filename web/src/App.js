@@ -6,7 +6,10 @@ import WasmMosaic from './WasmMosaic';
 function App() {
 
     const canvasRef = useRef(null);
+    const animationFrameRef = useRef(null);
+
     const [text, setText] = useState('');
+    const [wasmModule, setWasmModule] = useState(null);
     const [wasmMosaic, setWasmMosaic] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [computationComplete, setComputationComplete] = useState(false);
@@ -22,8 +25,7 @@ function App() {
 
         script.onload = () => {
         window.Module().then((instance) => {
-            const mosaic = new WasmMosaic(instance);
-            setWasmMosaic(mosaic);
+            setWasmModule(instance);
         }).catch((err) => {
             console.error('Failed to instantiate WASM module:', err);
         });
@@ -42,9 +44,6 @@ function App() {
 
     // Request Animation frame if play button
     useEffect(() => {
-
-        let animationFrameId;
-
         const animate = () => {
             if (!isPlaying || !wasmMosaic || wasmMosaic.empty()) return;
 
@@ -55,15 +54,11 @@ function App() {
             canvas.width = width;
             canvas.height = height;
 
-            let step_was_valid;
             if (!computationComplete) {
-                step_was_valid = wasmMosaic.stepK(k);
-                if (!step_was_valid) {
-                    setComputationComplete(true);
-                }
-                
+                const stepValid = wasmMosaic.stepK(k);
+                if (!stepValid) setComputationComplete(true);
             }
-            
+
             const start = wasmMosaic.getRenderPointer();
             wasmMosaic.renderImageRange(start, k);
 
@@ -71,18 +66,14 @@ function App() {
             const imageData = new ImageData(dataArray, width, height);
             ctx.putImageData(imageData, 0, 0);
 
-            
-            
-            animationFrameId = requestAnimationFrame(animate);
+            animationFrameRef.current = requestAnimationFrame(animate);
         };
 
-        if (isPlaying) { 
-            animationFrameId = requestAnimationFrame(animate);
+        if (isPlaying) {
+            animationFrameRef.current = requestAnimationFrame(animate);
         }
 
-        return () => cancelAnimationFrame(animationFrameId);
-
-
+        return () => cancelAnimationFrame(animationFrameRef.current);
     }, [isPlaying, wasmMosaic, computationComplete]);
 
 
@@ -90,24 +81,32 @@ function App() {
 
     const handleUpload = async (event) => { 
         const file = event.target.files[0];
-        if (!file || !wasmMosaic) return;
+        if (!file || !wasmModule) return;
 
         setIsPlaying(false);
+        cancelAnimationFrame(animationFrameRef.current);
+        setIsPlaying(false);
+        setComputationComplete(false);
 
-        if (!wasmMosaic.empty()) { 
+        if (wasmMosaic && !wasmMosaic.empty()) { 
             wasmMosaic.destroy();
         }
+
+        const mosaic = new WasmMosaic(wasmModule);
+        
 
 
 
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
         const size = byteArray.length;
-        wasmMosaic.loadMosaicFromBytes(byteArray, size);
+        mosaic.loadMosaicFromBytes(byteArray, size);
 
-        const { width, height } = wasmMosaic.getSize();
+        const { width, height } = mosaic.getSize();
         const size_string = "Mosaic: " + width + " x " + height;
         setText(size_string)
+
+        setWasmMosaic(mosaic);
 
     }
 

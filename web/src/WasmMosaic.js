@@ -8,7 +8,7 @@ export default class WasmMosaic {
 
     create() {
         this.params = new this.Module.Parameters;
-        this.params.resize_factor = 0.5;
+        this.params.resize_factor = 2;
         this.params.blur_kernel_size = 3;
         this.params.blur_sigma = 1.4;
         this.params.canny_threshold_1 = 50;
