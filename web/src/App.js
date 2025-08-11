@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import './App.css';
 
 import WasmMosaic from './WasmMosaic';
@@ -18,7 +18,35 @@ function App() {
 
 
 
-    // LOAD WASM + SAVE MODULE IN CLASS
+    // Function to call stepK from wasmMosaic
+    const stepK = (k) => { 
+
+        if (!wasmMosaic || wasmMosaic.empty()) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        const { width, height } = wasmMosaic.getSize();
+        canvas.width = width;
+        canvas.height = height;
+
+        if (!computationComplete) {
+            const stepValid = wasmMosaic.stepK(k);
+            if (!stepValid) setComputationComplete(true);
+        }
+
+        const start = wasmMosaic.getRenderPointer();
+        wasmMosaic.renderImageRange(start, k);
+
+        const dataArray = wasmMosaic.getRawData();
+        const imageData = new ImageData(dataArray, width, height);
+        ctx.putImageData(imageData, 0, 0);
+
+    }
+
+
+
+    // LOAD WASM + SAVE MODULE IN STATE
     useEffect(() => {
         const script = document.createElement('script');
         script.src = process.env.PUBLIC_URL + '/wasm/image_module.js';
@@ -45,27 +73,9 @@ function App() {
     // Request Animation frame if play button
     useEffect(() => {
         const animate = () => {
-            if (!isPlaying || !wasmMosaic || wasmMosaic.empty()) return;
+            if (!isPlaying) return;
 
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext('2d');
-
-            const { width, height } = wasmMosaic.getSize();
-            canvas.width = width;
-            canvas.height = height;
-
-            if (!computationComplete) {
-                const stepValid = wasmMosaic.stepK(k);
-                if (!stepValid) setComputationComplete(true);
-            }
-
-            const start = wasmMosaic.getRenderPointer();
-            wasmMosaic.renderImageRange(start, k);
-
-            const dataArray = wasmMosaic.getRawData();
-            const imageData = new ImageData(dataArray, width, height);
-            ctx.putImageData(imageData, 0, 0);
-
+            stepK(k);
             animationFrameRef.current = requestAnimationFrame(animate);
         };
 
@@ -95,8 +105,6 @@ function App() {
         const mosaic = new WasmMosaic(wasmModule);
         
 
-
-
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
         const size = byteArray.length;
@@ -106,11 +114,20 @@ function App() {
         const size_string = "Mosaic: " + width + " x " + height;
         setText(size_string)
 
+
         setWasmMosaic(mosaic);
+
+        // TODO load black canvas to show what dimesions will be
+        const canvas = canvasRef.current;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, width, height);
 
     }
 
-    function handleReset() { 
+    const handleReplay = () => { 
         if (!wasmMosaic || wasmMosaic.empty()) return;
         wasmMosaic.resetRenderPointer();
         wasmMosaic.resetCanvas();
@@ -122,6 +139,27 @@ function App() {
         setIsPlaying(true);
     }
 
+    const handleReset = () => { 
+
+        setIsPlaying(false);
+
+        if (!wasmMosaic || wasmMosaic.empty()) return;
+        wasmMosaic.resetRenderPointer();
+        wasmMosaic.resetCanvas();
+
+        
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+    }
+
+    const stepOnce = useCallback(() => {
+        if (isPlaying) return;
+        stepK(1);
+    }, [isPlaying, wasmMosaic]);
+
     return (
         <div className="App">
         <header className="App-header">
@@ -130,8 +168,14 @@ function App() {
             <button onClick={() => setIsPlaying(prev => !prev)}>
                 {isPlaying ? "Pause" : "Play"}
             </button>
+            <button onClick={handleReplay}>
+                Replay Animation
+            </button>
             <button onClick={handleReset}>
                 Reset Animation
+            </button>
+            <button onClick={stepOnce}>
+                Next Step
             </button>
             <canvas ref={canvasRef} />
         </header>
