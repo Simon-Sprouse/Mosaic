@@ -42,7 +42,7 @@ int main() {
     params.flood_fill_neighbor_points = 4;
     params.distance_from_center = 1.5 * params.tile_size;
     params.random_background_points = 50000;
-    params.tiles_per_frame = 20;
+    // params.tiles_per_frame = 20;
     // params.jitter_map.insert({4, 0});
     // params.jitter_map.insert({8, 1});
     // params.jitter_map.insert({12, 10});

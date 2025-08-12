@@ -17,6 +17,28 @@ function App() {
     const k = 100;
     const multi_step = 100;
 
+    const default_params = {
+        resize_factor: 2,
+        blur_kernel_size: 3,
+        blur_sigma: 1.4,
+        canny_threshold_1: 50,
+        canny_threshold_2: 100,
+        max_segment_angle_deg: 100,
+        min_segment_legnth: 20,
+        segment_angle_window: 10,
+        tile_size: 20,
+        number_of_rings: 3,
+        intiial_step_factor: 1.5,
+        step_size_factor: 0.25,
+        min_intersection_distance_factor: 0.25,
+        max_frontiers: 4,
+        flood_fill_neighbor_points: 4,
+        flood_fill_distance_factor: 1.5,
+        max_background_points: 50000,
+    }
+    const [params, setParams] = useState(default_params);
+
+
 
 
     // Function to progress wasm computation (if needed) and handle forward animation
@@ -36,8 +58,8 @@ function App() {
             if (!stepValid) setComputationComplete(true);
         }
 
-        const start = wasmMosaic.getRenderPointer();
-        wasmMosaic.renderImageRange(start, k);
+        const current = wasmMosaic.getRenderPointer();
+        wasmMosaic.renderImageRange(current, k);
 
         const dataArray = wasmMosaic.getRawData();
         const imageData = new ImageData(dataArray, width, height);
@@ -67,6 +89,24 @@ function App() {
         const imageData = new ImageData(dataArray, width, height);
         ctx.putImageData(imageData, 0, 0);
     }
+
+    const clearOnscreenCanvas = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    const stopAnimation = () => { 
+
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+
+        setAnimationMode("paused");
+    }
+
 
 
 
@@ -119,15 +159,42 @@ function App() {
         return () => cancelAnimationFrame(animationFrameRef.current);
     }, [animationMode, wasmMosaic, computationComplete]);
 
-    const stopAnimation = () => { 
 
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-        }
+    // Handle dynamic parameters change from user settings
+    useEffect(() => {
+        if (!wasmMosaic) return;
 
-        setAnimationMode("paused");
-    }
+        // 1. Store current animation state
+        const stored_animation_mode = animationMode;
+
+        // 2. Stop animation if running 
+        stopAnimation();
+
+        // 3. clear old data
+        wasmMosaic.clearData();
+
+        // 4. update mosaic with new params
+        wasmMosaic.setParameters(params);
+
+        // 5. reset canvas
+        wasmMosaic.resizeOriginal(); // done so we can access mosaic.size() and resize canvas
+        const { width, height } = wasmMosaic.getSize();
+        const canvas = canvasRef.current;
+        canvas.width = width;
+        canvas.height = height;
+        clearOnscreenCanvas();
+
+        // 6. mark comuptation flag as incomplete
+        setComputationComplete(false);
+
+        // 7. restart animation
+        setAnimationMode(stored_animation_mode);
+
+
+    }, [params]); // <- run this effect when params change
+
+
+    
 
 
 
@@ -136,40 +203,49 @@ function App() {
         const file = event.target.files[0];
         if (!file || !wasmModule) return;
 
-        setAnimationMode(false);
-        cancelAnimationFrame(animationFrameRef.current);
-        setAnimationMode(false);
+        // stop animation and reset computation flag
+        stopAnimation();
         setComputationComplete(false);
 
+        // destroy old mosaic
         if (wasmMosaic && !wasmMosaic.empty()) { 
             wasmMosaic.destroy();
         }
 
+        // create new mosaic with new image
         const mosaic = new WasmMosaic(wasmModule);
-        
+        mosaic.createMosaic(params);
 
+        // load byte array into mosaic
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
-        const size = byteArray.length;
-        mosaic.loadMosaicFromBytes(byteArray, size);
+        mosaic.loadMosaicFromBytes(byteArray, byteArray.length);
+        
 
+        // display mosaic metadata
         const { width, height } = mosaic.getSize();
         const size_string = "Mosaic: " + width + " x " + height;
         setText(size_string)
 
-
+        // store mosaic into state (this is async)
         setWasmMosaic(mosaic);
 
-        // TODO load black canvas to show what dimesions will be
+
+        // load black canvas to show what dimesions will be // TODO show image eventually
         const canvas = canvasRef.current;
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, width, height);
+        clearOnscreenCanvas();
 
     }
 
+
+
+    /*
+    --------------------------------------
+        vvv FUNCTIONS FOR BUTTONS/IO vvv
+    --------------------------------------
+    */
 
 
     const handlePlay = () => { 
@@ -277,7 +353,35 @@ function App() {
             <button onClick={stepBackMulti}>
                 Step Back Multi
             </button>
+            
+
+
+
+
+
+            <div style={{ marginTop: '1rem' }}>
+                <label>
+                    Tile Size: {params.tile_size}
+                    <input
+                    type="range"
+                    min="5"
+                    max="40"
+                    step="1"
+                    value={params.tile_size}
+                    onChange={(e) => 
+                        setParams(prev => ({
+                            ...prev,
+                            tile_size: parseInt(e.target.value, 10)
+                        }))
+                    }
+                    />
+                </label>
+            </div>
+
+
+
             <canvas ref={canvasRef} />
+
         </header>
         </div>
     );

@@ -1,38 +1,65 @@
 export default class WasmMosaic {
+
     constructor(Module) {
+
         this.Module = Module;
+        this.mosaic = null;
         this.params = null;
-        this.create();
-        
+    }
+    
+    createParamsObject(user_params) { 
+        // take js object and create Params object from module
+
+        const params = new this.Module.Parameters;
+        params.resize_factor = user_params.resize_factor;
+        params.blur_kernel_size = user_params.blur_kernel_size;
+        params.blur_sigma = user_params.blur_sigma;
+        params.canny_threshold_1 = user_params.canny_threshold_1;
+        params.canny_threshold_2 = user_params.canny_threshold_2;
+        params.max_segment_angle_rad = user_params.max_segment_angle_deg * Math.pi / 180.0; 
+        params.min_segment_length = user_params.min_segment_legnth;
+        params.segment_angle_window = user_params.segment_angle_window;
+        params.tile_size = user_params.tile_size;
+        params.number_of_rings = user_params.number_of_rings;
+        params.initial_step = user_params.intiial_step_factor * user_params.tile_size;
+        params.step_size = user_params.step_size_factor * user_params.tile_size;
+        params.min_intersection_distance = user_params.min_intersection_distance_factor * user_params.tile_size;
+        params.max_frontiers = user_params.max_frontiers;
+        params.flood_fill_neighbor_points = user_params.flood_fill_neighbor_points;
+        params.distance_from_center = user_params.flood_fill_distance_factor * user_params.tile_size;
+        params.random_background_points = user_params.max_background_points;
+
+        return params;
     }
 
-    create() {
-        this.params = new this.Module.Parameters;
-        this.params.resize_factor = 2;
-        this.params.blur_kernel_size = 3;
-        this.params.blur_sigma = 1.4;
-        this.params.canny_threshold_1 = 50;
-        this.params.canny_threshold_2 = 100;
-        this.params.max_segment_angle_rad = 100 * Math.pi / 180.0; // TODO why is this in rad
-        this.params.min_segment_length = 20;
-        this.params.segment_angle_window = 10;
-        this.params.tile_size = 10;
-        this.params.number_of_rings = 3;
-        this.params.initial_step = 1.5 * this.params.tile_size;
-        this.params.step_size = 0.25 * this.params.tile_size;
-        this.params.min_intersection_distance = 0.25 * this.params.tile_size;
-        this.params.max_frontiers = 4;
-        this.params.flood_fill_neighbor_points = 4;
-        this.params.distance_from_center = 1.5 * this.params.tile_size;
-        this.params.random_background_points = 50000;
-        this.params.tiles_per_frame = 20; //  TODO remove
-
+    createMosaic(user_params) {
+        
+        this.params = this.createParamsObject(user_params);
         this.mosaic = new this.Module.Mosaic(this.params);
         
     }
 
+    setParameters(user_params) { 
+        this.params = this.createParamsObject(user_params);
+        if (this.mosaic) { 
+            this.mosaic.setParameters(this.params);
+        }
+    }
+
+    clearData() { 
+        if (this.mosaic) { 
+            this.mosaic.clearData();
+        }
+    }
+
+    resizeOriginal() {
+        if (this.mosaic && !this.mosaic.empty()) { 
+            this.mosaic.resizeOriginal();
+        }
+    }
+
     loadMosaicFromBytes(byteArray, size) {
-        if (!this.mosaic) this.create();
+        if (!this.mosaic) return;
 
         // Allocate memory on Emscripten heap
         const ptr = this.Module._malloc(byteArray.length);
@@ -90,9 +117,6 @@ export default class WasmMosaic {
     resetCanvas() { 
         this.mosaic.resetCanvas();
     }
-
-
-
 
 
 

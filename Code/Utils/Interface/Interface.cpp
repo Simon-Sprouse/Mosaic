@@ -58,8 +58,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .property("max_frontiers", &Parameters::max_frontiers)
         .property("flood_fill_neighbor_points", &Parameters::flood_fill_neighbor_points)
         .property("distance_from_center", &Parameters::distance_from_center)
-        .property("random_background_points", &Parameters::random_background_points)
-        .property("tiles_per_frame", &Parameters::tiles_per_frame);
+        .property("random_background_points", &Parameters::random_background_points);
+
 
 
     // Bind Image class
@@ -103,6 +103,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
                 }))        
         .function("empty", &Mosaic::empty)
         .function("size", &Mosaic::size)
+        .function("setParameters", &Mosaic::setParameters)
+        .function("clearData", &Mosaic::clearData)
+        .function("resizeOriginal", &Mosaic::resizeOriginal)
         // You can add more Mosaic methods as needed
         ;
 }

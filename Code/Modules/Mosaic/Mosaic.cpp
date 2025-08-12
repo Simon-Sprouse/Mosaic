@@ -228,6 +228,7 @@ void Mosaic::loadExistingImage(const Image& img) {
 
 
 
+
 void Mosaic::contourPipeline() {
 
     // helper side effects
@@ -239,7 +240,11 @@ void Mosaic::contourPipeline() {
     // original = io::loadImage(params.image_path); // done from standalone function now
     // image::process::resize(original, resized, params.resize_factor);
 
-    
+    Size target_size = original.size() * params.resize_factor;
+    if (resized.size() != target_size) { 
+        image::process::resize(original, resized, target_size);
+        cout << "resized image to: " << resized.size() << endl;
+    }
     image::process::grayscale(resized, gray);
     image::process::gaussianBlur(gray, blurred, params.blur_kernel_size, params.blur_sigma);
     image::process::cannyFilter(blurred, canny, params.canny_threshold_1, params.canny_threshold_2);
@@ -253,6 +258,8 @@ void Mosaic::contourPipeline() {
     // TODO think about separate function for initialization
     mask = Image(resized.size());
     canvas = Image(resized.size());
+
+    cout << "contour pipeline complete" << endl;
 
 
 }
@@ -913,6 +920,9 @@ void Mosaic::resetCanvas() {
 }
 
 
+void Mosaic::setParameters(Parameters p) { 
+    params = p;
+}
 
 
 
@@ -1128,7 +1138,50 @@ bool Mosaic::stepOnce() {
 
 
 
+void Mosaic::clearData() { 
+    /*
+    Clear everything except for original (this shouldn't change ever)
+    */
 
+    params = Parameters();
+       
+    tiles_placed.clear();
+    
+    // image data various purposes
+   
+    resized = Image();
+    canny = Image();
+    strokes.clear();
+    selected_stroke = Image();
+
+    grad_x.clear();
+    grad_y.clear();
+
+    mask = Image();
+    canvas = Image();
+
+    std::stack<Point>().swap(strokePointsStack);
+    std::queue<Point>().swap(floodPointsQueue);
+    gapPointsVector.clear();
+
+    strokes_completed = 0;
+    frontiers_completed = 0;
+    gaps_calculated = false;
+
+    render_pointer = 0;
+
+
+    cout << "data cleared" << endl;
+}
+
+
+void Mosaic::resizeOriginal() {
+    Size target_size = original.size() * params.resize_factor;
+    if (resized.size() != target_size) { 
+        image::process::resize(original, resized, target_size);
+        cout << "resized image to: " << resized.size() << endl;
+    }
+}
 
 
 

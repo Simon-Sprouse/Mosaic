@@ -98,6 +98,8 @@ inline Point operator-(const Point& a, const Point& b) {
     return Point(a.x - b.x, a.y - b.y);
 }
 
+
+
 struct Vec2d {
     double x;
     double y;
@@ -157,6 +159,10 @@ struct Size {
     
 
 };
+
+inline Size operator*(const Size& s, double scalar) {
+    return Size(s.width * scalar, s.height * scalar);
+}
 
 
 

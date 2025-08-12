@@ -48,7 +48,7 @@ struct Parameters {
     int flood_fill_neighbor_points;
     double distance_from_center;
     int random_background_points;
-    int tiles_per_frame;
+    // int tiles_per_frame;
     // std::map<int, int> jitter_map;
     
     
@@ -95,6 +95,10 @@ class Mosaic {
         int getRenderPointer();
         void setRenderPointer(int start);
         void resetCanvas();
+
+        void setParameters(Parameters p);
+        void clearData();
+        void resizeOriginal();
 
 
         
