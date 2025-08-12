@@ -2,6 +2,7 @@
 #include "../../Modules/Mosaic/Mosaic.hpp"
 #include <stdint.h>
 #include <iostream>
+#include <string>
 
 #include <emscripten/bind.h>
 using namespace emscripten;
@@ -14,7 +15,16 @@ using image::Size;
 using mosaic_gen::Parameters;
 using mosaic_gen::Mosaic;
 
+std::string sayHello() {
+    std::cout << "Hello from C++!" << std::endl;
+    return "Hello from WASM!";
+}
+
 EMSCRIPTEN_BINDINGS(my_module) {
+
+
+    emscripten::function("sayHello", &sayHello);
+
 
 
     // Bind Color struct

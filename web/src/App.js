@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 import WasmMosaic from './WasmMosaic';
@@ -142,6 +142,50 @@ function App() {
             document.body.removeChild(script);
         };
     }, []);
+
+
+
+
+
+
+
+    // TEST USING WEB WORKER
+    useEffect(() => {
+        const worker = new Worker(`${process.env.PUBLIC_URL}/wasmWebWorker.js`);
+        // setMyWorker(worker); // store in state or ref
+
+        worker.postMessage({ type: 'ping' })
+
+        worker.onmessage = (e) => {
+            const { type, data, error } = e.data;
+
+            if (type === 'pong') { 
+                console.log("[Message from Worker]: ", data);
+            }
+
+            if (type === 'ready') { 
+                console.log("wasm worker ready");
+            }
+
+            if (type === 'wasm-ready') {
+                console.log('✅ WASM loaded in worker');
+            }
+
+            if (type === 'wasm-error') {
+                console.error('❌ WASM load failed:', error);
+            }
+        };
+
+        return () => worker.terminate();
+    }, []);
+
+
+
+
+
+
+
+
 
 
     // Request Animation frame if play/reverse mode
@@ -405,35 +449,7 @@ function App() {
                     />
                 </label>
 
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Blur Kernel Size: {params.blur_kernel_size}
-                    <input
-                    type="range"
-                    min="1"
-                    max="15"
-                    step="2"
-                    value={params.blur_kernel_size}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, blur_kernel_size: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
 
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Blur Sigma: {params.blur_sigma}
-                    <input
-                    type="range"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
-                    value={params.blur_sigma}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, blur_sigma: parseFloat(e.target.value) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
 
                 <label style={{ display: 'block', marginBottom: '1rem' }}>
                     Canny Threshold 1: {params.canny_threshold_1}
@@ -465,50 +481,6 @@ function App() {
                     />
                 </label>
 
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Max Segment Angle (deg): {params.max_segment_angle_deg}
-                    <input
-                    type="range"
-                    min="0"
-                    max="180"
-                    step="1"
-                    value={params.max_segment_angle_deg}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, max_segment_angle_deg: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
-
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Min Segment Length: {params.min_segment_legnth}
-                    <input
-                    type="range"
-                    min="1"
-                    max="1000"
-                    step="1"
-                    value={params.min_segment_legnth}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, min_segment_legnth: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
-
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Segment Angle Window: {params.segment_angle_window}
-                    <input
-                    type="range"
-                    min="1"
-                    max="180"
-                    step="1"
-                    value={params.segment_angle_window}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, segment_angle_window: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
 
                 <label style={{ display: 'block', marginBottom: '1rem' }}>
                     Tile Size: {params.tile_size}
@@ -525,66 +497,7 @@ function App() {
                     />
                 </label>
 
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Number of Rings: {params.number_of_rings}
-                    <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={params.number_of_rings}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, number_of_rings: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
-
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Initial Step Factor: {params.intiial_step_factor}
-                    <input
-                    type="range"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
-                    value={params.intiial_step_factor}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, intiial_step_factor: parseFloat(e.target.value) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
-
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Step Size Factor: {params.step_size_factor}
-                    <input
-                    type="range"
-                    min="0.05"
-                    max="2"
-                    step="0.05"
-                    value={params.step_size_factor}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, step_size_factor: parseFloat(e.target.value) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
-
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Min Intersection Distance Factor: {params.min_intersection_distance_factor}
-                    <input
-                    type="range"
-                    min="0.05"
-                    max="2"
-                    step="0.05"
-                    value={params.min_intersection_distance_factor}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, min_intersection_distance_factor: parseFloat(e.target.value) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
-
+              
                 <label style={{ display: 'block', marginBottom: '1rem' }}>
                     Max Frontiers: {params.max_frontiers}
                     <input
@@ -615,35 +528,6 @@ function App() {
                     />
                 </label>
 
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Flood Fill Distance Factor: {params.flood_fill_distance_factor}
-                    <input
-                    type="range"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
-                    value={params.flood_fill_distance_factor}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, flood_fill_distance_factor: parseFloat(e.target.value) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
-
-                {/* <label style={{ display: 'block', marginBottom: '1rem' }}>
-                    Max Background Points: {params.max_background_points}
-                    <input
-                    type="range"
-                    min="0"
-                    max="50000"
-                    step="1000"
-                    value={params.max_background_points}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, max_background_points: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label> */}
             </div>
 
 
