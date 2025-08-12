@@ -37,7 +37,7 @@ namespace image::process {
     }
 
     Size resize(Image& src, Image& dest, Size size) { 
-        return resize(src, dest, size.height, size.width);
+        return resize(src, dest, size.width, size.height);
     }
 
     Size resize(Image& src, Image& dest, double ratio) { 
