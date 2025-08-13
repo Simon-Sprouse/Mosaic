@@ -143,7 +143,7 @@ function App() {
 
 
 
-    // TEST USING WEB WORKER
+    // CREAT REF FOR WEB WORKER
     const workerRef = useRef(null);
     const [workerReady, setWorkerReady] = useState(false);
     useEffect(() => {
@@ -160,6 +160,17 @@ function App() {
 
             if (type === 'wasm_load_error') {
                 console.error('Error from worker:', error);
+            }
+
+            if (type === "mosaic_creation_error") {
+                console.error("Error fro worker:", error)
+            }
+
+            if (type === "mosaic_created") { 
+                const { width, height } = data;
+                const size_string = "Mosaic: " + width + " x " + height;
+                setText(size_string);
+                console.log("mosaic creation sucessful, message received in main thread");
             }
 
         };
@@ -242,46 +253,26 @@ function App() {
 
 
 
-    const handleUpload = async (event) => { 
+   const handleUpload = async (event) => {
         const file = event.target.files[0];
-        if (!file || !wasmModule) return;
+        if (!file || !workerRef.current || !workerReady) return;
 
-        // stop animation and reset computation flag
         stopAnimation();
         setComputationComplete(false);
 
-        // destroy old mosaic
-        if (wasmMosaic && !wasmMosaic.empty()) { 
-            wasmMosaic.destroy();
-        }
-
-        // create new mosaic with new image
-        const mosaic = new WasmMosaic(wasmModule);
-        mosaic.createMosaic(params);
-
-        // load byte array into mosaic
+        // Read image into bytes
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
-        mosaic.loadMosaicFromBytes(byteArray, byteArray.length);
-        
 
-        // display mosaic metadata
-        const { width, height } = mosaic.getSize();
-        const size_string = "Mosaic: " + width + " x " + height;
-        setText(size_string)
-
-        // store mosaic into state (this is async)
-        setWasmMosaic(mosaic);
-
-
-        // load black canvas to show what dimesions will be // TODO show image eventually
-        const canvas = canvasRef.current;
-        canvas.width = width;
-        canvas.height = height;
-        clearOnscreenCanvas();
-
-    }
-
+        // Send message to worker with image + parameters
+        workerRef.current.postMessage({
+            type: 'handle_image_upload',
+            data: {
+                bytes: byteArray,
+                parameters: params, // This must be a plain JS object matching your embind Parameters
+            },
+        });
+    };
 
 
     /*

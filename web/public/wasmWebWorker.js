@@ -10,6 +10,7 @@
 
 let wasmInstance = null;
 let wasmIsReady = false; // if called but not ready -> error is thrown
+let mosaic = null; // stores WasmMosaic class instance
 
 
 // import the compiled glue code, which will read self.Module
@@ -27,15 +28,14 @@ Module({
   }
 }).then((instance) => {
 
-
     // Save instance for later
     wasmInstance = instance;
     wasmIsReady = true;
     self.postMessage({ type: 'wasm_ready' }); 
 
 }).catch(err => {
-        console.error("WASM module instantiation failed:", err);
-        self.postMessage({ type: 'wasm-error', error: err.message });
+    console.error("WASM module instantiation failed:", err);
+    self.postMessage({ type: 'wasm-error', error: err.message });
 });
 
 
@@ -60,8 +60,104 @@ self.onmessage = function (e) {
             self.postMessage({ type: 'pong', data: "hello from worker"});
             self.postMessage({ type: 'pong', data: message });
         }
+
+        else if (type === "handle_image_upload") { 
+
+            const { bytes, parameters } = data;
+
+            try {
+
+                // Create Mosaic
+                const params = createParamsObject(parameters);
+                mosaic = new wasmInstance.Mosaic(params);
+
+                
+                // Load image data into Mosaic
+                const byteArray = new Uint8Array(bytes);
+                loadMosaicFromBytes(byteArray, byteArray.length);
+                console.log("worker received image of length: ", byteArray.length);
+                console.log("worker has created mosaic successfully");
+
+                const size = mosaic.size();
+                console.log("mosaic.size(): ", size);
+
+                self.postMessage({
+                    type: 'mosaic_created',
+                    data: {
+                        width: size.width,
+                        height: size.height,
+                    },
+                });
+
+            } catch (err) {
+                console.error('Error creating mosaic in worker:', err);
+                self.postMessage({
+                    type: 'mosaic_creation_error',
+                    error: 'Could not create mosaic',
+                });
+            }
+
+        }
+
+
+
     }
 
-
-
 };
+
+
+function createParamsObject(user_params) { 
+    // take js object and create Params object from module
+
+    const params = new wasmInstance.Parameters;
+    params.resize_factor = user_params.resize_factor;
+    params.blur_kernel_size = user_params.blur_kernel_size;
+    params.blur_sigma = user_params.blur_sigma;
+    params.canny_threshold_1 = user_params.canny_threshold_1;
+    params.canny_threshold_2 = user_params.canny_threshold_2;
+    params.max_segment_angle_rad = user_params.max_segment_angle_deg * Math.pi / 180.0; 
+    params.min_segment_length = user_params.min_segment_legnth;
+    params.segment_angle_window = user_params.segment_angle_window;
+    params.tile_size = user_params.tile_size;
+    params.number_of_rings = user_params.number_of_rings;
+    params.initial_step = user_params.intiial_step_factor * user_params.tile_size;
+    params.step_size = user_params.step_size_factor * user_params.tile_size;
+    params.min_intersection_distance = user_params.min_intersection_distance_factor * user_params.tile_size;
+    params.max_frontiers = user_params.max_frontiers;
+    params.flood_fill_neighbor_points = user_params.flood_fill_neighbor_points;
+    params.distance_from_center = user_params.flood_fill_distance_factor * user_params.tile_size;
+    params.random_background_points = user_params.max_background_points;
+
+    return params;
+}
+
+
+function loadMosaicFromBytes(byteArray, size) {
+    if (!mosaic) return;
+
+    // Allocate memory on Emscripten heap
+    const ptr = wasmInstance._malloc(byteArray.length);
+    if (!ptr) {
+        throw new Error("Failed to allocate memory");
+    }
+
+    try {
+        // Copy data to heap
+        wasmInstance.HEAPU8.set(byteArray, ptr);
+        
+        // Call the function with the pointer
+        mosaic.loadImageFromHeap(ptr, size);
+        console.log("loadImageFromHeap successful");
+
+    } catch (err) {
+        console.error('Error loading image from heap in worker:', err);
+        self.postMessage({
+            type: 'mosaic_creation_error',
+            error: 'Could not create mosaic',
+        });
+    } finally {
+        // Always free the memory
+        wasmInstance._free(ptr);
+    }
+
+}
