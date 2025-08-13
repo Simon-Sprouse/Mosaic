@@ -42,12 +42,6 @@ function App() {
         max_background_points: 50000,
     }
     const [params, setParams] = useState(default_params);
-    const updateParam = (key, value) => {
-        setParams(prev => ({
-            ...prev,
-            [key]: parseFloat(value)
-        }));
-    };
 
 
 
@@ -150,31 +144,27 @@ function App() {
 
 
     // TEST USING WEB WORKER
+    const workerRef = useRef(null);
+    const [workerReady, setWorkerReady] = useState(false);
     useEffect(() => {
         const worker = new Worker(`${process.env.PUBLIC_URL}/wasmWebWorker.js`);
-        // setMyWorker(worker); // store in state or ref
-
-        worker.postMessage({ type: 'ping' })
+        
 
         worker.onmessage = (e) => {
             const { type, data, error } = e.data;
 
-            if (type === 'pong') { 
-                console.log("[Message from Worker]: ", data);
+            if (type === 'wasm_ready') {
+                console.log('✅ WASM module ready');
+                setWorkerReady(true);
             }
 
-            if (type === 'ready') { 
-                console.log("wasm worker ready");
+            if (type === 'wasm_load_error') {
+                console.error('Error from worker:', error);
             }
 
-            if (type === 'wasm-ready') {
-                console.log('✅ WASM loaded in worker');
-            }
-
-            if (type === 'wasm-error') {
-                console.error('❌ WASM load failed:', error);
-            }
         };
+
+        workerRef.current = worker;
 
         return () => worker.terminate();
     }, []);
@@ -300,6 +290,14 @@ function App() {
     --------------------------------------
     */
 
+    const handleWorkerTest = () => { 
+        if (!workerReady) { 
+            console.log("wasm not ready yet");
+            return;
+        }
+        workerRef.current.postMessage({ type: "ping" })
+    }
+
 
     const handlePlay = () => { 
         if (animationMode === "play") { 
@@ -377,6 +375,11 @@ function App() {
     return (
         <div className="App">
         <header className="App-header">
+
+            <p></p>
+            <button onClick={handleWorkerTest}>
+                test worker
+            </button>
 
 
             <input type="file" accept="image/*" onChange={handleUpload} />
