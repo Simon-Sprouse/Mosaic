@@ -92,10 +92,39 @@ self.onmessage = function (e) {
             } catch (err) {
                 console.error('Error creating mosaic in worker:', err);
                 self.postMessage({
-                    type: 'mosaic_creation_error',
+                    type: 'error',
                     error: 'Could not create mosaic',
                 });
             }
+
+        }
+
+
+        else if (type === "step") { 
+
+            const k = data;
+
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "step called but no mosaic exists"
+                });
+            }
+
+            mosaic.stepK(k);
+            const current = mosaic.getRenderPointer();
+            mosaic.renderImageRange(current, k);
+
+            const { width, height, pixels } = getImageBuffer();
+
+            self.postMessage({
+                type: 'frame',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
+
+
 
         }
 
@@ -152,7 +181,7 @@ function loadMosaicFromBytes(byteArray, size) {
     } catch (err) {
         console.error('Error loading image from heap in worker:', err);
         self.postMessage({
-            type: 'mosaic_creation_error',
+            type: 'error',
             error: 'Could not create mosaic',
         });
     } finally {
@@ -160,4 +189,36 @@ function loadMosaicFromBytes(byteArray, size) {
         wasmInstance._free(ptr);
     }
 
+}
+
+
+function getBufferLength() {
+    const { width, height } = mosaic.size();
+    return width * height * 4;
+}
+
+function getImageBuffer() { 
+    if (!mosaic || mosaic.empty()) {
+        throw new Error("No mosaic data available");
+    }
+    
+    const ptr = mosaic.getRawData();
+    if (!ptr) {
+        throw new Error("Failed to get raw data pointer");
+    }
+    
+    
+
+    // Make a copy that is safe to transfer
+    const totalSize = getBufferLength();
+    const rawView = new Uint8ClampedArray(wasmInstance.HEAPU8.buffer, ptr, totalSize);
+    const copy = new Uint8ClampedArray(rawView); // OR rawView.slice()
+
+    const { width, height } = mosaic.size();
+
+    return {
+        width,
+        height,
+        pixels: copy
+    };
 }

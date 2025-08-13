@@ -153,17 +153,13 @@ function App() {
         worker.onmessage = (e) => {
             const { type, data, error } = e.data;
 
-            if (type === 'wasm_ready') {
-                console.log('✅ WASM module ready');
-                setWorkerReady(true);
-            }
-
-            if (type === 'wasm_load_error') {
+            if (type === 'error') {
                 console.error('Error from worker:', error);
             }
 
-            if (type === "mosaic_creation_error") {
-                console.error("Error fro worker:", error)
+            if (type === 'wasm_ready') {
+                console.log('✅ WASM module ready');
+                setWorkerReady(true);
             }
 
             if (type === "mosaic_created") { 
@@ -171,6 +167,21 @@ function App() {
                 const size_string = "Mosaic: " + width + " x " + height;
                 setText(size_string);
                 console.log("mosaic creation sucessful, message received in main thread");
+
+                // resize canvas
+                const canvas = canvasRef.current;
+                canvas.width = width;
+                canvas.height = height;
+                clearOnscreenCanvas();
+            }
+
+            if (type === "frame") { 
+                const { width, height, pixels } = e.data;
+
+                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.putImageData(imageData, 0, 0);
             }
 
         };
@@ -287,6 +298,7 @@ function App() {
             return;
         }
         workerRef.current.postMessage({ type: "ping" })
+        workerRef.current.postMessage({ type: "step", data:k })
     }
 
 
