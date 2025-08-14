@@ -62,6 +62,7 @@ self.onmessage = function (e) {
             self.postMessage({ type: 'pong', data: message });
         }
 
+        
         else if (type === "handle_image_upload") { 
 
             const { bytes, parameters } = data;
@@ -189,6 +190,32 @@ self.onmessage = function (e) {
 
             mosaic.setRenderPointer(0);
             mosaic.resetCanvas();
+        }
+
+
+        else if (type === "clear_data") { 
+             if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "clear data called but no mosaic exists"
+                });
+                return;
+            }
+            mosaic.clearData();
+            computationComplete = false;
+        }
+
+        else if (type === "set_parameters") { 
+             if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "set params called but no mosaic exists"
+                });
+                return;
+            }
+            const params = createParamsObject(data);
+            mosaic.setParameters(params);
+            mosaic.resizeOriginal();
         }
 
 

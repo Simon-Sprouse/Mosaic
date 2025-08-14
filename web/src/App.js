@@ -111,10 +111,19 @@ function App() {
 
             if (type === "frame") { 
                 const { width, height, pixels } = e.data;
-                
-                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
+
+                // if we are getting a new size, reset the canvas
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    clearOnscreenCanvas();
+                }
+                
+                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+                
                 ctx.putImageData(imageData, 0, 0);
             }
 
@@ -160,39 +169,27 @@ function App() {
     }, [animationMode]);
 
 
-    // Handle dynamic parameters change from user settings
-    // useEffect(() => {
-    //     if (!wasmMosaic) return;
 
-    //     // 2. Stop animation if running 
-    //     stopAnimation();
+    // HANDLE DYNAMIC PARAMETERS UPDATE
+    useEffect(() => {
+        if (!workerReady) return;
 
-    //     // 3. clear old data
-    //     wasmMosaic.clearData();
+        // 1. Stop animation if running 
+        stopAnimation();
 
-    //     // 4. update mosaic with new params
-    //     wasmMosaic.setParameters(params);
+        // 2. clear old data
+        workerRef.current.postMessage({ type: "clear_data" });
 
-    //     // 5. reset canvas
-    //     wasmMosaic.resizeOriginal(); // done so we can access mosaic.size() and resize canvas
-    //     const { width, height } = wasmMosaic.getSize();
-    //     const canvas = canvasRef.current;
-    //     canvas.width = width;
-    //     canvas.height = height;
-    //     clearOnscreenCanvas();
+        // 3. update mosaic with new params
+        workerRef.current.postMessage({ type: "set_parameters", data: params});
 
-    //     // 6. mark comuptation flag as incomplete
-    //     setComputationComplete(false);
-
-    //     // 7. restart animation
-    //     setTimeout(() => {
-    //         setAnimationMode("play");
-    //     }, 0);
+        // 5. restart animation
+        setTimeout(() => {
+            setAnimationMode("play");
+        }, 0);
 
 
-    // }, [params]); // <- run this effect when params change
-
-
+    }, [params]); // <- run this effect when params change
     
 
 
