@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
-import WasmMosaic from './WasmMosaic';
 
 function App() {
 
@@ -9,21 +8,17 @@ function App() {
     const animationFrameRef = useRef(null);
 
     const [text, setText] = useState('');
-    const [wasmModule, setWasmModule] = useState(null);
-    const [wasmMosaic, setWasmMosaic] = useState(null);
+
     const [animationMode, setAnimationMode] = useState("paused");
 
 
 
 
-
-    const [computationComplete, setComputationComplete] = useState(false);
-
     const k = 100;
     const multi_step = 100;
 
     const default_params = {
-        resize_factor: 2,
+        resize_factor: 1,
         blur_kernel_size: 3,
         blur_sigma: 1.4,
         canny_threshold_1: 50,
@@ -31,7 +26,7 @@ function App() {
         max_segment_angle_deg: 100,
         min_segment_legnth: 20,
         segment_angle_window: 10,
-        tile_size: 20,
+        tile_size: 10,
         number_of_rings: 3,
         intiial_step_factor: 1.5,
         step_size_factor: 0.25,
@@ -48,50 +43,18 @@ function App() {
     // Function to progress wasm computation (if needed) and handle forward animation
     const stepK = (k) => { 
 
-        if (!wasmMosaic || wasmMosaic.empty()) return;
-
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-
-        const { width, height } = wasmMosaic.getSize();
-        canvas.width = width;
-        canvas.height = height;
-
-        if (!computationComplete) {
-            const stepValid = wasmMosaic.stepK(k);
-            if (!stepValid) setComputationComplete(true);
-        }
-
-        const current = wasmMosaic.getRenderPointer();
-        wasmMosaic.renderImageRange(current, k);
-
-        const dataArray = wasmMosaic.getRawData();
-        const imageData = new ImageData(dataArray, width, height);
-        ctx.putImageData(imageData, 0, 0);
-
-
+        if (!workerReady) return; // TODO add mosaicready flag
+           
+        workerRef.current.postMessage({ type: "step", data:k })
+        
     }
 
     // Function to handle backward animation
     const reverseStepK = (k) => { 
-        if (!wasmMosaic || wasmMosaic.empty()) return;
 
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        if (!workerReady) return;
 
-        const { width, height } = wasmMosaic.getSize();
-        canvas.width = width;
-        canvas.height = height;
-
-        const current = wasmMosaic.getRenderPointer();
-        
-        wasmMosaic.resetCanvas();
-        wasmMosaic.resetRenderPointer();
-        wasmMosaic.renderImageRange(0, Math.max(0, current - k));
-
-        const dataArray = wasmMosaic.getRawData();
-        const imageData = new ImageData(dataArray, width, height);
-        ctx.putImageData(imageData, 0, 0);
+        workerRef.current.postMessage({ type: "reverse_step", data:k})
     }
 
     const clearOnscreenCanvas = () => {
@@ -110,36 +73,6 @@ function App() {
 
         setAnimationMode("paused");
     }
-
-
-
-
-    // LOAD WASM + SAVE MODULE IN STATE
-    useEffect(() => {
-        const script = document.createElement('script');
-        script.src = process.env.PUBLIC_URL + '/wasm/image_module.js';
-
-        script.onload = () => {
-        window.Module().then((instance) => {
-            setWasmModule(instance);
-        }).catch((err) => {
-            console.error('Failed to instantiate WASM module:', err);
-        });
-        };
-
-        script.onerror = () => {
-            console.error('Failed to load image_module.js');
-        };
-
-        document.body.appendChild(script);
-        return () => {
-            document.body.removeChild(script);
-        };
-    }, []);
-
-
-
-
 
 
 
@@ -175,9 +108,10 @@ function App() {
                 clearOnscreenCanvas();
             }
 
+
             if (type === "frame") { 
                 const { width, height, pixels } = e.data;
-
+                
                 const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
@@ -223,40 +157,40 @@ function App() {
         }
 
         return () => cancelAnimationFrame(animationFrameRef.current);
-    }, [animationMode, wasmMosaic, computationComplete]);
+    }, [animationMode]);
 
 
     // Handle dynamic parameters change from user settings
-    useEffect(() => {
-        if (!wasmMosaic) return;
+    // useEffect(() => {
+    //     if (!wasmMosaic) return;
 
-        // 2. Stop animation if running 
-        stopAnimation();
+    //     // 2. Stop animation if running 
+    //     stopAnimation();
 
-        // 3. clear old data
-        wasmMosaic.clearData();
+    //     // 3. clear old data
+    //     wasmMosaic.clearData();
 
-        // 4. update mosaic with new params
-        wasmMosaic.setParameters(params);
+    //     // 4. update mosaic with new params
+    //     wasmMosaic.setParameters(params);
 
-        // 5. reset canvas
-        wasmMosaic.resizeOriginal(); // done so we can access mosaic.size() and resize canvas
-        const { width, height } = wasmMosaic.getSize();
-        const canvas = canvasRef.current;
-        canvas.width = width;
-        canvas.height = height;
-        clearOnscreenCanvas();
+    //     // 5. reset canvas
+    //     wasmMosaic.resizeOriginal(); // done so we can access mosaic.size() and resize canvas
+    //     const { width, height } = wasmMosaic.getSize();
+    //     const canvas = canvasRef.current;
+    //     canvas.width = width;
+    //     canvas.height = height;
+    //     clearOnscreenCanvas();
 
-        // 6. mark comuptation flag as incomplete
-        setComputationComplete(false);
+    //     // 6. mark comuptation flag as incomplete
+    //     setComputationComplete(false);
 
-        // 7. restart animation
-        setTimeout(() => {
-            setAnimationMode("play");
-        }, 0);
+    //     // 7. restart animation
+    //     setTimeout(() => {
+    //         setAnimationMode("play");
+    //     }, 0);
 
 
-    }, [params]); // <- run this effect when params change
+    // }, [params]); // <- run this effect when params change
 
 
     
@@ -269,7 +203,6 @@ function App() {
         if (!file || !workerRef.current || !workerReady) return;
 
         stopAnimation();
-        setComputationComplete(false);
 
         // Read image into bytes
         const arrayBuffer = await file.arrayBuffer();
@@ -297,7 +230,7 @@ function App() {
             console.log("wasm not ready yet");
             return;
         }
-        workerRef.current.postMessage({ type: "ping" })
+        // workerRef.current.postMessage({ type: "ping" })
         workerRef.current.postMessage({ type: "step", data:k })
     }
 
@@ -325,30 +258,19 @@ function App() {
     }
 
     const handleReplay = () => { 
-        if (!wasmMosaic || wasmMosaic.empty()) return;
-        wasmMosaic.resetRenderPointer();
-        wasmMosaic.resetCanvas();
+        if (!workerReady) return;
 
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        workerRef.current.postMessage({ type: 'reset_pointer'});
+        clearOnscreenCanvas();
+       
         setAnimationMode("play");
     }
 
     const handleReset = () => { 
 
         setAnimationMode("paused");
-
-        if (!wasmMosaic || wasmMosaic.empty()) return;
-        wasmMosaic.resetRenderPointer();
-        wasmMosaic.resetCanvas();
-
-        
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        workerRef.current.postMessage({ type: 'reset_pointer'});
+        clearOnscreenCanvas();
         
     }
 

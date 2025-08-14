@@ -11,6 +11,7 @@
 let wasmInstance = null;
 let wasmIsReady = false; // if called but not ready -> error is thrown
 let mosaic = null; // stores WasmMosaic class instance
+let computationComplete = false;
 
 
 // import the compiled glue code, which will read self.Module
@@ -67,6 +68,15 @@ self.onmessage = function (e) {
 
             try {
 
+                console.log("handling image upload");
+
+                if (mosaic) { 
+                    mosaic.delete();
+                    mosaic = null;
+                    computationComplete = false;
+                    console.log("deleting existing mosaic");
+                }
+
                 // Create Mosaic
                 const params = createParamsObject(parameters);
                 mosaic = new wasmInstance.Mosaic(params);
@@ -109,9 +119,18 @@ self.onmessage = function (e) {
                     type: "error",
                     error: "step called but no mosaic exists"
                 });
+                return;
             }
 
-            mosaic.stepK(k);
+            // prevent redudant calls to wasm module
+            if (!computationComplete){
+                const stepValid = mosaic.stepK(k);
+                if (!stepValid) computationComplete = true;
+            }
+            
+
+
+
             const current = mosaic.getRenderPointer();
             mosaic.renderImageRange(current, k);
 
@@ -124,9 +143,56 @@ self.onmessage = function (e) {
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
 
+            
 
 
         }
+
+        else if (type === "reverse_step") { 
+
+            const k = data;
+
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "reverse step called but no mosaic exists"
+                });
+                return;
+            }
+
+            const current = mosaic.getRenderPointer();
+            mosaic.resetCanvas();
+            mosaic.setRenderPointer(0);
+            mosaic.renderImageRange(0, Math.max(0, current - k));
+
+            const { width, height, pixels } = getImageBuffer();
+
+            self.postMessage({
+                type: 'frame',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
+
+
+        }
+
+        else if (type === "reset_pointer") { 
+
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "reset pointer called but no mosaic exists"
+                });
+                return;
+            }
+
+            mosaic.setRenderPointer(0);
+            mosaic.resetCanvas();
+        }
+
+
+
 
 
 
