@@ -86,6 +86,8 @@ class Mosaic {
 
         void runAll();
         Image getCanvas();
+        Image* getCanvasPtr();
+        Image getContourImage();
         uint8_t* getRawData();
         bool empty();
         Size size();

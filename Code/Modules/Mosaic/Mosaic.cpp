@@ -41,6 +41,16 @@ Image Mosaic::getCanvas() {
     return canvas.clone();
 }
 
+Image* Mosaic::getCanvasPtr() { 
+    return &canvas;
+}
+
+Image Mosaic::getContourImage() {
+    Image output(resized.size());
+    Graphics::drawStrokesRandomColor(output, strokes);
+    return output;
+}
+
 uint8_t* Mosaic::getRawData() { 
     return canvas.rawData();
 }

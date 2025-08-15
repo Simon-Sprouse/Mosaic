@@ -134,8 +134,7 @@ self.onmessage = function (e) {
 
             const current = mosaic.getRenderPointer();
             mosaic.renderImageRange(current, k);
-
-            const { width, height, pixels } = getImageBuffer();
+            const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
 
             self.postMessage({
                 type: 'frame',
@@ -166,7 +165,8 @@ self.onmessage = function (e) {
             mosaic.setRenderPointer(0);
             mosaic.renderImageRange(0, Math.max(0, current - k));
 
-            const { width, height, pixels } = getImageBuffer();
+        
+            const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
 
             self.postMessage({
                 type: 'frame',
@@ -215,7 +215,19 @@ self.onmessage = function (e) {
             }
             const params = createParamsObject(data);
             mosaic.setParameters(params);
-            mosaic.resizeOriginal();
+            mosaic.resizeOriginal(); // TODO this can be refactored on c++ side
+        }
+
+
+        else if (type === "getContourImage") { 
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "get contour image called but no mosaic exists"
+                });
+                return;
+            }
+            // mosaic.getContourImage();
         }
 
 
@@ -290,24 +302,25 @@ function getBufferLength() {
     return width * height * 4;
 }
 
-function getImageBuffer() { 
-    if (!mosaic || mosaic.empty()) {
-        throw new Error("No mosaic data available");
+function getImageBuffer(image_ptr) { 
+    if (!image_ptr) {
+        throw new Error("No data available");
     }
     
-    const ptr = mosaic.getRawData();
-    if (!ptr) {
+    const data_ptr = image_ptr.getRawData();
+    if (!data_ptr) {
         throw new Error("Failed to get raw data pointer");
     }
     
-    
+    const width = image_ptr.getWidth();
+    const height = image_ptr.getHeight();
 
     // Make a copy that is safe to transfer
-    const totalSize = getBufferLength();
-    const rawView = new Uint8ClampedArray(wasmInstance.HEAPU8.buffer, ptr, totalSize);
+    const total_size = width * height * 4;
+    const rawView = new Uint8ClampedArray(wasmInstance.HEAPU8.buffer, data_ptr, total_size);
     const copy = new Uint8ClampedArray(rawView); // OR rawView.slice()
 
-    const { width, height } = mosaic.size();
+    
 
     return {
         width,

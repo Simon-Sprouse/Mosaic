@@ -90,6 +90,10 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .function("at", select_overload<Color&(int,int)>(&Image::at))
         .function("setPixel", &Image::setPixel)
         .function("rawData", select_overload<const uint8_t*() const>(&Image::rawData), allow_raw_pointer<const uint8_t*>())
+        .function("getRawData", optional_override([](Image& self) -> uintptr_t {
+                    uint8_t* data = self.rawData();
+                    return reinterpret_cast<uintptr_t>(data);
+                }))
         ;
 
     
@@ -116,6 +120,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .function("setParameters", &Mosaic::setParameters)
         .function("clearData", &Mosaic::clearData)
         .function("resizeOriginal", &Mosaic::resizeOriginal)
+        .function("getContourImage", &Mosaic::getContourImage)
+        .function("getCanvas", &Mosaic::getCanvas)
+        .function("getCanvasPtr", &Mosaic::getCanvasPtr, allow_raw_pointer<Image*>())
         // You can add more Mosaic methods as needed
         ;
 }
