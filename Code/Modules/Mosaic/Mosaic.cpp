@@ -45,6 +45,10 @@ Image* Mosaic::getCanvasPtr() {
     return &canvas;
 }
 
+Image* Mosaic::getStrokesImagePtr() { 
+    return &strokes_image;
+}
+
 Image Mosaic::getContourImage() {
     Image output(resized.size());
     Graphics::drawStrokesRandomColor(output, strokes);
@@ -262,6 +266,9 @@ void Mosaic::contourPipeline() {
     image::process::divideIntoStrokes(contours, strokes, canny.size(), params.segment_angle_window, params.max_segment_angle_rad, params.min_segment_length);
     Geometry::sortStrokesPCALength(strokes);
 
+    strokes_image = Image(resized.size());
+    Graphics::drawStrokesRandomColor(strokes_image, strokes);
+
     // could be separate function, this can run concurrent with stroke covering
     computeDistanceField();
 
@@ -270,6 +277,7 @@ void Mosaic::contourPipeline() {
     canvas = Image(resized.size());
 
     cout << "contour pipeline complete" << endl;
+    cout << "strokes_image: " << strokes_image << endl;
 
 
 }

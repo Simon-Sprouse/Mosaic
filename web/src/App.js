@@ -5,13 +5,12 @@ import './App.css';
 function App() {
 
     const canvasRef = useRef(null);
+    const canvasRef2 = useRef(null);
     const animationFrameRef = useRef(null);
 
     const [text, setText] = useState('');
 
     const [animationMode, setAnimationMode] = useState("paused");
-
-
 
 
     const k = 100;
@@ -79,12 +78,9 @@ function App() {
     // CREAT REF FOR WEB WORKER
     const workerRef = useRef(null);
     const [workerReady, setWorkerReady] = useState(false);
-    useEffect(() => {
-        const worker = new Worker(`${process.env.PUBLIC_URL}/wasmWebWorker.js`);
-        
 
-        worker.onmessage = (e) => {
-            const { type, data, error } = e.data;
+    const handleWorkerMessage = (e) => { 
+        const { type, data, error } = e.data;
 
             if (type === 'error') {
                 console.error('Error from worker:', error);
@@ -127,7 +123,38 @@ function App() {
                 ctx.putImageData(imageData, 0, 0);
             }
 
-        };
+            if (type == "contours") {
+                const { width, height, pixels } = e.data;
+
+                const canvas = canvasRef2.current;
+                const ctx = canvas.getContext('2d');
+
+                // if we are getting a new size, reset the canvas
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+                
+                ctx.putImageData(imageData, 0, 0);
+            }
+
+    };
+    
+
+
+
+
+
+    useEffect(() => {
+        const worker = new Worker(`${process.env.PUBLIC_URL}/wasmWebWorker.js`);
+        
+
+        worker.onmessage = handleWorkerMessage;
+            
 
         workerRef.current = worker;
 
@@ -183,6 +210,9 @@ function App() {
         // 3. update mosaic with new params
         workerRef.current.postMessage({ type: "set_parameters", data: params});
 
+        // 4. re-run contour pipeline
+        workerRef.current.postMessage({ type: "run_contour_pipeline"});
+
         // 5. restart animation
         setTimeout(() => {
             setAnimationMode("play");
@@ -213,6 +243,8 @@ function App() {
                 parameters: params, // This must be a plain JS object matching your embind Parameters
             },
         });
+
+        workerRef.current.postMessage({ type: "run_contour_pipeline" });
     };
 
 
@@ -460,6 +492,7 @@ function App() {
 
 
             <canvas ref={canvasRef} />
+            <canvas ref={canvasRef2} />
             </div>
         </header>
         </div>

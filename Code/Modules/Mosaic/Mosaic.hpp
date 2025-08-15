@@ -84,9 +84,11 @@ class Mosaic {
 
         void loadExistingImage(const Image& img);
 
+        void contourPipeline();
         void runAll();
         Image getCanvas();
         Image* getCanvasPtr();
+        Image* getStrokesImagePtr();
         Image getContourImage();
         uint8_t* getRawData();
         bool empty();
@@ -122,7 +124,7 @@ class Mosaic {
 
 
 
-        void contourPipeline();
+        
         void selectStroke(int stroke_id);
 
         bool isValidTile(Point center, double size, double theta_deg);
@@ -178,6 +180,7 @@ class Mosaic {
         Image original;
         Image resized;
         Image canny;
+        Image strokes_image;
         std::vector<std::vector<Point>> strokes;
         Image selected_stroke;
 

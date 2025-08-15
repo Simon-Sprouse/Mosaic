@@ -110,6 +110,24 @@ self.onmessage = function (e) {
 
         }
 
+        else if (type === "run_contour_pipeline") { 
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "pipeline called but no mosaic exists"
+                });
+                return;
+            }
+            mosaic.contourPipeline();
+            const { width, height, pixels } = getImageBuffer(mosaic.getStrokesImagePtr());
+            self.postMessage({
+                type: 'contours',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
+        }
+
 
         else if (type === "step") { 
 
@@ -142,8 +160,6 @@ self.onmessage = function (e) {
                 height,
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
-
-            
 
 
         }
