@@ -12,10 +12,20 @@ function App() {
 
     const [animationMode, setAnimationMode] = useState("paused");
 
+    const maxPendingFrames = 5;
+    const pendingFramesRef = useRef(0);
+
 
     const k = 100;
     const multi_step = 100;
 
+
+
+    
+
+
+
+    
     const default_params = {
         resize_factor: 1,
         blur_kernel_size: 3,
@@ -36,6 +46,17 @@ function App() {
         max_background_points: 50000,
     }
     const [params, setParams] = useState(default_params);
+    function useDebouncedValue(value, delay) {
+        const [debouncedValue, setDebouncedValue] = useState(value);
+
+        useEffect(() => {
+            const timeout = setTimeout(() => setDebouncedValue(value), delay);
+            return () => clearTimeout(timeout);
+        }, [value, delay]);
+
+        return debouncedValue;
+    }
+    const debouncedParams = useDebouncedValue(params, 50);
 
 
 
@@ -44,7 +65,10 @@ function App() {
 
         if (!workerReady) return; // TODO add mosaicready flag
            
-        workerRef.current.postMessage({ type: "step", data:k })
+        if (pendingFramesRef.current < maxPendingFrames) { 
+            workerRef.current.postMessage({ type: "step", data:k });
+            pendingFramesRef.current++;
+        }
         
     }
 
@@ -53,7 +77,11 @@ function App() {
 
         if (!workerReady) return;
 
-        workerRef.current.postMessage({ type: "reverse_step", data:k})
+        if (pendingFramesRef.current < maxPendingFrames) { 
+            workerRef.current.postMessage({ type: "reverse_step", data:k});
+            pendingFramesRef.current++;
+        }
+        
     }
 
     const clearOnscreenCanvas = () => {
@@ -121,6 +149,7 @@ function App() {
                 const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
                 
                 ctx.putImageData(imageData, 0, 0);
+                pendingFramesRef.current--;
             }
 
             if (type == "contours") {
@@ -197,29 +226,22 @@ function App() {
 
 
 
-    // HANDLE DYNAMIC PARAMETERS UPDATE
+
+    // }, [params]); // <- run this effect when params change
+
     useEffect(() => {
         if (!workerReady) return;
 
-        // 1. Stop animation if running 
-        stopAnimation();
-
-        // 2. clear old data
+        // stopAnimation();
         workerRef.current.postMessage({ type: "clear_data" });
+        workerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
+        workerRef.current.postMessage({ type: "run_contour_pipeline" });
 
-        // 3. update mosaic with new params
-        workerRef.current.postMessage({ type: "set_parameters", data: params});
+        // setTimeout(() => {
+        //     setAnimationMode("play");
+        // }, 0);
+    }, [debouncedParams]);
 
-        // 4. re-run contour pipeline
-        workerRef.current.postMessage({ type: "run_contour_pipeline"});
-
-        // 5. restart animation
-        setTimeout(() => {
-            setAnimationMode("play");
-        }, 0);
-
-
-    }, [params]); // <- run this effect when params change
     
 
 
