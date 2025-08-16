@@ -58,6 +58,14 @@ function App() {
     }
     const debouncedParams = useDebouncedValue(params, 50);
 
+    const [advancedView, setAdvancedView] = useState(false); // simple (one result image / advanced -> prereqs)
+
+
+
+  
+
+
+
 
 
     // Function to progress wasm computation (if needed) and handle forward animation
@@ -126,10 +134,10 @@ function App() {
                 console.log("mosaic creation sucessful, message received in main thread");
 
                 // resize canvas
-                const canvas = canvasRef.current;
-                canvas.width = width;
-                canvas.height = height;
-                clearOnscreenCanvas();
+                // const canvas = canvasRef.current;
+                // canvas.width = width;
+                // canvas.height = height;
+                // clearOnscreenCanvas();
             }
 
 
@@ -152,7 +160,11 @@ function App() {
                 pendingFramesRef.current--;
             }
 
+            // TODO merge into one frame call widh dest canvas as worker-sent data member
             if (type == "contours") {
+
+        
+
                 const { width, height, pixels } = e.data;
 
                 const canvas = canvasRef2.current;
@@ -227,27 +239,41 @@ function App() {
 
 
 
-    // }, [params]); // <- run this effect when params change
-
     useEffect(() => {
         if (!workerReady) return;
 
-        // stopAnimation();
         workerRef.current.postMessage({ type: "clear_data" });
         workerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
         workerRef.current.postMessage({ type: "run_contour_pipeline" });
 
-        // setTimeout(() => {
-        //     setAnimationMode("play");
-        // }, 0);
+
     }, [debouncedParams]);
 
     
 
 
+    const scaleCanvas = (canvas, scaled_width, scaled_height) => {
+        if (!canvas) return null;
+
+        // Resize canvas element and style
+        canvas.width = scaled_width;
+        canvas.height = scaled_height;
+        canvas.style.width = `${scaled_width}px`;
+        canvas.style.height = `${scaled_height}px`;
+
+        // Fill with background color
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        ctx.fillStyle = "blue";
+        ctx.fillRect(0, 0, scaled_width, scaled_height);
+
+        // return { width: scaledWidth, height: scaledHeight };
+    };
 
 
-   const handleUpload = async (event) => {
+
+    const handleUpload = async (event) => {
         const file = event.target.files[0];
         if (!file || !workerRef.current || !workerReady) return;
 
@@ -267,6 +293,45 @@ function App() {
         });
 
         workerRef.current.postMessage({ type: "run_contour_pipeline" });
+
+
+        
+        // Decode image to get width/height
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+
+        img.onload = () => {
+
+
+            const original_width = img.width;
+            const original_height = img.height;
+
+
+
+            const max_width = 1200;
+            const max_height = 800;
+
+            // TODO more elegant solution for array of n canvases
+            // if (advancedView) { 
+            //     max_height /= 2;
+            // }
+
+            
+
+            // Compute scale preserving aspect ratio
+            const scale = Math.min(max_width / original_width, max_height / original_height);
+            const scaled_width = Math.round(original_width * scale);
+            const scaled_height = Math.round(original_height * scale);
+
+            scaleCanvas(canvasRef.current, scaled_width, scaled_height);
+            scaleCanvas(canvasRef2.current, scaled_width, scaled_height);
+
+            // Clean up object URL
+            URL.revokeObjectURL(img.src);
+        };
+
+
+
     };
 
 
@@ -355,6 +420,9 @@ function App() {
             <p></p>
             <button onClick={handleWorkerTest}>
                 test worker
+            </button>
+            <button onClick={() => setAdvancedView(!advancedView)}>
+                Toggle Advanced View
             </button>
 
 
@@ -511,10 +579,31 @@ function App() {
 
 
 
+            <div style={{
+                width: '1200px',        // Half the screen width
+                maxWidth: '100%',     // Prevents overflow
+                border: '1px solid #ccc',  // Optional visual border
+                position: 'relative',      // Useful if canvases use absolute positioning
+                overflow: 'hidden',        // Hides overflow if any canvas exceeds bounds
+            }}>
+
+                
+
+                <canvas
+                    ref={canvasRef2}
+                    style={{ display: advancedView ? 'block' : 'none' }}
+                />
+
+                <canvas 
+                    style={{ display: 'block' }}
+                    ref={canvasRef} 
+                />
+
+            </div>
 
 
-            <canvas ref={canvasRef} />
-            <canvas ref={canvasRef2} />
+            
+
             </div>
         </header>
         </div>
