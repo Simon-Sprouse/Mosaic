@@ -259,6 +259,21 @@ function App() {
     
 
 
+
+
+
+
+    const getWindowSize = () => {
+        const window_width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        const window_height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        return { window_width, window_height };
+    }
+    const { window_width, window_height } = getWindowSize();
+    const canvas_display_width = 0.75 * window_width;
+    const canvas_display_height = 0.60 * window_height;
+    // console.log("canvas element dimensions: ", canvas_display_width, " x ", canvas_display_height);
+
+
     const scaleCanvas = (canvas, scaled_width, scaled_height) => {
         if (!canvas) return null;
 
@@ -304,7 +319,7 @@ function App() {
 
 
         
-        // Decode image to get width/height
+        // Resize displays based on aspect ratio of uploaded image
         const img = new Image();
         img.src = URL.createObjectURL(file);
 
@@ -316,14 +331,8 @@ function App() {
 
 
 
-            const max_width = 1200;
-            const max_height = 800;
-
-            // TODO more elegant solution for array of n canvases
-            // if (advancedView) { 
-            //     max_height /= 2;
-            // }
-
+            const max_width = canvas_display_width;
+            const max_height = canvas_display_height;
             
 
             // Compute scale preserving aspect ratio
@@ -611,7 +620,7 @@ function App() {
 
 
 
-            <CanvasDisplay ref={canvasRef} width={800} height={600} />
+            <CanvasDisplay ref={canvasRef} width={canvas_display_width} height={canvas_display_height} />
             {/* <CanvasDisplay ref={canvasRef2} width={800} height={600} style={{ display: advancedView ? 'block' : 'none' }} /> */}
 
             
