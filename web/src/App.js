@@ -3,12 +3,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 import CanvasDisplay from './components/CanvasDisplay';
+import GridCanvasDisplay from './components/GridCanvasDisplay';
 
 
 function App() {
 
     const canvasRef = useRef(null);
     const canvasRef2 = useRef(null);
+    const canvasRef3 = useRef(null);
+    const refs_array = useRef([canvasRef, canvasRef2, canvasRef3]);
+
     const animationFrameRef = useRef(null);
 
     const [text, setText] = useState('');
@@ -138,11 +142,9 @@ function App() {
 
                 setMosaicReady(true);
 
-                // resize canvas
-                // const canvas = canvasRef.current;
-                // canvas.width = width;
-                // canvas.height = height;
-                // clearOnscreenCanvas();
+                setAnimationMode("play");
+
+                
             }
 
 
@@ -170,6 +172,8 @@ function App() {
             // TODO merge into one frame call widh dest canvas as worker-sent data member
             if (type == "contours") {
 
+                console.log('main thread recieves contours_image');
+
                 if (canvasRef2.current === null) return;
 
                 const { width, height, pixels } = e.data;
@@ -188,6 +192,8 @@ function App() {
                 const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
                 
                 ctx.putImageData(imageData, 0, 0);
+
+                console.log("putting contours image data to canvasRef2");
             }
 
     };
@@ -266,35 +272,64 @@ function App() {
     const getWindowSize = () => {
         const window_width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
         const window_height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-        return { window_width, window_height };
+        return { w: window_width, h: window_height };
     }
-    const { window_width, window_height } = getWindowSize();
-    const canvas_display_width = 0.75 * window_width;
-    const canvas_display_height = 0.60 * window_height;
-    // console.log("canvas element dimensions: ", canvas_display_width, " x ", canvas_display_height);
+
+    const getDisplaySize = () => {
+        const { w, h } = getWindowSize();
+        return { w: 0.75 * w, h: 0.6 * h};
+    }
 
 
-    const scaleCanvas = (canvas, scaled_width, scaled_height) => {
-        if (!canvas) return null;
+    const findOptimalRectanglePacking = (n, tableWidth, tableHeight, rectWidth, rectHeight) => {
+        if (n <= 0 || tableWidth <= 0 || tableHeight <= 0 || rectWidth <= 0 || rectHeight <= 0) {
+            throw new Error('All parameters must be positive numbers');
+        }
+        
+        let bestLayout = null;
+        let maxScale = 0;
+        
+        // Try all possible grid configurations
+        // For n rectangles, we need rows * cols >= n
+        for (let rows = 1; rows <= n; rows++) {
+            // Calculate minimum columns needed for this row count
+            const cols = Math.ceil(n / rows);
+            
+            // Calculate the maximum scale factor for this grid configuration
+            const scaleX = tableWidth / (cols * rectWidth);   // Scale limited by width
+            const scaleY = tableHeight / (rows * rectHeight); // Scale limited by height
+            
+            // Use the smaller scale factor to ensure rectangles fit in both dimensions
+            const scale = Math.min(scaleX, scaleY);
+            
+            // Skip if this configuration doesn't fit at all
+            if (scale <= 0) continue;
+            
+            // Check if this is the best configuration so far
+            if (scale > maxScale) {
+                maxScale = scale;
+                bestLayout = {
+                    rows: rows,
+                    cols: cols,
+                    scale: scale,
+                    scaledRectWidth: rectWidth * scale,
+                    scaledRectHeight: rectHeight * scale,
+                    totalUsedWidth: cols * rectWidth * scale,
+                    totalUsedHeight: rows * rectHeight * scale,
+                    unusedRectangles: rows * cols - n
+                };
+            }
+        }
+        
+        if (!bestLayout) {
+            throw new Error('No valid packing configuration found - rectangles may be too large for the table');
+        }
+        
+        return bestLayout;
+    }
 
-        // Resize canvas element and style
-        canvas.width = scaled_width;
-        canvas.height = scaled_height;
-        canvas.style.width = `${scaled_width}px`;
-        canvas.style.height = `${scaled_height}px`;
 
-        // Fill with background color
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return null;
-
-        ctx.fillStyle = "blue";
-        ctx.fillRect(0, 0, scaled_width, scaled_height);
-
-        // return { width: scaledWidth, height: scaledHeight };
-    };
-
-
-
+    const [uploadedImageSize, setUploadedImageSize] = useState({ w: 0, h: 0});
     const handleUpload = async (event) => {
         const file = event.target.files[0];
         if (!file || !workerRef.current || !workerReady) return;
@@ -325,31 +360,57 @@ function App() {
 
         img.onload = () => {
 
-
-            const original_width = img.width;
-            const original_height = img.height;
-
-
-
-            const max_width = canvas_display_width;
-            const max_height = canvas_display_height;
-            
-
-            // Compute scale preserving aspect ratio
-            const scale = Math.min(max_width / original_width, max_height / original_height);
-            const scaled_width = Math.round(original_width * scale);
-            const scaled_height = Math.round(original_height * scale);
-
-            scaleCanvas(canvasRef.current, scaled_width, scaled_height);
-            scaleCanvas(canvasRef2.current, scaled_width, scaled_height);
+            handleScaling(img.width, img.height);
+            setUploadedImageSize({ w: img.width, h: img.height });
 
             // Clean up object URL
             URL.revokeObjectURL(img.src);
         };
 
-
-
     };
+
+    const [canvasSize, setCanvasSize] = useState(getDisplaySize());
+    const [gridLayout, setGridLayout] = useState({ rows: 0, cols: 0});
+    const handleScaling = (original_width, original_height) => { 
+
+        const { w, h } = getDisplaySize();
+        const max_width = w;
+        const max_height = h;
+
+        if (!advancedView) { 
+            
+            // Compute scale preserving aspect ratio
+            const scale = Math.min(max_width / original_width, max_height / original_height);
+
+            const scaled_width = Math.round(original_width * scale);
+            const scaled_height = Math.round(original_height * scale);
+            setCanvasSize({ w: scaled_width, h: scaled_height});
+        }
+        else {
+            const grid_metadata = findOptimalRectanglePacking(refs_array.current.length, max_width, max_height, original_width, original_height);
+
+            const scaled_width = grid_metadata.scaledRectWidth;
+            const scaled_height = grid_metadata.scaledRectHeight;
+            setCanvasSize({ w: scaled_width, h: scaled_height});
+
+            const rows = grid_metadata.rows;
+            const cols= grid_metadata.cols;
+            setGridLayout({ rows: rows, cols: cols});
+
+            console.log("grid metadata: ", grid_metadata);
+
+        }
+    }
+
+    useEffect(() => {
+        if (!mosaicReady) return;
+   
+        handleScaling(uploadedImageSize.w, uploadedImageSize.h);
+
+        if (advancedView) { 
+            workerRef.current.postMessage({ type: "get_contour_image"});
+        }
+    },[advancedView]);
 
 
     /*
@@ -369,6 +430,8 @@ function App() {
 
 
     const handlePlay = () => { 
+        console.log("play button pressed");
+        console.log("animationMode before change: ", animationMode);
         if (animationMode === "play") { 
             setAnimationMode("paused");
         }
@@ -596,34 +659,16 @@ function App() {
 
 
 
-            {/* <div style={{
-                width: '1200px',        // Half the screen width
-                maxWidth: '100%',     // Prevents overflow
-                border: '1px solid #ccc',  // Optional visual border
-                position: 'relative',      // Useful if canvases use absolute positioning
-                overflow: 'hidden',        // Hides overflow if any canvas exceeds bounds
-            }}>
-
-                
-
-                <canvas
-                    ref={canvasRef2}
-                    style={{ display: advancedView ? 'block' : 'none' }}
-                />
-
-                <canvas 
-                    style={{ display: 'block' }}
-                    ref={canvasRef} 
-                />
-
-            </div> */}
 
 
-
-            <CanvasDisplay ref={canvasRef} width={canvas_display_width} height={canvas_display_height} />
-            {/* <CanvasDisplay ref={canvasRef2} width={800} height={600} style={{ display: advancedView ? 'block' : 'none' }} /> */}
-
+          
+            {
+                advancedView ? (<GridCanvasDisplay canvasRefs={refs_array.current} size={canvasSize} gridLayout={gridLayout}/>) : 
+                (<CanvasDisplay ref={canvasRef} size={canvasSize} />)
+            }
             
+
+
 
             </div>
         </header>

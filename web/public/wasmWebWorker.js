@@ -235,7 +235,7 @@ self.onmessage = function (e) {
         }
 
 
-        else if (type === "getContourImage") { 
+        else if (type === "get_contour_image") { 
             if (!mosaic) { 
                 self.postMessage({
                     type: "error",
@@ -243,7 +243,13 @@ self.onmessage = function (e) {
                 });
                 return;
             }
-            // mosaic.getContourImage();
+            const { width, height, pixels } = getImageBuffer(mosaic.getStrokesImagePtr());
+            self.postMessage({
+                type: 'contours',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
         }
 
 

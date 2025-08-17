@@ -1,6 +1,6 @@
 import React, { forwardRef, useEffect, useRef } from 'react';
 
-const CanvasDisplay = forwardRef(({ width, height, style }, ref) => {
+const CanvasDisplay = forwardRef(({ size, style }, ref) => {
     const internalRef = useRef(null);
 
     // If no ref is passed, fall back to internalRef (for flexible usage)
@@ -8,13 +8,13 @@ const CanvasDisplay = forwardRef(({ width, height, style }, ref) => {
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (canvas && width && height) {
-            canvas.width = width;
-            canvas.height = height;
-            canvas.style.width = `${width}px`;
-            canvas.style.height = `${height}px`;
+        if (canvas && size.w && size.h) {
+            canvas.width = size.w;
+            canvas.height = size.h;
+            canvas.style.width = `${size.w}px`;
+            canvas.style.height = `${size.h}px`;
         }
-    }, [width, height]);
+    }, [size]);
 
     return (
         <canvas
