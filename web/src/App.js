@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import './App.css';
+
+import CanvasDisplay from './components/CanvasDisplay';
 
 
 function App() {
@@ -60,7 +63,7 @@ function App() {
 
     const [advancedView, setAdvancedView] = useState(false); // simple (one result image / advanced -> prereqs)
 
-
+    const [mosaicReady, setMosaicReady] = useState(false);
 
   
 
@@ -71,7 +74,7 @@ function App() {
     // Function to progress wasm computation (if needed) and handle forward animation
     const stepK = (k) => { 
 
-        if (!workerReady) return; // TODO add mosaicready flag
+        if (!workerReady || !mosaicReady) return;
            
         if (pendingFramesRef.current < maxPendingFrames) { 
             workerRef.current.postMessage({ type: "step", data:k });
@@ -83,7 +86,7 @@ function App() {
     // Function to handle backward animation
     const reverseStepK = (k) => { 
 
-        if (!workerReady) return;
+        if (!workerReady || !mosaicReady) return;
 
         if (pendingFramesRef.current < maxPendingFrames) { 
             workerRef.current.postMessage({ type: "reverse_step", data:k});
@@ -133,6 +136,8 @@ function App() {
                 setText(size_string);
                 console.log("mosaic creation sucessful, message received in main thread");
 
+                setMosaicReady(true);
+
                 // resize canvas
                 // const canvas = canvasRef.current;
                 // canvas.width = width;
@@ -155,6 +160,8 @@ function App() {
                 }
                 
                 const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+
+                // console.log("main thread received frame");
                 
                 ctx.putImageData(imageData, 0, 0);
                 pendingFramesRef.current--;
@@ -163,7 +170,7 @@ function App() {
             // TODO merge into one frame call widh dest canvas as worker-sent data member
             if (type == "contours") {
 
-        
+                if (canvasRef2.current === null) return;
 
                 const { width, height, pixels } = e.data;
 
@@ -278,6 +285,7 @@ function App() {
         if (!file || !workerRef.current || !workerReady) return;
 
         stopAnimation();
+        setMosaicReady(false); // will be reset once the worker responds
 
         // Read image into bytes
         const arrayBuffer = await file.arrayBuffer();
@@ -579,7 +587,7 @@ function App() {
 
 
 
-            <div style={{
+            {/* <div style={{
                 width: '1200px',        // Half the screen width
                 maxWidth: '100%',     // Prevents overflow
                 border: '1px solid #ccc',  // Optional visual border
@@ -599,8 +607,12 @@ function App() {
                     ref={canvasRef} 
                 />
 
-            </div>
+            </div> */}
 
+
+
+            <CanvasDisplay ref={canvasRef} width={800} height={600} />
+            {/* <CanvasDisplay ref={canvasRef2} width={800} height={600} style={{ display: advancedView ? 'block' : 'none' }} /> */}
 
             
 
