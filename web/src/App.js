@@ -11,7 +11,7 @@ function App() {
     const canvasRef = useRef(null);
     const canvasRef2 = useRef(null);
     const canvasRef3 = useRef(null);
-    const refs_array = useRef([canvasRef, canvasRef2, canvasRef3]);
+    const refs_array = useRef([canvasRef2, canvasRef, canvasRef3]);
 
     const animationFrameRef = useRef(null);
 
@@ -194,6 +194,7 @@ function App() {
                 ctx.putImageData(imageData, 0, 0);
 
                 console.log("putting contours image data to canvasRef2");
+                
             }
 
     };
@@ -404,13 +405,31 @@ function App() {
 
     useEffect(() => {
         if (!mosaicReady) return;
-   
+
         handleScaling(uploadedImageSize.w, uploadedImageSize.h);
 
-        if (advancedView) { 
-            workerRef.current.postMessage({ type: "get_contour_image"});
+        if (advancedView) {
+            let attempts = 0;
+            const maxAttempts = 20; // 20 * 50ms = 1s max wait
+            const interval = setInterval(() => {
+                if (canvasRef2.current) {
+                    clearInterval(interval);
+                    workerRef.current.postMessage({ type: "get_contour_image" });
+                } else {
+                    attempts++;
+                    if (attempts > maxAttempts) {
+                        console.warn("canvasRef2 never became available.");
+                        clearInterval(interval);
+                    }
+                }
+            }, 50); // check every 50ms
+
+            // Clean up on unmount or if advancedView becomes false
+            return () => clearInterval(interval);
         }
-    },[advancedView]);
+
+    }, [advancedView]);
+
 
 
     /*
