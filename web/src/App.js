@@ -8,10 +8,11 @@ import GridCanvasDisplay from './components/GridCanvasDisplay';
 
 function App() {
 
-    const canvasRef = useRef(null);
-    const canvasRef2 = useRef(null);
-    const canvasRef3 = useRef(null);
-    const refs_array = useRef([canvasRef2, canvasRef, canvasRef3]);
+    const canvasRef = useRef(null); // output
+    const canvasRef2 = useRef(null); // canny
+    const canvasRef3 = useRef(null); // original
+    const canvasRef4 = useRef(null); // debug
+    const refs_array = useRef([canvasRef3, canvasRef2, canvasRef4, canvasRef]);
 
     const animationFrameRef = useRef(null);
 
@@ -28,7 +29,6 @@ function App() {
 
 
 
-    
 
 
 
@@ -83,7 +83,13 @@ function App() {
         if (pendingFramesRef.current < maxPendingFrames) { 
             workerRef.current.postMessage({ type: "step", data:k });
             pendingFramesRef.current++;
+
+            if (advancedView) { 
+                workerRef.current.postMessage({type: "get_debug_image"});
+            }
         }
+
+       
         
     }
 
@@ -172,11 +178,14 @@ function App() {
             // TODO merge into one frame call widh dest canvas as worker-sent data member
             if (type == "contours") {
 
-                console.log('main thread recieves contours_image');
+                console.log('main thread recieves contours_image post message');
 
                 if (canvasRef2.current === null) return;
 
+                
+
                 const { width, height, pixels } = e.data;
+                console.log("main thread receives contour image dim:", width, " x " , height);
 
                 const canvas = canvasRef2.current;
                 const ctx = canvas.getContext('2d');
@@ -194,6 +203,67 @@ function App() {
                 ctx.putImageData(imageData, 0, 0);
 
                 console.log("putting contours image data to canvasRef2");
+                
+            }
+
+
+            if (type == "original") {
+
+                console.log('main thread receives contours_image post messge');
+
+                if (canvasRef3.current === null) return;
+
+                
+
+                const { width, height, pixels } = e.data;
+                console.log("main thread recieves original image dim:", width, " x " , height);
+
+                const canvas = canvasRef3.current;
+                const ctx = canvas.getContext('2d');
+
+                // if we are getting a new size, reset the canvas
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+                
+                ctx.putImageData(imageData, 0, 0);
+
+                console.log("putting contours image data to canvasRef3");
+                
+            }
+
+            if (type == "debug_image") {
+
+                // console.log('main thread receives contours_image post messge');
+
+                if (canvasRef4.current === null) return;
+
+                
+
+                const { width, height, pixels } = e.data;
+                // console.log("main thread recieves original image dim:", width, " x " , height);
+
+                const canvas = canvasRef4.current;
+                const ctx = canvas.getContext('2d');
+
+                // if we are getting a new size, reset the canvas
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+                
+                ctx.putImageData(imageData, 0, 0);
+
+                // console.log("putting contours image data to canvasRef3");
                 
             }
 
@@ -342,6 +412,8 @@ function App() {
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
 
+       
+
         // Send message to worker with image + parameters
         workerRef.current.postMessage({
             type: 'handle_image_upload',
@@ -360,6 +432,7 @@ function App() {
         img.src = URL.createObjectURL(file);
 
         img.onload = () => {
+
 
             handleScaling(img.width, img.height);
             setUploadedImageSize({ w: img.width, h: img.height });
@@ -398,37 +471,50 @@ function App() {
             const cols= grid_metadata.cols;
             setGridLayout({ rows: rows, cols: cols});
 
-            console.log("grid metadata: ", grid_metadata);
+
 
         }
     }
 
+    // TOGGLE ADVANCED VIEW
     useEffect(() => {
         if (!mosaicReady) return;
 
         handleScaling(uploadedImageSize.w, uploadedImageSize.h);
 
         if (advancedView) {
+
+
+
+
+            
+
+
             let attempts = 0;
             const maxAttempts = 20; // 20 * 50ms = 1s max wait
             const interval = setInterval(() => {
-                if (canvasRef2.current) {
+                if (canvasRef3.current && canvasRef2.current && canvasRef4.current) {
                     clearInterval(interval);
                     workerRef.current.postMessage({ type: "get_contour_image" });
+                    workerRef.current.postMessage({ type: "get_original_image" });
+                    workerRef.current.postMessage({ type: "get_debug_image" });
+
+                  
                 } else {
                     attempts++;
                     if (attempts > maxAttempts) {
-                        console.warn("canvasRef2 never became available.");
+                        console.warn("canvas components never became available.");
                         clearInterval(interval);
                     }
                 }
+                
             }, 50); // check every 50ms
 
             // Clean up on unmount or if advancedView becomes false
             return () => clearInterval(interval);
         }
 
-    }, [advancedView]);
+    }, [advancedView, mosaicReady, debouncedParams]);
 
 
 
@@ -449,8 +535,8 @@ function App() {
 
 
     const handlePlay = () => { 
-        console.log("play button pressed");
-        console.log("animationMode before change: ", animationMode);
+        // console.log("play button pressed");
+        // console.log("animationMode before change: ", animationMode);
         if (animationMode === "play") { 
             setAnimationMode("paused");
         }

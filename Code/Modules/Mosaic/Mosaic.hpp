@@ -88,7 +88,9 @@ class Mosaic {
         void runAll();
         Image getCanvas();
         Image* getCanvasPtr();
+        Image* getDebugCanvasPtr();
         Image* getStrokesImagePtr();
+        Image* getOriginalImagePtr();
         Image getContourImage();
         uint8_t* getRawData();
         bool empty();
@@ -99,6 +101,7 @@ class Mosaic {
         int getRenderPointer();
         void setRenderPointer(int start);
         void resetCanvas();
+        void renderDebugImageRange(int start, int num_tiles);
 
         void setParameters(Parameters p);
         void clearData();
@@ -189,6 +192,7 @@ class Mosaic {
 
         Image mask;
         Image canvas;
+        Image debugCanvas; // TODO unify this logic with canvas somehow
 
 
 

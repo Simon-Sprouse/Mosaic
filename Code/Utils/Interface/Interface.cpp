@@ -108,6 +108,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
         // .function("runAll", &Mosaic::runAll)
         .function("stepK", &Mosaic::stepK)
         .function("renderImageRange", &Mosaic::renderImageRange)
+        .function("renderDebugImageRange", &Mosaic::renderDebugImageRange)
         .function("setRenderPointer", &Mosaic::setRenderPointer)
         .function("getRenderPointer", &Mosaic::getRenderPointer)
         .function("resetCanvas", &Mosaic::resetCanvas)
@@ -123,6 +124,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .function("getContourImage", &Mosaic::getContourImage)
         // .function("getCanvas", &Mosaic::getCanvas)
         .function("getCanvasPtr", &Mosaic::getCanvasPtr, allow_raw_pointer<Image*>())
+        .function("getDebugCanvasPtr", &Mosaic::getDebugCanvasPtr, allow_raw_pointer<Image*>())
+        .function("getOriginalImagePtr", &Mosaic::getOriginalImagePtr, allow_raw_pointer<Image*>())
         .function("getStrokesImagePtr", &Mosaic::getStrokesImagePtr, allow_raw_pointer<Image*>())
         .function("contourPipeline", &Mosaic::contourPipeline)
         // You can add more Mosaic methods as needed

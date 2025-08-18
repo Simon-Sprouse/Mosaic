@@ -45,8 +45,16 @@ Image* Mosaic::getCanvasPtr() {
     return &canvas;
 }
 
+Image* Mosaic::getDebugCanvasPtr() { 
+    return &debugCanvas;
+}
+
 Image* Mosaic::getStrokesImagePtr() { 
     return &strokes_image;
+}
+
+Image* Mosaic::getOriginalImagePtr() { 
+    return &resized;
 }
 
 Image Mosaic::getContourImage() {
@@ -275,9 +283,10 @@ void Mosaic::contourPipeline() {
     // TODO think about separate function for initialization
     mask = Image(resized.size());
     canvas = Image(resized.size());
+    debugCanvas = Image(resized.size());
 
-    cout << "contour pipeline complete" << endl;
-    cout << "strokes_image: " << strokes_image << endl;
+    // cout << "contour pipeline complete" << endl;
+    // cout << "strokes_image: " << strokes_image << endl;
 
 
 }
@@ -925,6 +934,40 @@ void Mosaic::renderImageRange(int start, int num_tiles) {
     render_pointer = start + num_tiles;
 }
 
+void Mosaic::renderDebugImageRange(int start, int num_tiles) { 
+
+    cout << "rendering debug image" << endl;
+
+    int max_index = std::min<int>(tiles_placed.size(), start + num_tiles);
+
+    for (int i = start; i < max_index; i++) { 
+        TileInfo tile = tiles_placed[i];
+        Color color;
+        if (tile.frontier == 0) { 
+            color = Color(255, 0, 0);
+            cout << "using red" << endl;
+        }
+        else if (tile.frontier > 0) { 
+            color = Color(0, 255, 0);
+        }
+        else if (tile.frontier == -1) { 
+            color = Color(0, 100, 255);
+        }
+        else { 
+            cout << "tile stored incorrectly" << endl;
+        }
+        // cout << color << endl;
+        Graphics::drawSquare(debugCanvas, tile.center, tile.size * 1.0, tile.theta_deg, color, tile.size);
+    }
+}
+
+
+
+
+
+
+
+
 int Mosaic::getRenderPointer() { 
     return std::min(static_cast<int>(tiles_placed.size()), render_pointer);
 }
@@ -935,6 +978,7 @@ void Mosaic::setRenderPointer(int start) {
 
 void Mosaic::resetCanvas() { 
     canvas = Image(canvas.size());
+    debugCanvas = Image(debugCanvas.size());
 }
 
 
@@ -1177,6 +1221,7 @@ void Mosaic::clearData() {
 
     mask = Image();
     canvas = Image();
+    debugCanvas = Image();
 
     std::stack<Point>().swap(strokePointsStack);
     std::queue<Point>().swap(floodPointsQueue);

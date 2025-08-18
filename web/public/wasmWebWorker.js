@@ -252,8 +252,48 @@ self.onmessage = function (e) {
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
         }
 
+        else if (type === "get_original_image") { 
+            console.log("worker gets request for original image");
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "get original image called but no mosaic exists"
+                });
+                return;
+            }
+            
+            const { width, height, pixels } = getImageBuffer(mosaic.getOriginalImagePtr());
+            self.postMessage({
+                type: 'original',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
+            console.log("worker sending original image");
+        }
 
+        else if (type === "get_debug_image") { 
 
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "get original image called but no mosaic exists"
+                });
+                return;
+            }
+            
+            const current = mosaic.getRenderPointer();
+            mosaic.renderDebugImageRange(0, current);
+            const { width, height, pixels } = getImageBuffer(mosaic.getDebugCanvasPtr());
+            self.postMessage({
+                type: 'debug_image',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
+            console.log("worker sending debug image");
+
+        }
 
 
 
