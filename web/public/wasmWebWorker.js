@@ -131,7 +131,8 @@ self.onmessage = function (e) {
 
         else if (type === "step") { 
 
-            const k = data;
+            const k = data.k;
+            const isAdvancedView = data.advancedView;
 
             if (!mosaic) { 
                 self.postMessage({
@@ -152,8 +153,9 @@ self.onmessage = function (e) {
 
             const current = mosaic.getRenderPointer();
             mosaic.renderImageRange(current, k);
-            const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
+            mosaic.setRenderPointer(current + k);
 
+            const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
             self.postMessage({
                 type: 'frame',
                 width,
@@ -162,11 +164,23 @@ self.onmessage = function (e) {
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
 
 
+
+            if (isAdvancedView) { 
+                const { width, height, pixels } = getImageBuffer(mosaic.getDebugCanvasPtr());
+                self.postMessage({
+                    type: 'debug_image',
+                    width,
+                    height,
+                    pixels: pixels.buffer, // send raw ArrayBuffer
+                }, [pixels.buffer]);  // transfer ownership (zero-copy)
+            }
+
         }
 
         else if (type === "reverse_step") { 
 
-            const k = data;
+            const k = data.k;
+            const isAdvancedView = data.advancedView;
 
             if (!mosaic) { 
                 self.postMessage({
@@ -179,8 +193,9 @@ self.onmessage = function (e) {
             const current = mosaic.getRenderPointer();
             mosaic.resetCanvas();
             mosaic.setRenderPointer(0);
-            mosaic.renderImageRange(0, Math.max(0, current - k));
-
+            const num_steps = Math.max(0, current - k);
+            mosaic.renderImageRange(0, num_steps);
+            mosaic.setRenderPointer(num_steps);
         
             const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
 
@@ -190,6 +205,18 @@ self.onmessage = function (e) {
                 height,
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
+
+
+
+            if (isAdvancedView) { 
+                const { width, height, pixels } = getImageBuffer(mosaic.getDebugCanvasPtr());
+                self.postMessage({
+                    type: 'debug_image',
+                    width,
+                    height,
+                    pixels: pixels.buffer, // send raw ArrayBuffer
+                }, [pixels.buffer]);  // transfer ownership (zero-copy)
+            }
 
 
         }
@@ -206,6 +233,18 @@ self.onmessage = function (e) {
 
             mosaic.setRenderPointer(0);
             mosaic.resetCanvas();
+        }
+
+        else if (type === "set_debug_mode") { 
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "reset pointer called but no mosaic exists"
+                });
+                return;
+            }
+
+            mosaic.setDebugMode(data);
         }
 
 

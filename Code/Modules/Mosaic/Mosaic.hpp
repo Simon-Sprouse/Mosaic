@@ -108,7 +108,7 @@ class Mosaic {
         void resizeOriginal();
 
 
-        
+        void setDebugMode(bool state);
 
         string image_name;
         
@@ -206,6 +206,8 @@ class Mosaic {
 
         // int num_tiles_rendered = 0; // used to avoid re-rendering entire tiles_placed vector every step;
         int render_pointer = 0;
+
+        bool debug_mode = false;
 
 
         // in case pca function fails

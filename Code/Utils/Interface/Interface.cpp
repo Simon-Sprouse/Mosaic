@@ -128,6 +128,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .function("getOriginalImagePtr", &Mosaic::getOriginalImagePtr, allow_raw_pointer<Image*>())
         .function("getStrokesImagePtr", &Mosaic::getStrokesImagePtr, allow_raw_pointer<Image*>())
         .function("contourPipeline", &Mosaic::contourPipeline)
+        .function("setDebugMode", &Mosaic::setDebugMode)
         // You can add more Mosaic methods as needed
         ;
 }

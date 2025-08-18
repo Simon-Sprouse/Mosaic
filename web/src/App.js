@@ -81,12 +81,18 @@ function App() {
         if (!workerReady || !mosaicReady) return;
            
         if (pendingFramesRef.current < maxPendingFrames) { 
-            workerRef.current.postMessage({ type: "step", data:k });
+            workerRef.current.postMessage({ 
+                type: "step", 
+                data: {
+                    k: k,
+                    advancedView: advancedView
+                }
+            });
             pendingFramesRef.current++;
 
-            if (advancedView) { 
-                workerRef.current.postMessage({type: "get_debug_image"});
-            }
+            // if (advancedView) { 
+            //     workerRef.current.postMessage({type: "get_debug_image"});
+            // }
         }
 
        
@@ -99,17 +105,34 @@ function App() {
         if (!workerReady || !mosaicReady) return;
 
         if (pendingFramesRef.current < maxPendingFrames) { 
-            workerRef.current.postMessage({ type: "reverse_step", data:k});
+            workerRef.current.postMessage({ 
+                type: "reverse_step", 
+                data: {
+                    k: k,
+                    advancedView: advancedView
+                }
+            });
             pendingFramesRef.current++;
         }
         
     }
 
-    const clearOnscreenCanvas = () => {
+    const clearOnscreenCanvas = (canvasRef) => {
+
+
+       if (!canvasRef) return;
+
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (canvas) { 
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+
+
+ 
+        
     }
 
     const stopAnimation = () => { 
@@ -485,7 +508,7 @@ function App() {
         if (advancedView) {
 
 
-
+            workerRef.current.postMessage({type: "set_debug_mode", data: true});
 
             
 
@@ -512,6 +535,9 @@ function App() {
 
             // Clean up on unmount or if advancedView becomes false
             return () => clearInterval(interval);
+        }
+        else { 
+            workerRef.current.postMessage({type: "set_debug_mode", data: false});
         }
 
     }, [advancedView, mosaicReady, debouncedParams]);
@@ -562,7 +588,8 @@ function App() {
         if (!workerReady) return;
 
         workerRef.current.postMessage({ type: 'reset_pointer'});
-        clearOnscreenCanvas();
+        clearOnscreenCanvas(canvasRef);
+        clearOnscreenCanvas(canvasRef4);
        
         setAnimationMode("play");
     }
@@ -571,7 +598,8 @@ function App() {
 
         setAnimationMode("paused");
         workerRef.current.postMessage({ type: 'reset_pointer'});
-        clearOnscreenCanvas();
+        clearOnscreenCanvas(canvasRef);
+        clearOnscreenCanvas(canvasRef4);
         
     }
 

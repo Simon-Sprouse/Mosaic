@@ -931,7 +931,10 @@ void Mosaic::renderImageRange(int start, int num_tiles) {
         TileInfo tile = tiles_placed[i];
         Graphics::drawSquare(canvas, tile.center, tile.size * 1.0, tile.theta_deg, tile.color, tile.size);
     }
-    render_pointer = start + num_tiles;
+    // render_pointer = start + num_tiles;
+    if (debug_mode) { 
+        renderDebugImageRange(start, num_tiles);
+    }
 }
 
 void Mosaic::renderDebugImageRange(int start, int num_tiles) { 
@@ -962,7 +965,9 @@ void Mosaic::renderDebugImageRange(int start, int num_tiles) {
 }
 
 
-
+void Mosaic::setDebugMode(bool state) { 
+    debug_mode = state;
+}
 
 
 
@@ -1232,6 +1237,7 @@ void Mosaic::clearData() {
     gaps_calculated = false;
 
     render_pointer = 0;
+
 
 
     cout << "data cleared" << endl;
