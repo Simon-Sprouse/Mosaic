@@ -265,7 +265,7 @@ void Mosaic::contourPipeline() {
     Size target_size = original.size() * params.resize_factor;
     if (resized.size() != target_size) { 
         image::process::resize(original, resized, target_size);
-        cout << "resized image to: " << resized.size() << endl;
+        // cout << "resized image to: " << resized.size() << endl;
     }
     image::process::grayscale(resized, gray);
     image::process::gaussianBlur(gray, blurred, params.blur_kernel_size, params.blur_sigma);
@@ -939,7 +939,7 @@ void Mosaic::renderImageRange(int start, int num_tiles) {
 
 void Mosaic::renderDebugImageRange(int start, int num_tiles) { 
 
-    cout << "rendering debug image" << endl;
+    // cout << "rendering debug image" << endl;
 
     int max_index = std::min<int>(tiles_placed.size(), start + num_tiles);
 
@@ -948,7 +948,7 @@ void Mosaic::renderDebugImageRange(int start, int num_tiles) {
         Color color;
         if (tile.frontier == 0) { 
             color = Color(255, 0, 0);
-            cout << "using red" << endl;
+            // cout << "using red" << endl;
         }
         else if (tile.frontier > 0) { 
             color = Color(0, 255, 0);
@@ -957,7 +957,7 @@ void Mosaic::renderDebugImageRange(int start, int num_tiles) {
             color = Color(0, 100, 255);
         }
         else { 
-            cout << "tile stored incorrectly" << endl;
+            // cout << "tile stored incorrectly" << endl;
         }
         // cout << color << endl;
         Graphics::drawSquare(debugCanvas, tile.center, tile.size * 1.0, tile.theta_deg, color, tile.size);
@@ -1060,7 +1060,7 @@ bool Mosaic::stepK(int k) {
     for (int i = 0; i < k; i++) { 
         bool tile_placed = stepOnce();
         if (!tile_placed) {
-            cout << "step k exiting at i=" << i << endl;
+            // cout << "step k exiting at i=" << i << endl;
             return false;
         }
     }
@@ -1241,6 +1241,7 @@ void Mosaic::clearData() {
 
 
     cout << "data cleared" << endl;
+    cout << "debug mode: " << debug_mode << endl;
 }
 
 
@@ -1248,7 +1249,7 @@ void Mosaic::resizeOriginal() {
     Size target_size = original.size() * params.resize_factor;
     if (resized.size() != target_size) { 
         image::process::resize(original, resized, target_size);
-        cout << "resized image to: " << resized.size() << endl;
+        // cout << "resized image to: " << resized.size() << endl;
     }
 }
 

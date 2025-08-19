@@ -69,13 +69,13 @@ self.onmessage = function (e) {
 
             try {
 
-                console.log("handling image upload");
+                // console.log("handling image upload");
 
                 if (mosaic) { 
                     mosaic.delete();
                     mosaic = null;
                     computationComplete = false;
-                    console.log("deleting existing mosaic");
+                    // console.log("deleting existing mosaic");
                 }
 
                 // Create Mosaic
@@ -86,11 +86,11 @@ self.onmessage = function (e) {
                 // Load image data into Mosaic
                 const byteArray = new Uint8Array(bytes);
                 loadMosaicFromBytes(byteArray, byteArray.length);
-                console.log("worker received image of length: ", byteArray.length);
-                console.log("worker has created mosaic successfully");
+                // console.log("worker received image of length: ", byteArray.length);
+                // console.log("worker has created mosaic successfully");
 
                 const size = mosaic.size();
-                console.log("mosaic.size(): ", size);
+                // console.log("mosaic.size(): ", size);
 
                 self.postMessage({
                     type: 'mosaic_created',
@@ -142,6 +142,8 @@ self.onmessage = function (e) {
                 return;
             }
 
+           
+
             // prevent redudant calls to wasm module
             if (!computationComplete){
                 const stepValid = mosaic.stepK(k);
@@ -162,10 +164,13 @@ self.onmessage = function (e) {
                 height,
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
-
+            // console.log("sending output image update from worker");
+            // console.log("advancedView: ", isAdvancedView);
 
 
             if (isAdvancedView) { 
+                console.log("sending debug image update from worker");
+
                 const { width, height, pixels } = getImageBuffer(mosaic.getDebugCanvasPtr());
                 self.postMessage({
                     type: 'debug_image',
@@ -189,6 +194,8 @@ self.onmessage = function (e) {
                 });
                 return;
             }
+
+          
 
             const current = mosaic.getRenderPointer();
             mosaic.resetCanvas();
@@ -292,7 +299,7 @@ self.onmessage = function (e) {
         }
 
         else if (type === "get_original_image") { 
-            console.log("worker gets request for original image");
+            // console.log("worker gets request for original image");
             if (!mosaic) { 
                 self.postMessage({
                     type: "error",
@@ -308,7 +315,7 @@ self.onmessage = function (e) {
                 height,
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
-            console.log("worker sending original image");
+            // console.log("worker sending original image");
         }
 
         else if (type === "get_debug_image") { 
@@ -332,6 +339,26 @@ self.onmessage = function (e) {
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
             console.log("worker sending debug image");
 
+        }
+
+        else if (type === "get_output_image") { 
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "get original image called but no mosaic exists"
+                });
+                return;
+            }
+            
+            const current = mosaic.getRenderPointer();
+            mosaic.renderImageRange(0, current);
+            const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
+            self.postMessage({
+                type: 'frame',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
         }
 
 

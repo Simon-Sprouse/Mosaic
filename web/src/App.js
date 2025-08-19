@@ -66,6 +66,7 @@ function App() {
     const debouncedParams = useDebouncedValue(params, 50);
 
     const [advancedView, setAdvancedView] = useState(false); // simple (one result image / advanced -> prereqs)
+    const advancedViewRef = useRef(false);
 
     const [mosaicReady, setMosaicReady] = useState(false);
 
@@ -81,11 +82,12 @@ function App() {
         if (!workerReady || !mosaicReady) return;
            
         if (pendingFramesRef.current < maxPendingFrames) { 
+            console.log("main thread requesting frame, advanced view: ", advancedViewRef.current);
             workerRef.current.postMessage({ 
                 type: "step", 
                 data: {
                     k: k,
-                    advancedView: advancedView
+                    advancedView: advancedViewRef.current
                 }
             });
             pendingFramesRef.current++;
@@ -109,7 +111,7 @@ function App() {
                 type: "reverse_step", 
                 data: {
                     k: k,
-                    advancedView: advancedView
+                    advancedView: advancedViewRef.current
                 }
             });
             pendingFramesRef.current++;
@@ -167,7 +169,7 @@ function App() {
                 const { width, height } = data;
                 const size_string = "Mosaic: " + width + " x " + height;
                 setText(size_string);
-                console.log("mosaic creation sucessful, message received in main thread");
+                // console.log("mosaic creation sucessful, message received in main thread");
 
                 setMosaicReady(true);
 
@@ -201,14 +203,14 @@ function App() {
             // TODO merge into one frame call widh dest canvas as worker-sent data member
             if (type == "contours") {
 
-                console.log('main thread recieves contours_image post message');
+                // console.log('main thread recieves contours_image post message');
 
                 if (canvasRef2.current === null) return;
 
                 
 
                 const { width, height, pixels } = e.data;
-                console.log("main thread receives contour image dim:", width, " x " , height);
+                // console.log("main thread receives contour image dim:", width, " x " , height);
 
                 const canvas = canvasRef2.current;
                 const ctx = canvas.getContext('2d');
@@ -225,21 +227,21 @@ function App() {
                 
                 ctx.putImageData(imageData, 0, 0);
 
-                console.log("putting contours image data to canvasRef2");
+                // console.log("putting contours image data to canvasRef2");
                 
             }
 
 
             if (type == "original") {
 
-                console.log('main thread receives contours_image post messge');
+                // console.log('main thread receives original post messge');
 
                 if (canvasRef3.current === null) return;
 
                 
 
                 const { width, height, pixels } = e.data;
-                console.log("main thread recieves original image dim:", width, " x " , height);
+                // console.log("main thread recieves original image dim:", width, " x " , height);
 
                 const canvas = canvasRef3.current;
                 const ctx = canvas.getContext('2d');
@@ -256,13 +258,13 @@ function App() {
                 
                 ctx.putImageData(imageData, 0, 0);
 
-                console.log("putting contours image data to canvasRef3");
+                // console.log("putting contours image data to canvasRef3");
                 
             }
 
             if (type == "debug_image") {
 
-                // console.log('main thread receives contours_image post messge');
+                console.log('main thread receives debug post messge');
 
                 if (canvasRef4.current === null) return;
 
@@ -352,6 +354,8 @@ function App() {
         workerRef.current.postMessage({ type: "clear_data" });
         workerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
         workerRef.current.postMessage({ type: "run_contour_pipeline" });
+
+  
 
 
     }, [debouncedParams]);
@@ -509,18 +513,19 @@ function App() {
 
 
             workerRef.current.postMessage({type: "set_debug_mode", data: true});
-
+            advancedViewRef.current = true;
             
 
 
             let attempts = 0;
             const maxAttempts = 20; // 20 * 50ms = 1s max wait
             const interval = setInterval(() => {
-                if (canvasRef3.current && canvasRef2.current && canvasRef4.current) {
+                if (canvasRef.current && canvasRef3.current && canvasRef2.current && canvasRef4.current) {
                     clearInterval(interval);
                     workerRef.current.postMessage({ type: "get_contour_image" });
                     workerRef.current.postMessage({ type: "get_original_image" });
                     workerRef.current.postMessage({ type: "get_debug_image" });
+                    workerRef.current.postMessage({ type: "get_output_image" });
 
                   
                 } else {
@@ -537,7 +542,29 @@ function App() {
             return () => clearInterval(interval);
         }
         else { 
+            advancedViewRef.current = false;
             workerRef.current.postMessage({type: "set_debug_mode", data: false});
+
+            let attempts = 0;
+            const maxAttempts = 20; // 20 * 50ms = 1s max wait
+            const interval = setInterval(() => {
+                if (canvasRef.current) {
+                    clearInterval(interval);
+                    workerRef.current.postMessage({ type: "get_output_image" });
+
+                  
+                } else {
+                    attempts++;
+                    if (attempts > maxAttempts) {
+                        console.warn("canvas components never became available.");
+                        clearInterval(interval);
+                    }
+                }
+                
+            }, 50); // check every 50ms
+
+            // Clean up on unmount or if advancedView becomes false
+            return () => clearInterval(interval);
         }
 
     }, [advancedView, mosaicReady, debouncedParams]);
