@@ -68,7 +68,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .property("max_frontiers", &Parameters::max_frontiers)
         .property("flood_fill_neighbor_points", &Parameters::flood_fill_neighbor_points)
         .property("distance_from_center", &Parameters::distance_from_center)
-        .property("random_background_points", &Parameters::random_background_points);
+        .property("random_background_points", &Parameters::random_background_points)
+        .property("canny_resize_factor", &Parameters::canny_resize_factor)
+        ;
 
 
 

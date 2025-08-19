@@ -51,6 +51,7 @@ function App() {
         flood_fill_neighbor_points: 4,
         flood_fill_distance_factor: 1.5,
         max_background_points: 50000,
+        canny_resize_factor: 1,
     }
     const [params, setParams] = useState(default_params);
     function useDebouncedValue(value, delay) {
@@ -82,7 +83,7 @@ function App() {
         if (!workerReady || !mosaicReady) return;
            
         if (pendingFramesRef.current < maxPendingFrames) { 
-            console.log("main thread requesting frame, advanced view: ", advancedViewRef.current);
+            // console.log("main thread requesting frame, advanced view: ", advancedViewRef.current);
             workerRef.current.postMessage({ 
                 type: "step", 
                 data: {
@@ -264,7 +265,7 @@ function App() {
 
             if (type == "debug_image") {
 
-                console.log('main thread receives debug post messge');
+                // console.log('main thread receives debug post messge');
 
                 if (canvasRef4.current === null) return;
 
@@ -375,7 +376,7 @@ function App() {
 
     const getDisplaySize = () => {
         const { w, h } = getWindowSize();
-        return { w: 0.75 * w, h: 0.6 * h};
+        return { w: 0.75 * w, h: 0.7 * h};
     }
 
 
@@ -731,6 +732,21 @@ function App() {
                     value={params.resize_factor}
                     onChange={(e) =>
                         setParams((prev) => ({ ...prev, resize_factor: parseFloat(e.target.value) }))
+                    }
+                    style={{ width: '100%' }}
+                    />
+                </label>
+
+                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                    Canny Resize Factor: {params.canny_resize_factor}
+                    <input
+                    type="range"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
+                    value={params.canny_resize_factor}
+                    onChange={(e) =>
+                        setParams((prev) => ({ ...prev, canny_resize_factor: parseFloat(e.target.value) }))
                     }
                     style={{ width: '100%' }}
                     />

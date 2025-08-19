@@ -48,6 +48,7 @@ struct Parameters {
     int flood_fill_neighbor_points;
     double distance_from_center;
     int random_background_points;
+    double canny_resize_factor;
     // int tiles_per_frame;
     // std::map<int, int> jitter_map;
     

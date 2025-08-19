@@ -4,6 +4,7 @@
 #include "../../../Code/Utils/Image/io.hpp"
 #include "../../../Code/Utils/Random/random.hpp"
 #include "geometry.hpp"
+#include "imageProcess.hpp"
 #include <opencv2/imgproc.hpp>
 
 namespace mosaic_gen::test { 
@@ -481,6 +482,24 @@ void MosaicTest::testStepK() {
 
 
 
+void MosaicTest::testCanny() { 
+
+    int k = 100000;
+    Mosaic mosaic(params_);
+    Image original = image::io::loadImageFileSystem(image_path_);
+    mosaic.loadExistingImage(original);
+    mosaic.contourPipeline();
+
+
+    image::io::saveImageFileSystem(mosaic.strokes_image, save_dir_ + "canny_test.png");
+
+
+
+
+}
+
+
+
 
 
 
@@ -510,8 +529,9 @@ void MosaicTest::runAllTests() {
     // total_time += timeFunction("Reconstruct Image", [&]() {testReconstructImage();});
 
 
-    total_time += timeFunction("Step Once", [&]() {testStepOnce();});
-    total_time += timeFunction("Step k", [&]() {testStepK();});
+    // total_time += timeFunction("Step Once", [&]() {testStepOnce();});
+    // total_time += timeFunction("Step k", [&]() {testStepK();});
+    total_time += timeFunction("Test Canny", [&]() {testCanny();});
    
 
 

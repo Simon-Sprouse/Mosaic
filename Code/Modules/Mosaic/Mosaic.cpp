@@ -269,7 +269,16 @@ void Mosaic::contourPipeline() {
     }
     image::process::grayscale(resized, gray);
     image::process::gaussianBlur(gray, blurred, params.blur_kernel_size, params.blur_sigma);
-    image::process::cannyFilter(blurred, canny, params.canny_threshold_1, params.canny_threshold_2);
+
+
+    // double canny_resize_factor = 0.25;
+    double reverse_canny_resize_factor = 1 / params.canny_resize_factor;
+    Image resized_for_canny;
+    Image canny_downsampled;
+    image::process::resize(blurred, resized_for_canny, params.canny_resize_factor);
+    image::process::cannyFilter(resized_for_canny, canny_downsampled, params.canny_threshold_1, params.canny_threshold_2);
+    image::process::resize(canny_downsampled, canny, reverse_canny_resize_factor);
+
     image::process::findContours(canny, contours);
     image::process::divideIntoStrokes(contours, strokes, canny.size(), params.segment_angle_window, params.max_segment_angle_rad, params.min_segment_length);
     Geometry::sortStrokesPCALength(strokes);

@@ -169,7 +169,7 @@ self.onmessage = function (e) {
 
 
             if (isAdvancedView) { 
-                console.log("sending debug image update from worker");
+                // console.log("sending debug image update from worker");
 
                 const { width, height, pixels } = getImageBuffer(mosaic.getDebugCanvasPtr());
                 self.postMessage({
@@ -337,7 +337,7 @@ self.onmessage = function (e) {
                 height,
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
-            console.log("worker sending debug image");
+            // console.log("worker sending debug image");
 
         }
 
@@ -389,6 +389,7 @@ function createParamsObject(user_params) {
     params.flood_fill_neighbor_points = user_params.flood_fill_neighbor_points;
     params.distance_from_center = user_params.flood_fill_distance_factor * user_params.tile_size;
     params.random_background_points = user_params.max_background_points;
+    params.canny_resize_factor = user_params.canny_resize_factor;
 
     return params;
 }
