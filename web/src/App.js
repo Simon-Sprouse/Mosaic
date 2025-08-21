@@ -20,7 +20,7 @@ function App() {
 
     const [animationMode, setAnimationMode] = useState("paused");
 
-    const maxPendingFrames = 5;
+    const maxPendingFrames = 3;
     const pendingFramesRef = useRef(0);
 
 
@@ -294,6 +294,23 @@ function App() {
             }
 
     };
+
+
+    const gifWorkerRef = useRef(null);
+    const [gifWorkerReady, setGifWorkerReady] = useState(false);
+    const handleGifWorkerMessage = (e) => { 
+        const { type, data, error } = e.data;
+
+        if (type === 'error') {
+            console.error('Error from worker:', error);
+        }
+
+        if (type === "gif_wasm_ready") { 
+            console.log('✅ gif WASM module ready');
+            setGifWorkerReady(true);
+        }
+
+    }
     
 
 
@@ -301,13 +318,16 @@ function App() {
 
 
     useEffect(() => {
+
         const worker = new Worker(`${process.env.PUBLIC_URL}/wasmWebWorker.js`);
-        
+        const gif_worker = new Worker(`${process.env.PUBLIC_URL}/gifWorker.js`);
 
         worker.onmessage = handleWorkerMessage;
+        gif_worker.onmessage = handleGifWorkerMessage;
             
 
         workerRef.current = worker;
+        gifWorkerRef.current = gifWorkerRef;
 
         return () => worker.terminate();
     }, []);

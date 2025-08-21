@@ -1,8 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 function GridCanvasDisplay({ canvasRefs, size, gridLayout }) {
-
-    console.log("gridLayout: ", gridLayout); // {rows: 2, cols: 2}
 
     useEffect(() => {
         canvasRefs.forEach(ref => {
@@ -22,14 +20,65 @@ function GridCanvasDisplay({ canvasRefs, size, gridLayout }) {
         gap: '0px',
     };
 
+    const canvasWrapperStyle = {
+        position: 'relative',
+        width: `${size.w}px`,
+        height: `${size.h}px`,
+    };
+
+    const overlayStyle = {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        background: 'rgba(0, 0, 0, 0.6)',
+        color: 'white',
+        padding: '2px 6px',
+        fontSize: '20px',
+        cursor: 'pointer',
+        zIndex: 1,
+        display: 'none',
+    };
+
+    const wrapperHoverStyle = {
+        ...overlayStyle,
+        display: 'block',
+    };
+
+    const saveCanvasAsImage = (ref, index) => {
+        if (!ref.current) return;
+        const link = document.createElement('a');
+        link.download = `canvas-${index}.png`;
+        link.href = ref.current.toDataURL();
+        link.click();
+    };
+
     return (
         <div style={gridStyle}>
             {canvasRefs.map((ref, i) => (
-                <canvas
+                <div
                     key={i}
-                    ref={ref}
-                    style={{ border: '1px solid white' }} // remove border if you want tighter packing
-                />
+                    style={canvasWrapperStyle}
+                    onMouseEnter={e => {
+                        const overlay = e.currentTarget.querySelector('.save-overlay');
+                        if (overlay) overlay.style.display = 'block';
+                    }}
+                    onMouseLeave={e => {
+                        const overlay = e.currentTarget.querySelector('.save-overlay');
+                        if (overlay) overlay.style.display = 'none';
+                    }}
+                >
+                    <canvas
+                        ref={ref}
+                        style={{ display: 'block' }}
+                    />
+                    <div
+                        className="save-overlay"
+                        style={overlayStyle}
+                        onClick={() => saveCanvasAsImage(ref, i)}
+                    >
+                        Save
+                    </div>
+                </div>
             ))}
         </div>
     );
