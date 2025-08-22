@@ -349,13 +349,33 @@ self.onmessage = function (e) {
             mosaic.renderImageRange(0, current);
             const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
             self.postMessage({
-                type: 'frame',
+                type: 'output_image',
                 width,
                 height,
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
         }
 
+
+        else if (type === "get_final_output_image") { 
+            if (!mosaic) { 
+                self.postMessage({
+                    type: "error",
+                    error: "get original image called but no mosaic exists"
+                });
+                return;
+            }
+            
+            const current = mosaic.getRenderPointer();
+            mosaic.renderImageRange(0, current);
+            const { width, height, pixels } = getImageBuffer(mosaic.getCanvasPtr());
+            self.postMessage({
+                type: 'final_output_image',
+                width,
+                height,
+                pixels: pixels.buffer, // send raw ArrayBuffer
+            }, [pixels.buffer]);  // transfer ownership (zero-copy)
+        }
 
 
     }

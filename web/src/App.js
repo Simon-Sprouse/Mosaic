@@ -71,6 +71,10 @@ function App() {
 
     const [mosaicReady, setMosaicReady] = useState(false);
 
+
+
+    const [pngUrl, setPngUrl] = useState(null);
+
   
 
 
@@ -146,6 +150,21 @@ function App() {
         }
 
         setAnimationMode("paused");
+    }
+
+    function imageDataToBlob(imageData) {
+        const canvas = document.createElement('canvas');
+        canvas.width = imageData.width;
+        canvas.height = imageData.height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.putImageData(imageData, 0, 0);
+
+        return new Promise(resolve => {
+            canvas.toBlob(blob => {
+                resolve(blob);
+            }, 'image/png');
+        });
     }
 
 
@@ -291,6 +310,58 @@ function App() {
 
                 // console.log("putting contours image data to canvasRef3");
                 
+            }
+
+
+            if (type === "output_image") { 
+                const { width, height, pixels } = e.data;
+
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+
+                // if we are getting a new size, reset the canvas
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    clearOnscreenCanvas();
+                }
+                
+                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+
+                // console.log("main thread received frame");
+                
+                ctx.putImageData(imageData, 0, 0);
+
+
+            }
+
+            if (type === "final_output_image") { 
+                const { width, height, pixels } = e.data;
+
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+
+                // if we are getting a new size, reset the canvas
+                if (canvas.width !== width || canvas.height !== height) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    clearOnscreenCanvas();
+                }
+                
+                const imageData = new ImageData(new Uint8ClampedArray(pixels), width, height);
+
+                // console.log("main thread received frame");
+                
+                ctx.putImageData(imageData, 0, 0);
+
+
+                // save for later download
+                imageDataToBlob(imageData).then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    setPngUrl(url);
+                });
+
+
             }
 
 
@@ -711,10 +782,25 @@ function App() {
     }
 
 
+    const handleImageExport = () => { 
+
+        setPngUrl(null);
+
+        if (workerReady) {
+
+            workerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
+            workerRef.current.postMessage({ type: "get_final_output_image" })
+        }
+    }
+
+
     const [gifPause, setGifPause] = useState(1);
     const [gifDelay, setGifDelay] = useState(50);
     const [stepsPerFrame, setStepsPerFrame] = useState(k);
     const handleGenerateGif = () => { 
+
+        setGifUrl(null);
+
         if (gifWorkerReady) {
 
 
@@ -776,6 +862,10 @@ function App() {
                 Step Back Multi
             </button>
 
+
+            <button onClick={handleImageExport}>
+                export as png
+            </button>
 
             <button onClick={handleGenerateGif}>
                 generate gif
@@ -969,10 +1059,25 @@ function App() {
                 (<CanvasDisplay ref={canvasRef} size={canvasSize} />)
             }
 
+            {pngUrl && (
+                <div>
+                    <h3>Generated PNG</h3>
+                    <a href={pngUrl} download="mosaic.png">
+                    <button>Download PNG</button>
+                    </a>
+                    <button
+                    onClick={() => window.open(pngUrl, '_blank')}
+                    style={{ marginLeft: '10px' }}
+                    >
+                    View PNG in New Tab
+                    </button>
+                </div>
+            )}
+
             {gifUrl && (
                 <div>
                     <h3>Generated GIF Preview</h3>
-                    <img src={gifUrl} alt="Generated GIF" style={{ maxWidth: '100%', height: 'auto' }} />
+                    <img src={gifUrl} alt="Generated GIF" style={{ maxWidth: '100px', height: 'auto' }} />
                     <a href={gifUrl} download="mosaic.gif">
                     <button>Download GIF</button>
                     </a>
