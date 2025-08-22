@@ -107,7 +107,7 @@ self.onmessage = function (e) {
     }
 
     else if (type === "create_gif") { 
-        const { k, end_time } = data;
+        const { k, delay, end_time } = data;
 
         if (!mosaic) { 
             self.postMessage({
@@ -132,19 +132,19 @@ self.onmessage = function (e) {
 
             let step_valid = true;
             let i = 0;
-            let total_time = 0;
-            const delay = 100; // ms per frame
+
+            // const delay = 100; // ms per frame
 
 
 
-            while (step_valid && total_time < end_time) {
+            while (step_valid) {
                 step_valid = mosaic.stepK(k);
 
                 const current = mosaic.getRenderPointer();
                 mosaic.renderImageRange(0, current);
                 mosaic.setRenderPointer(current + k);
                 const { pixels } = getImageBuffer(mosaic.getCanvasPtr());
-                console.log("Pixel sample:", pixels.slice(0, 16)); // log first 16 bytes of pixel array
+                
 
 
                 // Create ImageData for the frame
@@ -154,6 +154,20 @@ self.onmessage = function (e) {
                 i++;
 
             }
+
+
+
+            const pause_time_ms = 1000 * end_time;
+            const pause_frames = pause_time_ms / delay;
+
+            const { pixels } = getImageBuffer(mosaic.getCanvasPtr());
+            const imageData = new ImageData(pixels, width, height);
+
+            for (let i = 0; i < pause_frames; i++) { 
+                gif.addFrame(imageData, { delay });
+            }
+
+
 
             console.log("gif computation stopped after: ", i * k, "steps");
 

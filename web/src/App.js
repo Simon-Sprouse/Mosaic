@@ -711,14 +711,21 @@ function App() {
     }
 
 
+    const [gifPause, setGifPause] = useState(1);
+    const [gifDelay, setGifDelay] = useState(50);
+    const [stepsPerFrame, setStepsPerFrame] = useState(k);
     const handleGenerateGif = () => { 
         if (gifWorkerReady) {
+
+
+
             gifWorkerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
             gifWorkerRef.current.postMessage({
                 type: "create_gif",
                 data: {
-                    k: k,
-                    end_time: 1,
+                    k: stepsPerFrame,
+                    delay: gifDelay,
+                    end_time: gifPause,
                 }
             })
         }
@@ -773,6 +780,48 @@ function App() {
             <button onClick={handleGenerateGif}>
                 generate gif
             </button>
+            <label style={{ display: 'block', marginBottom: '1rem' }}>
+                Tiles Per Frame: {stepsPerFrame}
+                <input
+                type="range"
+                min="1"
+                max="1000"
+                step="10"
+                value={stepsPerFrame}
+                onChange={(e) =>
+                    setStepsPerFrame(parseInt(e.target.value))
+                }
+                style={{ width: '100%' }}
+                />
+            </label>
+            <label style={{ display: 'block', marginBottom: '1rem' }}>
+                Gif Frame Time ms: {gifDelay}
+                <input
+                type="range"
+                min="35"
+                max="500"
+                step="5"
+                value={gifDelay}
+                onChange={(e) =>
+                    setGifDelay(parseInt(e.target.value))
+                }
+                style={{ width: '100%' }}
+                />
+            </label>
+            <label style={{ display: 'block', marginBottom: '1rem' }}>
+                Seconds of Pause at End: {gifPause}
+                <input
+                type="range"
+                min="0.1"
+                max="5"
+                step="0.1"
+                value={gifPause}
+                onChange={(e) =>
+                    setGifPause(parseFloat(e.target.value))
+                }
+                style={{ width: '100%' }}
+                />
+            </label>
             
 
 
