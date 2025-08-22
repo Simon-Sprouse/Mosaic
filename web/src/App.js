@@ -371,6 +371,7 @@ function App() {
     const gifWorkerRef = useRef(null);
     const [gifWorkerReady, setGifWorkerReady] = useState(false);
     const [gifUrl, setGifUrl] = useState(null);
+    const [gifProgress, setGifProgress] = useState(0);
 
     const handleGifWorkerMessage = (e) => {
         const { type, data, error, blob } = e.data;
@@ -384,8 +385,13 @@ function App() {
             setGifWorkerReady(true);
         }
 
+        if (type === "gif_progress") { 
+            setGifProgress(data);
+        }
+
         if (type === 'gif_ready') {
             console.log('🎞️ Received gif blob from worker');
+            setGifProgress(100);
             
             // Revoke previous URL if it exists to avoid memory leaks
             if (gifUrl) {
@@ -1072,6 +1078,10 @@ function App() {
                     View PNG in New Tab
                     </button>
                 </div>
+            )}
+
+            {(gifProgress > 0 && !gifUrl) && (
+                <p>Loading... {Number(gifProgress).toFixed(2)}</p>
             )}
 
             {gifUrl && (

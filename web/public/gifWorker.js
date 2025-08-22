@@ -6,6 +6,7 @@ importScripts('/libs/gif.js', '/libs/gif.worker.js');
 let wasmInstance = null;
 let wasmIsReady = false; // if called but not ready -> error is thrown
 let mosaic = null;
+let total_tiles_estimate = -1;
 
 
 
@@ -104,6 +105,12 @@ self.onmessage = function (e) {
         mosaic.setParameters(params);
         mosaic.resizeOriginal(); // TODO this can be refactored on c++ side
 
+
+        const { width, height } = mosaic.size();
+        const n = parseInt(params.tile_size);
+        const packingDensity = 0.60; // could adjust based on empirical data
+        total_tiles_estimate = Math.floor(packingDensity * (width * height) / (n * n));
+
     }
 
     else if (type === "create_gif") { 
@@ -131,7 +138,8 @@ self.onmessage = function (e) {
             });
 
             let step_valid = true;
-            let i = 0;
+            let tiles_placed = 0;
+            let progress = 0;
 
             // const delay = 100; // ms per frame
 
@@ -151,7 +159,10 @@ self.onmessage = function (e) {
                 const imageData = new ImageData(pixels, width, height);
                 gif.addFrame(imageData, { delay });
 
-                i++;
+                tiles_placed += k;
+                progress = (tiles_placed / total_tiles_estimate) * 100;
+                // console.log("progress estimate: ", progress, "%")
+                self.postMessage({type: "gif_progress", data:progress});
 
             }
 
@@ -169,7 +180,7 @@ self.onmessage = function (e) {
 
 
 
-            console.log("gif computation stopped after: ", i * k, "steps");
+            console.log("gif computation stopped after: ", tiles_placed, "steps");
 
             gif.on('finished', function(blob) {
                 console.log("✅ GIF encoding finished, blob size:", blob.size, "bytes");
