@@ -293,24 +293,40 @@ function App() {
                 
             }
 
+
     };
 
 
     const gifWorkerRef = useRef(null);
     const [gifWorkerReady, setGifWorkerReady] = useState(false);
-    const handleGifWorkerMessage = (e) => { 
-        const { type, data, error } = e.data;
+    const [gifUrl, setGifUrl] = useState(null);
+
+    const handleGifWorkerMessage = (e) => {
+        const { type, data, error, blob } = e.data;
 
         if (type === 'error') {
-            console.error('Error from worker:', error);
+            console.error('❌ Error from worker:', error);
         }
 
-        if (type === "gif_wasm_ready") { 
+        if (type === 'gif_wasm_ready') {
             console.log('✅ gif WASM module ready');
             setGifWorkerReady(true);
         }
 
-    }
+        if (type === 'gif_ready') {
+            console.log('🎞️ Received gif blob from worker');
+            
+            // Revoke previous URL if it exists to avoid memory leaks
+            if (gifUrl) {
+                URL.revokeObjectURL(gifUrl);
+            }
+
+            // Create a new URL for the blob and update state
+            const url = URL.createObjectURL(blob);
+            setGifUrl(url);
+        }
+    };
+
     
 
 
@@ -370,11 +386,14 @@ function App() {
 
 
     useEffect(() => {
-        if (!workerReady) return;
+        if (workerReady) {
 
-        workerRef.current.postMessage({ type: "clear_data" });
-        workerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
-        workerRef.current.postMessage({ type: "run_contour_pipeline" });
+            workerRef.current.postMessage({ type: "clear_data" });
+            workerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
+            workerRef.current.postMessage({ type: "run_contour_pipeline" });
+        }
+
+        
 
   
 
@@ -474,6 +493,7 @@ function App() {
 
         workerRef.current.postMessage({ type: "run_contour_pipeline" }); // TODO is this necessary?
 
+        // We don't use useEffect with image because of the dependencies 
         gifWorkerRef.current.postMessage({
             type: 'handle_image_upload',
             data: {
@@ -481,6 +501,7 @@ function App() {
                 parameters: params, // This must be a plain JS object matching your embind Parameters
             },
         });
+
 
 
         
@@ -499,26 +520,6 @@ function App() {
         };
 
     };
-
-
-
-    // create gif in background
-    useEffect(() => { 
-
-        console.log("gif useEffect called")
-
-        if (!gifWorkerReady) return;
-        gifWorkerRef.current.postMessage({
-            type: "create_gif",
-            data: {
-                k: k,
-                end_time: 1,
-            }
-        })
-
-        console.log("app.js posts gif request to worker");
-
-    }, [uploadedImage, debouncedParams])
 
 
 
@@ -710,6 +711,19 @@ function App() {
     }
 
 
+    const handleGenerateGif = () => { 
+        if (gifWorkerReady) {
+            gifWorkerRef.current.postMessage({ type: "set_parameters", data: debouncedParams });
+            gifWorkerRef.current.postMessage({
+                type: "create_gif",
+                data: {
+                    k: k,
+                    end_time: 1,
+                }
+            })
+        }
+    }
+
 
 
     return (
@@ -753,6 +767,11 @@ function App() {
             </button>
             <button onClick={stepBackMulti}>
                 Step Back Multi
+            </button>
+
+
+            <button onClick={handleGenerateGif}>
+                generate gif
             </button>
             
 
@@ -900,6 +919,24 @@ function App() {
                 advancedView ? (<GridCanvasDisplay canvasRefs={refs_array.current} size={canvasSize} gridLayout={gridLayout}/>) : 
                 (<CanvasDisplay ref={canvasRef} size={canvasSize} />)
             }
+
+            {gifUrl && (
+                <div>
+                    <h3>Generated GIF Preview</h3>
+                    <img src={gifUrl} alt="Generated GIF" style={{ maxWidth: '100%', height: 'auto' }} />
+                    <a href={gifUrl} download="mosaic.gif">
+                    <button>Download GIF</button>
+                    </a>
+                    <button
+                    onClick={() => window.open(gifUrl, '_blank')}
+                    style={{ marginLeft: '10px' }}
+                    >
+                    Open GIF in New Tab
+                    </button>
+                </div>
+            )}
+
+
             
 
 

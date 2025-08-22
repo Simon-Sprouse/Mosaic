@@ -142,17 +142,13 @@ self.onmessage = function (e) {
                 return;
             }
 
-           
 
             // prevent redudant calls to wasm module
             if (!computationComplete){
                 const stepValid = mosaic.stepK(k);
                 if (!stepValid) computationComplete = true;
             }
-            
-
-
-
+    
             const current = mosaic.getRenderPointer();
             mosaic.renderImageRange(current, k);
             mosaic.setRenderPointer(current + k);
@@ -164,8 +160,7 @@ self.onmessage = function (e) {
                 height,
                 pixels: pixels.buffer, // send raw ArrayBuffer
             }, [pixels.buffer]);  // transfer ownership (zero-copy)
-            // console.log("sending output image update from worker");
-            // console.log("advancedView: ", isAdvancedView);
+
 
 
             if (isAdvancedView) { 
