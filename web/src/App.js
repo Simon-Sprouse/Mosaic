@@ -327,7 +327,7 @@ function App() {
             
 
         workerRef.current = worker;
-        gifWorkerRef.current = gifWorkerRef;
+        gifWorkerRef.current = gif_worker;
 
         return () => worker.terminate();
     }, []);
@@ -449,6 +449,7 @@ function App() {
 
 
     const [uploadedImageSize, setUploadedImageSize] = useState({ w: 0, h: 0});
+    const [uploadedImage, setUploadedImage] = useState(null);
     const handleUpload = async (event) => {
         const file = event.target.files[0];
         if (!file || !workerRef.current || !workerReady) return;
@@ -471,7 +472,15 @@ function App() {
             },
         });
 
-        workerRef.current.postMessage({ type: "run_contour_pipeline" });
+        workerRef.current.postMessage({ type: "run_contour_pipeline" }); // TODO is this necessary?
+
+        gifWorkerRef.current.postMessage({
+            type: 'handle_image_upload',
+            data: {
+                bytes: byteArray,
+                parameters: params, // This must be a plain JS object matching your embind Parameters
+            },
+        });
 
 
         
@@ -490,6 +499,35 @@ function App() {
         };
 
     };
+
+
+
+    // create gif in background
+    useEffect(() => { 
+
+        console.log("gif useEffect called")
+
+        if (!gifWorkerReady) return;
+        gifWorkerRef.current.postMessage({
+            type: "create_gif",
+            data: {
+                k: k,
+                end_time: 1,
+            }
+        })
+
+        console.log("app.js posts gif request to worker");
+
+    }, [uploadedImage, debouncedParams])
+
+
+
+
+
+
+
+
+
 
     const [canvasSize, setCanvasSize] = useState(getDisplaySize());
     const [gridLayout, setGridLayout] = useState({ rows: 0, cols: 0});
