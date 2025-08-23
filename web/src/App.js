@@ -4,6 +4,7 @@ import './App.css';
 
 import CanvasDisplay from './components/CanvasDisplay';
 import GridCanvasDisplay from './components/GridCanvasDisplay';
+import SliderInput from './components/SliderInput';
 
 
 function App() {
@@ -721,12 +722,11 @@ function App() {
     */
 
     const handleWorkerTest = () => { 
-        if (!workerReady) { 
-            console.log("wasm not ready yet");
-            return;
-        }
-        // workerRef.current.postMessage({ type: "ping" })
-        workerRef.current.postMessage({ type: "step", data:k })
+
+
+
+        console.log("uploaded file name: ", uploadedFilename);
+        console.log("stripped: ", uploadedFilename.replace(/\.[^/.]+$/, ""));
     }
 
 
@@ -829,11 +829,18 @@ function App() {
         }
     }
 
+    const getOutputFilename = (extension) => { 
+        if (!uploadedFilename) return;
+        return uploadedFilename.replace(/\.[^/.]+$/, "") + "_mosaic" + extension;
+    }
+
     return (
         <div className="App">
             <header className="app-layout">
             {/* Left Sidebar */}
             <div className="sidebar">
+
+                <h1>Mosaic Filter</h1>
 
                 {/* Upload Section */}
                 <section>
@@ -875,180 +882,142 @@ function App() {
                 {/* Parameter Tuning */}
                 <section>
                 <h3>Tune Parameters</h3>
-                <label>
-                    Resize Factor: {params.resize_factor}
-                    <input
-                    type="range"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
+                <SliderInput
+                    label="Resize Factor"
                     value={params.resize_factor}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, resize_factor: parseFloat(e.target.value) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, resize_factor: newVal }))}
+                />
 
-                <label>
-                    Canny Resize Factor: {params.canny_resize_factor}
-                    <input
-                    type="range"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
+                <SliderInput
+                    label="Canny Resize Factor"
                     value={params.canny_resize_factor}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, canny_resize_factor: parseFloat(e.target.value) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, canny_resize_factor: newVal }))}
+                />
 
-                <label>
-                    Canny Threshold 1: {params.canny_threshold_1}
-                    <input
-                    type="range"
-                    min="0"
-                    max="255"
-                    step="1"
+                <SliderInput
+                    label="Canny Threshold 1"
                     value={params.canny_threshold_1}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, canny_threshold_1: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                    min={0}
+                    max={255}
+                    step={1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, canny_threshold_1: newVal }))}
+                />
 
-                <label>
-                    Canny Threshold 2: {params.canny_threshold_2}
-                    <input
-                    type="range"
-                    min="0"
-                    max="255"
-                    step="1"
+                <SliderInput
+                    label="Canny Threshold 2"
                     value={params.canny_threshold_2}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, canny_threshold_2: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                    min={0}
+                    max={255}
+                    step={1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, canny_threshold_2: newVal }))}
+                />
 
-                <label>
-                    Tile Size: {params.tile_size}
-                    <input
-                    type="range"
-                    min="5"
-                    max="40"
-                    step="1"
+                <SliderInput
+                    label="Tile Size"
                     value={params.tile_size}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, tile_size: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                    min={5}
+                    max={40}
+                    step={1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, tile_size: newVal }))}
+                />
 
-                <label>
-                    Max Frontiers: {params.max_frontiers}
-                    <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    step="1"
+                <SliderInput
+                    label="Max Frontiers"
                     value={params.max_frontiers}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, max_frontiers: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                    min={1}
+                    max={20}
+                    step={1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, max_frontiers: newVal }))}
+                />
 
-                <label>
-                    Flood Fill Neighbor Points: {params.flood_fill_neighbor_points}
-                    <input
-                    type="range"
-                    min="1"
-                    max="16"
-                    step="1"
+                <SliderInput
+                    label="Flood Fill Neighbor Points"
                     value={params.flood_fill_neighbor_points}
-                    onChange={(e) =>
-                        setParams((prev) => ({ ...prev, flood_fill_neighbor_points: parseInt(e.target.value, 10) }))
-                    }
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                    min={1}
+                    max={16}
+                    step={1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, flood_fill_neighbor_points: newVal }))}
+                />
                 </section>
+
 
                 {/* Save Options */}
                 <section>
-                <h3>Save / Export</h3>
-                <button onClick={handleImageExport}>Export as PNG</button>
-                <button onClick={handleGenerateGif}>Generate GIF</button>
-
-                <label>
-                    Tiles Per Frame: {stepsPerFrame}
-                    <input
-                    type="range"
-                    min="1"
-                    max="1000"
-                    step="10"
-                    value={stepsPerFrame}
-                    onChange={(e) => setStepsPerFrame(parseInt(e.target.value))}
-                    style={{ width: '100%' }}
-                    />
-                </label>
-                <label>
-                    Gif Frame Time ms: {gifDelay}
-                    <input
-                    type="range"
-                    min="35"
-                    max="500"
-                    step="5"
-                    value={gifDelay}
-                    onChange={(e) => setGifDelay(parseInt(e.target.value))}
-                    style={{ width: '100%' }}
-                    />
-                </label>
-                <label>
-                    Seconds of Pause at End: {gifPause}
-                    <input
-                    type="range"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
-                    value={gifPause}
-                    onChange={(e) => setGifPause(parseFloat(e.target.value))}
-                    style={{ width: '100%' }}
-                    />
-                </label>
+                <h3>Save Image</h3>
+                <button onClick={handleImageExport}>Generate PNG</button>
                 {/* PNG Output */}
                 {pngUrl && (
                 <div>
-                    <h3>Generated PNG</h3>
-                    <a href={pngUrl} download="mosaic.png">
+
+                    <img src={pngUrl} alt="Generated PNG" style={{ maxWidth: '100px', height: 'auto' }} />
+
+                    <div>
+                    <a href={pngUrl} download={getOutputFilename(".png")}>
                     <button>Download PNG</button>
                     </a>
                     <button onClick={() => window.open(pngUrl, '_blank')} style={{ marginLeft: '10px' }}>
                     View PNG in New Tab
                     </button>
+                    </div>
                 </div>
                 )}
+                </section>
+
+                {/* Save Options */}
+                <section>
+                <h3>Save Animation</h3>
+                
+
+                <SliderInput
+                    label="Tiles Per Frame"
+                    value={stepsPerFrame}
+                    min={1}
+                    max={1000}
+                    step={10}
+                    onChange={(newVal) => setStepsPerFrame(Math.round(newVal))}
+                />
+
+                <SliderInput
+                    label="Gif Frame Time ms"
+                    value={gifDelay}
+                    min={35}
+                    max={500}
+                    step={5}
+                    onChange={(newVal) => setGifDelay(Math.round(newVal))}
+                />
+
+                <SliderInput
+                    label="Seconds of Pause at End"
+                    value={gifPause}
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    onChange={setGifPause}
+                />
+
+                <button onClick={handleGenerateGif}>Generate GIF</button>
 
                 {/* GIF Output */}
-                {(gifProgress > 0 && !gifUrl) && <p>Loading... {Number(gifProgress).toFixed(2)}</p>}
+                {(gifProgress > 0 && !gifUrl) && <p>Loading... {Number(gifProgress).toFixed(2)}%</p>}
                 {gifUrl && (
-                <div>
-                    <h3>Generated GIF Preview</h3>
-                    <img src={gifUrl} alt="Generated GIF" style={{ maxWidth: '100px', height: 'auto' }} />
-                    <a href={gifUrl} download="mosaic.gif">
-                    <button>Download GIF</button>
-                    </a>
-                    <button onClick={() => window.open(gifUrl, '_blank')} style={{ marginLeft: '10px' }}>
-                    Open GIF in New Tab
-                    </button>
-                </div>
+                    <div>
+                        <img src={gifUrl} alt="Generated GIF" style={{ maxWidth: '100px', height: 'auto' }} />
+
+                        <div>  {/* <-- wrap buttons here */}
+                        <a href={gifUrl} download={getOutputFilename(".gif")}>
+                            <button>Download GIF</button>
+                        </a>
+                        <button onClick={() => window.open(gifUrl, '_blank')} style={{ marginLeft: '10px' }}>
+                            View GIF in New Tab
+                        </button>
+                        </div>
+                    </div>
                 )}
                 </section>
 
