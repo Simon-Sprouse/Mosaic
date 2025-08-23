@@ -28,15 +28,10 @@ function App() {
     const k = 100;
     const multi_step = 100;
 
-
-
-
-
-
     
     const default_params = {
         resize_factor: 1,
-        blur_kernel_size: 3,
+        blur_kernel_size: 5,
         blur_sigma: 1.4,
         canny_threshold_1: 50,
         canny_threshold_2: 100,
@@ -384,7 +379,7 @@ function App() {
         }
 
         if (type === 'gif_wasm_ready') {
-            console.log('✅ gif WASM module ready');
+            // console.log('✅ gif WASM module ready');
             setGifWorkerReady(true);
         }
 
@@ -393,7 +388,7 @@ function App() {
         }
 
         if (type === 'gif_ready') {
-            console.log('🎞️ Received gif blob from worker');
+            // console.log('🎞️ Received gif blob from worker');
             setGifProgress(100);
             
             // Revoke previous URL if it exists to avoid memory leaks
@@ -723,10 +718,8 @@ function App() {
 
     const handleWorkerTest = () => { 
 
+        console.log("bungus");
 
-
-        console.log("uploaded file name: ", uploadedFilename);
-        console.log("stripped: ", uploadedFilename.replace(/\.[^/.]+$/, ""));
     }
 
 
@@ -892,6 +885,15 @@ function App() {
                 />
 
                 <SliderInput
+                    label="Canny Blur Sigma"
+                    value={params.blur_sigma}
+                    min={0.1}
+                    max={5}
+                    step={0.1}
+                    onChange={(newVal) => setParams((prev) => ({ ...prev, blur_sigma: newVal }))}
+                />
+
+                <SliderInput
                     label="Canny Resize Factor"
                     value={params.canny_resize_factor}
                     min={0.1}
@@ -1024,8 +1026,8 @@ function App() {
                 {/* Developer Tools */}
                 <section>
                 <h3>Developer</h3>
-                <button onClick={handleWorkerTest}>Test Worker</button>
-                <p>{text || "Click the button to run C++ code"}</p>
+                <button onClick={handleWorkerTest}>Mystery Button</button>
+                
                 </section>
             </div>
 

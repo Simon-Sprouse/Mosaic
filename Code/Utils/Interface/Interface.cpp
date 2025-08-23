@@ -81,8 +81,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .constructor<int,int>()
         .constructor<int,int,Color>()
         .constructor<Size>()
-        // .constructor<Size,Color>() // constructors only overloaded with parameter count?? 
-        //.constructor<Size,std::vector<float>>() // Vector binding more complex; omit or add if needed
         .function("getWidth", &Image::getWidth)
         .function("getHeight", &Image::getHeight)
         .function("size", &Image::size)
@@ -91,7 +89,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
         .function("clone", &Image::clone)
         .function("at", select_overload<Color&(int,int)>(&Image::at))
         .function("setPixel", &Image::setPixel)
-        // .function("rawData", select_overload<const uint8_t*() const>(&Image::rawData), allow_raw_pointer<const uint8_t*>())
         .function("getRawData", optional_override([](Image& self) -> uintptr_t {
                     uint8_t* data = self.rawData();
                     return reinterpret_cast<uintptr_t>(data);
@@ -107,30 +104,23 @@ EMSCRIPTEN_BINDINGS(my_module) {
             const uint8_t* data = reinterpret_cast<const uint8_t*>(dataPtr);
             return self.loadImageFromBuffer(data, size);
         }))
-        // .function("runAll", &Mosaic::runAll)
         .function("stepK", &Mosaic::stepK)
         .function("renderImageRange", &Mosaic::renderImageRange)
         .function("renderDebugImageRange", &Mosaic::renderDebugImageRange)
         .function("setRenderPointer", &Mosaic::setRenderPointer)
         .function("getRenderPointer", &Mosaic::getRenderPointer)
-        .function("resetCanvas", &Mosaic::resetCanvas)
-        // .function("getRawData", optional_override([](Mosaic& self) -> uintptr_t {
-        //             uint8_t* data = self.getRawData();
-        //             return reinterpret_cast<uintptr_t>(data);
-        //         }))        
+        .function("resetCanvas", &Mosaic::resetCanvas)      
         .function("empty", &Mosaic::empty)
         .function("size", &Mosaic::size)
         .function("setParameters", &Mosaic::setParameters)
         .function("clearData", &Mosaic::clearData)
         .function("resizeOriginal", &Mosaic::resizeOriginal)
         .function("getContourImage", &Mosaic::getContourImage)
-        // .function("getCanvas", &Mosaic::getCanvas)
         .function("getCanvasPtr", &Mosaic::getCanvasPtr, allow_raw_pointer<Image*>())
         .function("getDebugCanvasPtr", &Mosaic::getDebugCanvasPtr, allow_raw_pointer<Image*>())
         .function("getOriginalImagePtr", &Mosaic::getOriginalImagePtr, allow_raw_pointer<Image*>())
         .function("getStrokesImagePtr", &Mosaic::getStrokesImagePtr, allow_raw_pointer<Image*>())
         .function("contourPipeline", &Mosaic::contourPipeline)
         .function("setDebugMode", &Mosaic::setDebugMode)
-        // You can add more Mosaic methods as needed
         ;
 }

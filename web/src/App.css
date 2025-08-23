@@ -11,6 +11,11 @@
   --color-accent-main: #dc86f4; /* teal-ish track color */
 }
 
+
+body {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
 .App {
   text-align: center;
 }
@@ -51,6 +56,7 @@ section {
 }
 
 button {
+  /* font-family: 'IBM Plex Mono', monospace; */
   background-color: var(--color-button-bg);
   color: var(--color-fg);
   padding: 8px 12px;

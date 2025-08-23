@@ -3,7 +3,6 @@
 #include "../../Utils/Graphics/graphics.hpp"
 #include "../../Utils/Geometry/geometry.hpp"
 #include "../../Utils/Random/random.hpp"
-// #include "../../Utils/Io/io.hpp"
 #include "../../Utils/ImageProcess/imageProcess.hpp"
 
 // #include "gif.h" TODO add this later
@@ -12,15 +11,11 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
-// #include <filesystem>
-// #include <random>
 #include <stack>
-#include <sstream>
-// #include <fstream>
 #include <queue>
 
 using namespace std;
-// namespace fs = std::__fs::filesystem;
+
 
 namespace mosaic_gen {
 
@@ -76,162 +71,13 @@ Size Mosaic::size() {
     return Size();
 }
 
-// // param constructor
-// Mosaic::Mosaic(const Parameters& hp) { 
-//     params = hp;
-
-//     loadImage();
-//     resizeOriginal();
-//     // cout << "Loaded image: " << image_name << endl;
-//     // cout << "Original dimensions: " << original.size() << endl;
-//     // cout << "Resized image to size: " << resized.size() << endl;
-//     // cout << endl;
-
-
-
-    
-// }
-
-
-
-
-
-
-// TODO implement clear function on Image
-// void Mosaic::resetData() {
-
-
-//     original.release();
-//     resized.release();
-//     grayscale.release();
-//     blurred.release();
-//     edges.release();
-//     contours.release();
-//     distance_map.release();
-//     gradX.release();
-//     gradY.release();
-
-//     selected_contour.release();
-//     canvas.release();
-//     mask.release();
-
-//     segment_points.clear();
-//     segment_lengths.clear();
-
-//     tiles_placed.clear();
-// }
-
-
-// void Mosaic::runAll() {
-//     loadImage();
-//     resizeOriginal();
-//     grayImage();
-//     blurImage();
-//     cannyFilter();
-//     detectContours();
-//     rankContours();
-//     placeTileAllContours();
-//     floodFill();
-//     gapFill();
-//     renderTiles();
-// }
-
-// cv::Mat Mosaic::getCanvas() { 
-//     return canvas.clone();
-// }
-
-
-// void Mosaic::saveGif(int tilesPerFrame, const std::string& suffix) {
-
-//     string output_dir = params.results_dir;
-
-
-//     int width = canvas.cols;
-//     int height = canvas.rows;
-
-//     std::string gifFilename = output_dir + "/" + image_name + "_" + suffix + ".gif";
-
-//     GifWriter writer;
-
-//     GifBegin(&writer, gifFilename.c_str(), width, height, 10); // delay in 1/100s
-
-//     cv::Mat gifCanvas = cv::Mat::zeros(canvas.size(), CV_8UC3);
-//     for (size_t i = 0; i < tiles_placed.size(); i += tilesPerFrame) {
-//         for (size_t j = i; j < std::min(i + tilesPerFrame, tiles_placed.size()); ++j) {
-//             const TileInfo& tile = tiles_placed[j];
-//             cv::Vec3b color = sampleTileColor(tile);
-//             Graphics::drawSquare(gifCanvas, tile.center, tile.size, tile.theta_deg, color, tile.size);
-//         }
-
-//         // Convert to RGBA
-//         cv::Mat rgba;
-//         cv::cvtColor(gifCanvas, rgba, cv::COLOR_BGR2RGBA);
-
-//         GifWriteFrame(&writer, rgba.data, width, height, 10);
-//     }
-
-
-//     // Hold on final frame by repeating it
-
-//     int final_hold_frames = 10;
-
-//     cv::Mat rgbaFinal;
-//     cv::cvtColor(gifCanvas, rgbaFinal, cv::COLOR_BGR2RGBA);
-//     for (int k = 0; k < final_hold_frames; ++k) {
-//         GifWriteFrame(&writer, rgbaFinal.data, width, height, 10);
-//     }
-
-//     GifEnd(&writer);
-//     // std::cout << "Saved animated GIF to: " << gifFilename << std::endl;
-// }
-
-
-
-
-// void Mosaic::saveTileInfo(const std::string& suffix) { 
-
-//     string output_dir = params.results_dir;
-
-
-//     std::ostringstream oss;
-
-//     // Write the CSV header
-//     oss << "center_x,center_y,size,theta_deg,order,frontier\n";
-
-//     // Iterate through each TileInfo struct in the vector
-//     for (const auto& tile : tiles_placed) {
-//         oss << tile.center.x << ","
-//             << tile.center.y << ","
-//             << tile.size << ","
-//             << tile.theta_deg << ","
-//             << tile.order << ","
-//             << tile.frontier << "\n";
-//     }
-
-//     std::string fileName = output_dir + "/" + image_name + "_" + suffix + ".csv";
-//     std::ofstream outFile(fileName); // Open the file for writing
-//     if (outFile.is_open()) {
-//         outFile << oss.str(); // Write the CSV content to the file
-//         outFile.close();      // Close the file
-//         // std::cout << "CSV data successfully written to " << fileName << std::endl;
-//     } else {
-//         std::cerr << "Error: Unable to open file '" << fileName << "' for writing." << std::endl;
-//     }
-
-
-
-// }
-
-
-
-
 
 
 void Mosaic::loadImageFromBuffer(const uint8_t *data, size_t size) { 
     original = image::fromEncodedBuffer(data, size);
     image::process::resize(original, resized, params.resize_factor);
 
-    cout << "inside Mosaic: resized.size(): " << resized.size() << endl;
+    // cout << "inside Mosaic: resized.size(): " << resized.size() << endl;
 }
 
 void Mosaic::loadImageFromVector(const std::vector<uint8_t>& buffer){
@@ -1249,8 +1095,8 @@ void Mosaic::clearData() {
 
 
 
-    cout << "data cleared" << endl;
-    cout << "debug mode: " << debug_mode << endl;
+    // cout << "data cleared" << endl;
+    // cout << "debug mode: " << debug_mode << endl;
 }
 
 

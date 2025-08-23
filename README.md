@@ -13,3 +13,4 @@ Sample RGB values under tiles.
 And like magic... here is an exmaple output:
 
 ![Example Gif](example.gif)
+
