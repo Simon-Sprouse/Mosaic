@@ -75,6 +75,8 @@ function App() {
 
     const [pngUrl, setPngUrl] = useState(null);
 
+    const [uploadedFilename, setUploadedFilename] = useState(null);
+
   
 
 
@@ -553,6 +555,10 @@ function App() {
         stopAnimation();
         setMosaicReady(false); // will be reset once the worker responds
 
+
+        // save file name
+        setUploadedFilename(file.name);
+
         // Read image into bytes
         const arrayBuffer = await file.arrayBuffer();
         const byteArray = new Uint8Array(arrayBuffer);
@@ -823,128 +829,53 @@ function App() {
         }
     }
 
-
-
     return (
         <div className="App">
-        <header className="App-header">
+            <header className="app-layout">
+            {/* Left Sidebar */}
+            <div className="sidebar">
 
-            <p></p>
-            <button onClick={handleWorkerTest}>
-                test worker
-            </button>
-            <button onClick={() => setAdvancedView(!advancedView)}>
-                Toggle Advanced View
-            </button>
-
-
-            <input type="file" accept="image/*" onChange={handleUpload} />
-            <p>{text || "Click the button to run C++ code"}</p>
-            <button onClick={handlePlay}>
-                Play
-            </button>
-            <button onClick={handlePause}>
-                Pause
-            </button>
-            <button onClick={handleReverse}>
-                Reverse
-            </button>
-            <button onClick={handleReplay}>
-                Replay Animation
-            </button>
-            <button onClick={handleReset}>
-                Reset Animation
-            </button>
-            <button onClick={stepForward}>
-                Step Forward
-            </button>
-            <button onClick={stepBack}>
-                Step Back
-            </button>
-            <button onClick={stepForwardMulti}>
-                Step Forward Multi
-            </button>
-            <button onClick={stepBackMulti}>
-                Step Back Multi
-            </button>
-
-
-            <button onClick={handleImageExport}>
-                export as png
-            </button>
-
-            <button onClick={handleGenerateGif}>
-                generate gif
-            </button>
-            <label style={{ display: 'block', marginBottom: '1rem' }}>
-                Tiles Per Frame: {stepsPerFrame}
+                {/* Upload Section */}
+                <section>
+                <h3>Upload</h3>
+                <label htmlFor="file-upload" className="file-upload-label">Choose File</label>
                 <input
-                type="range"
-                min="1"
-                max="1000"
-                step="10"
-                value={stepsPerFrame}
-                onChange={(e) =>
-                    setStepsPerFrame(parseInt(e.target.value))
-                }
-                style={{ width: '100%' }}
+                    id="file-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUpload}
+                    className="file-input"
                 />
-            </label>
-            <label style={{ display: 'block', marginBottom: '1rem' }}>
-                Gif Frame Time ms: {gifDelay}
-                <input
-                type="range"
-                min="35"
-                max="500"
-                step="5"
-                value={gifDelay}
-                onChange={(e) =>
-                    setGifDelay(parseInt(e.target.value))
-                }
-                style={{ width: '100%' }}
-                />
-            </label>
-            <label style={{ display: 'block', marginBottom: '1rem' }}>
-                Seconds of Pause at End: {gifPause}
-                <input
-                type="range"
-                min="0.1"
-                max="5"
-                step="0.1"
-                value={gifPause}
-                onChange={(e) =>
-                    setGifPause(parseFloat(e.target.value))
-                }
-                style={{ width: '100%' }}
-                />
-            </label>
-            
+                {uploadedFilename && (
+                    <p>{uploadedFilename}</p>
+                )}
+                </section>
 
 
+                {/* Animation Controls */}
+                <section>
+                <h3>Animation</h3>
+                <button onClick={handlePlay}>Play</button>
+                <button onClick={handlePause}>Pause</button>
+                <button onClick={handleReverse}>Reverse</button>
+                <button onClick={handleReplay}>Replay</button>
+                <button onClick={handleReset}>Reset</button>
+                <button onClick={stepForward}>Step Forward</button>
+                <button onClick={stepBack}>Step Back</button>
+                <button onClick={stepForwardMulti}>Step Forward Multi</button>
+                <button onClick={stepBackMulti}>Step Back Multi</button>
+                </section>
 
-            <div
-            style={{
-                display: 'flex',
-                height: '100vh',
-                boxSizing: 'border-box',
-                padding: '1rem',
-                gap: '1rem',
-            }}
-            >
-            <div
-            className="params-container"
-            style={{
-                maxWidth: 400,
-                margin: '1rem auto',
-                padding: '1rem',
-                border: '1px solid #ccc',
-                borderRadius: 8,
-                backgroundColor: '#000000',
-                overflowY: 'auto',
-                maxHeight: '70vh',
-            }}
-            >
-                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                {/* View Controls */}
+                <section>
+                <h3>View</h3>
+                <button onClick={() => setAdvancedView(!advancedView)}>Toggle Advanced View</button>
+                </section>
+
+                {/* Parameter Tuning */}
+                <section>
+                <h3>Tune Parameters</h3>
+                <label>
                     Resize Factor: {params.resize_factor}
                     <input
                     type="range"
@@ -959,7 +890,7 @@ function App() {
                     />
                 </label>
 
-                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                <label>
                     Canny Resize Factor: {params.canny_resize_factor}
                     <input
                     type="range"
@@ -974,9 +905,7 @@ function App() {
                     />
                 </label>
 
-
-
-                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                <label>
                     Canny Threshold 1: {params.canny_threshold_1}
                     <input
                     type="range"
@@ -991,7 +920,7 @@ function App() {
                     />
                 </label>
 
-                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                <label>
                     Canny Threshold 2: {params.canny_threshold_2}
                     <input
                     type="range"
@@ -1006,8 +935,7 @@ function App() {
                     />
                 </label>
 
-
-                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                <label>
                     Tile Size: {params.tile_size}
                     <input
                     type="range"
@@ -1022,8 +950,7 @@ function App() {
                     />
                 </label>
 
-              
-                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                <label>
                     Max Frontiers: {params.max_frontiers}
                     <input
                     type="range"
@@ -1038,7 +965,7 @@ function App() {
                     />
                 </label>
 
-                <label style={{ display: 'block', marginBottom: '1rem' }}>
+                <label>
                     Flood Fill Neighbor Points: {params.flood_fill_neighbor_points}
                     <input
                     type="range"
@@ -1052,63 +979,104 @@ function App() {
                     style={{ width: '100%' }}
                     />
                 </label>
+                </section>
 
-            </div>
+                {/* Save Options */}
+                <section>
+                <h3>Save / Export</h3>
+                <button onClick={handleImageExport}>Export as PNG</button>
+                <button onClick={handleGenerateGif}>Generate GIF</button>
 
-
-
-
-
-          
-            {
-                advancedView ? (<GridCanvasDisplay canvasRefs={refs_array.current} size={canvasSize} gridLayout={gridLayout}/>) : 
-                (<CanvasDisplay ref={canvasRef} size={canvasSize} />)
-            }
-
-            {pngUrl && (
+                <label>
+                    Tiles Per Frame: {stepsPerFrame}
+                    <input
+                    type="range"
+                    min="1"
+                    max="1000"
+                    step="10"
+                    value={stepsPerFrame}
+                    onChange={(e) => setStepsPerFrame(parseInt(e.target.value))}
+                    style={{ width: '100%' }}
+                    />
+                </label>
+                <label>
+                    Gif Frame Time ms: {gifDelay}
+                    <input
+                    type="range"
+                    min="35"
+                    max="500"
+                    step="5"
+                    value={gifDelay}
+                    onChange={(e) => setGifDelay(parseInt(e.target.value))}
+                    style={{ width: '100%' }}
+                    />
+                </label>
+                <label>
+                    Seconds of Pause at End: {gifPause}
+                    <input
+                    type="range"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
+                    value={gifPause}
+                    onChange={(e) => setGifPause(parseFloat(e.target.value))}
+                    style={{ width: '100%' }}
+                    />
+                </label>
+                {/* PNG Output */}
+                {pngUrl && (
                 <div>
                     <h3>Generated PNG</h3>
                     <a href={pngUrl} download="mosaic.png">
                     <button>Download PNG</button>
                     </a>
-                    <button
-                    onClick={() => window.open(pngUrl, '_blank')}
-                    style={{ marginLeft: '10px' }}
-                    >
+                    <button onClick={() => window.open(pngUrl, '_blank')} style={{ marginLeft: '10px' }}>
                     View PNG in New Tab
                     </button>
                 </div>
-            )}
+                )}
 
-            {(gifProgress > 0 && !gifUrl) && (
-                <p>Loading... {Number(gifProgress).toFixed(2)}</p>
-            )}
-
-            {gifUrl && (
+                {/* GIF Output */}
+                {(gifProgress > 0 && !gifUrl) && <p>Loading... {Number(gifProgress).toFixed(2)}</p>}
+                {gifUrl && (
                 <div>
                     <h3>Generated GIF Preview</h3>
                     <img src={gifUrl} alt="Generated GIF" style={{ maxWidth: '100px', height: 'auto' }} />
                     <a href={gifUrl} download="mosaic.gif">
                     <button>Download GIF</button>
                     </a>
-                    <button
-                    onClick={() => window.open(gifUrl, '_blank')}
-                    style={{ marginLeft: '10px' }}
-                    >
+                    <button onClick={() => window.open(gifUrl, '_blank')} style={{ marginLeft: '10px' }}>
                     Open GIF in New Tab
                     </button>
                 </div>
-            )}
+                )}
+                </section>
 
-
-            
-
-
-
+                {/* Developer Tools */}
+                <section>
+                <h3>Developer</h3>
+                <button onClick={handleWorkerTest}>Test Worker</button>
+                <p>{text || "Click the button to run C++ code"}</p>
+                </section>
             </div>
-        </header>
+
+            {/* Main Canvas Area */}
+            <div className="canvas-area">
+                {advancedView ? (
+                <GridCanvasDisplay
+                    canvasRefs={refs_array.current}
+                    size={canvasSize}
+                    gridLayout={gridLayout}
+                />
+                ) : (
+                <CanvasDisplay ref={canvasRef} size={canvasSize} />
+                )}
+            </div>
+            </header>
         </div>
     );
+
+
 }
 
 export default App;
