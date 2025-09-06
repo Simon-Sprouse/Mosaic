@@ -1,6 +1,6 @@
 # Mosaic
 
-This Repo is undergoing a move from C++ to WebAsm so it can be run in a small React App -- Stay tuned! View the first release for a working, downloadable verison that can be run from the cli. 
+This project is now hosted on a free website: https://simon-sprouse.github.io/Mosaic/
 
 The algorithm works as follows: 
 
