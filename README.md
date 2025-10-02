@@ -12,5 +12,5 @@ Sample RGB values under tiles.
 
 And like magic... here is an exmaple output:
 
-![Example Gif](example.gif)
+![Example Gif](https://github.com/Simon-Sprouse/Mosaic-Assets/blob/f73133f2ac8d8066f1d1538676e2141f1836e607/mosaic.gif)
 
